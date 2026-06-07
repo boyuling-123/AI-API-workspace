@@ -1,0 +1,31 @@
+{
+  "name": "ai-api-workspace",
+  "version": "1.0.0",
+  "description": "AI 接口跑批评测平台 — 统一模型池管理、批量调用对比、AI 自动评分，全本地运行，数据不上传。",
+  "author": "卢柄元",
+  "license": "MIT",
+  "private": false,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "dexie": "^4.4.3",
+    "next": "14.2.35",
+    "react": "^18",
+    "react-dom": "^18",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "14.2.35",
+    "postcss": "^8",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5"
+  }
+}
