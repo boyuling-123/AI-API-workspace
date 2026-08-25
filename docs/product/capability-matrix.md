@@ -65,8 +65,8 @@
 | POOL-005 | 记录历史主题、维度表现、耗时、成本和失败率 | 部分实现 | Task/Evaluation 有结果与耗时，缺聚合成本指标 | 无 | 资源详情可展示全部历史指标与数据口径 | 资源池 | 待关联 |
 | POOL-006 | Agent 按任务要求筛选候选资源 | 设计中 | 无 | 无 | Agent 只收到过滤后的候选集并说明筛选依据 | 资源池 | 待关联 |
 | POOL-007 | 主榜、专项候选和别名分层管理 | 设计中 | 无 | 无 | 三层资源可配置、查询并用于报告 | 资源池 | 待关联 |
-| TASK-001 | Case × 模型拆成独立子任务且失败隔离 | 已实现 | `runService.ts`；`taskRunner.ts` | `tests/unit/taskRunner.test.ts`；`tests/stress/taskRunner.stress.test.ts` 直接导入真实源码 | 单项失败不阻塞其他项且结果状态准确 | 任务引擎 | PR 02A（当前分支） |
-| TASK-002 | 配置并发数和 QPS | 部分实现 | `RunPanel.tsx` 支持并发，无 QPS；`taskRunner.ts` 规范化非法并发 | 真实源码单测与 2,000 任务压力测试通过 | 并发和 QPS 均可配置并被调度器严格执行 | 任务控制 | PR 02A（当前分支） |
+| TASK-001 | Case × 模型拆成独立子任务且失败隔离 | 已验证 | `runService.ts`；`taskRunner.ts` | `tests/unit/taskRunner.test.ts`；`tests/stress/taskRunner.stress.test.ts` 直接导入真实源码；PR #10 CI 通过 | 单项失败不阻塞其他项且结果状态准确 | 任务引擎 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
+| TASK-002 | 配置并发数和 QPS | 部分实现 | `RunPanel.tsx` 支持并发，无 QPS；`taskRunner.ts` 规范化非法并发 | 真实源码单测与 2,000 任务压力测试通过；PR #10 CI 通过 | 并发和 QPS 均可配置并被调度器严格执行 | 任务控制 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
 | TASK-003 | 分批提交、执行并逐批落库 | Demo | 运行池并发执行，但 Task 在整批结束后落库 | 无 | 大任务按批持久化，刷新后可见已完成批次 | 任务引擎 | 待关联 |
 | TASK-004 | 保存检查点并支持中断续跑 | 设计中 | 跑批无检查点；AI 造数据有局部续跑逻辑 | 无 | 刷新或进程中断后从最后一致检查点继续 | 任务引擎 | 待关联 |
 | TASK-005 | 仅重跑失败项、指定 Case、新模型或新维度 | 部分实现 | 可复用结果新增维度评价，其他定向重跑缺失 | 无 | 四种重跑范围均可预览、确认和追溯 | 任务控制 | 待关联 |
@@ -97,13 +97,14 @@
 | CLI-008 | 明确终端权限、工作目录和文件范围 | 设计中 | 脚本执行器有局部边界，CLI 会话边界缺失 | 无 | 每次会话展示并强制执行权限与目录白名单 | CLI Agent | 待关联 |
 | SEC-001 | API Key 仅由服务端读取和注入 | 已实现 | `getApiKey.ts`；服务端 adapters | 待补：客户端包密钥引用扫描 | 浏览器网络与状态中不存在 Key 真值 | 安全审计 | 待关联 |
 | SEC-002 | Key 不进入前端、缓存、导出和日志 | 部分实现 | 前端只保存 apiKeyRef；原始脚本输出尚无统一脱敏 | 无安全测试 | 日志、IndexedDB、导出、Trace 和错误均通过泄漏测试 | 安全审计 | 待关联 |
-| SEC-003 | Skill、Prompt 和报告不保存真实 Key | 部分实现 | Schema 使用 keyRef；`scanSecrets.mjs` 与 `quality.yml` 扫描仓库产物 | `secretScan.test.ts` 覆盖安全样例、环境文件和 Token 脱敏失败日志 | 所有生成物通过 Secret Scan，且有回归用例 | 安全审计 | PR 02A（当前分支） |
+| SEC-003 | Skill、Prompt 和报告不保存真实 Key | 部分实现 | Schema 使用 keyRef；`scanSecrets.mjs` 与 `quality.yml` 扫描仓库产物 | `secretScan.test.ts` 覆盖安全样例、环境文件和 Token 脱敏失败日志；PR #10 CI 通过 | 所有生成物通过 Secret Scan，且有回归用例 | 安全审计 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
 | SEC-004 | 敏感参数脱敏展示 | 设计中 | 无统一 masker | 无 | UI、日志和导出按字段策略脱敏且可审计 | 安全审计 | 待关联 |
 | SEC-005 | 区分查看、运行、配置修改和发布权限 | 设计中 | 当前本地单用户无权限模型 | 无 | 四类权限可配置并由服务端强制校验 | 安全审计 | 待关联 |
 | SEC-006 | 记录配置、Prompt、Evaluator 和任务审计日志 | 设计中 | 无统一审计日志 | 无 | 关键操作含操作者、时间、前后值和关联对象 | 安全审计 | 待关联 |
 
 ## 当前审计结论
 
-- 当前没有能力满足“已验证”标准；PR 02A 已补真实源码测试，仍需 GitHub CI 通过后再升级状态。
+- TASK-001 已满足代码证据、真实源码测试、异常路径、压力测试、干净环境复验和 PR #10 CI Trace，状态为“已验证”。
+- TASK-002 尚缺 QPS 调度，SEC-003 尚缺完整日志与外部生成物泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。
 - 四个不存在的规划 API 必须持续显示为“设计中”或“Demo”，直至对应 route、契约测试和文档全部完成。

@@ -27,11 +27,13 @@
 
 ## CI 证据
 
-GitHub Actions 文件：`.github/workflows/quality.yml`。PR 创建后以 GitHub Check 结果作为最终 CI Trace；在 Check 成功前，能力矩阵不会标记为“已验证”。
+GitHub Actions 文件：`.github/workflows/quality.yml`。[PR #10](https://github.com/boyuling-123/AI-API-workspace/pull/10) 的 `Quality Gate / Lint, test, build, and secret scan` 已通过，作为最终远端 CI Trace。
 
 本地 `npm run quality` 已按 Secret Scan → lint → typecheck → unit → stress → build 顺序完整通过。
 
 提交 `275aea2` 另建独立干净工作树后，重新执行 `npm ci` 与 `npm run quality` 仍完整通过，证明门禁不依赖原工作区缓存、`.next` 或旧依赖。
+
+基于真实源码测试、异常路径、压力测试、干净环境复验和 GitHub CI Trace，能力矩阵中的 TASK-001 已升级为“已验证”。TASK-002 与 SEC-003 仍有明确缺口，因此保持“部分实现”。
 
 ## 回滚
 

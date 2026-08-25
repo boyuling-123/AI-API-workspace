@@ -16,7 +16,7 @@
 - [x] 提交并推送 `codex/chore-baseline-sync` 分支。
 - [x] 创建并合并 [PR #9](https://github.com/boyuling-123/AI-API-workspace/pull/9)。
 
-## 当前执行：PR 02A 真实源码测试与基础 CI
+## 已完成：PR 02A 真实源码测试与基础 CI
 
 分支：`codex/test-real-source-ci`
 
@@ -28,11 +28,12 @@
 - [x] 增加 GitHub Actions 基础质量门禁。
 - [x] 为 75 项能力矩阵增加 Issue/PR 列并关联 PR 01/02A。
 - [x] 完成生产构建、干净环境复验和验收证据。
-- [ ] 提交、推送并创建 PR 02A，等待 GitHub CI 通过。
+- [x] 提交、推送并创建 [PR #10](https://github.com/boyuling-123/AI-API-workspace/pull/10)。
+- [x] GitHub Actions 质量门禁通过，并将 TASK-001 升级为“已验证”。
 
 ## 下一任务：PR 02B 浏览器用户路径门禁
 
-状态：Ready（PR 02A 合并后开始）
+状态：Ready（PR #10 合并后开始）
 
 - 接入 Playwright E2E、可访问性检查和失败 Trace。
 - 覆盖首页输入、目标选择、接口状态和无付费调用的 Mock 路径。
