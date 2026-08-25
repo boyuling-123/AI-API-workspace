@@ -30,14 +30,25 @@
 - [x] 完成生产构建、干净环境复验和验收证据。
 - [x] 提交、推送并创建 [PR #10](https://github.com/boyuling-123/AI-API-workspace/pull/10)。
 - [x] GitHub Actions 质量门禁通过，并将 TASK-001 升级为“已验证”。
+- [x] 非强推 fast-forward 合并 PR #10，GitHub 已确认 Merged。
 
-## 下一任务：PR 02B 浏览器用户路径门禁
+## 当前执行：PR 02B 浏览器用户路径门禁
 
-状态：Ready（PR #10 合并后开始）
+分支：`codex/test-playwright-a11y`
 
-- 接入 Playwright E2E、可访问性检查和失败 Trace。
-- 覆盖首页输入、目标选择、接口状态和无付费调用的 Mock 路径。
-- 清理本轮记录的 React Hook 与 `<img>` lint 警告。
+- [x] 接入 Playwright Chromium、HTML 报告和失败 Trace/截图。
+- [x] 覆盖首页布局、目标选择提示、外部接口状态、导入深链和 AI 评价安全入口。
+- [x] 所有 E2E 页面统一拦截 `/api/**`，发现任何请求即失败，禁止误调用付费模型。
+- [x] 增加 WCAG 2A/2AA/2.1A/2.1AA 严重与致命问题门禁。
+- [x] 修复目标卡片嵌套交互控件、Tab 语义和已覆盖页面的颜色对比问题。
+- [x] 本地 6 项 Playwright 用户路径与可访问性测试通过。
+- [ ] 完成全量质量门禁、干净环境复验、提交、推送、PR 和 GitHub CI。
+
+## 下一任务：PR 02C 质量债务与日志脱敏
+
+状态：Ready（PR 02B 合并后开始）
+
+- 清理现有 React Hook 与 `<img>` lint 警告。
 - 评估并逐项处理剩余 8 个高危依赖问题，禁止直接使用破坏性 `--force` 升级。
 - 增加统一运行日志脱敏底线测试。
 

@@ -11,6 +11,8 @@
     "test": "npm run test:unit",
     "test:unit": "vitest run tests/unit",
     "test:stress": "vitest run tests/stress",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "security:secrets": "node scripts/scanSecrets.mjs",
     "quality": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:unit && npm run test:stress && npm run build"
   },
@@ -22,6 +24,8 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

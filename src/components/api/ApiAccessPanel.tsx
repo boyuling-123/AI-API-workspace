@@ -75,7 +75,7 @@ export function ApiAccessPanel({ configs, onChange }: ApiAccessPanelProps) {
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
           接入管理
         </h2>
-        <span className="text-xs text-slate-400">
+        <span className="text-xs text-slate-600 dark:text-slate-400">
           一条配置 = 一个评测目标（均可编辑/删除）
         </span>
         {!showForm && (
@@ -149,15 +149,15 @@ function ApiConfigList({
     unsupported: "不支持",
   };
   const statusClass: Record<TargetConfig["status"], string> = {
-    unverified: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+    unverified: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-400",
     tested_ok: "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400",
     tested_fail: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
-    unsupported: "bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500",
+    unsupported: "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300",
   };
   const kindClass: Record<string, { label: string; className: string }> = {
     text: { label: "文本", className: "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400" },
     multimodal: { label: "多模态", className: "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400" },
-    image: { label: "生图", className: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400" },
+    image: { label: "生图", className: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400" },
   };
 
   return (
@@ -180,7 +180,7 @@ function ApiConfigList({
                     {kind.label}
                   </span>
                 </span>
-                <span className="truncate text-xs text-slate-400">
+                <span className="truncate text-xs text-slate-600 dark:text-slate-400">
                   {config.requestTemplate
                     ? `${config.requestTemplate.method} ${config.requestTemplate.url}`
                     : "通过平台内置通道调用"}
@@ -208,7 +208,7 @@ function ApiConfigList({
       </ul>
       {configs.length === 0 && (
         <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-slate-200 p-4 dark:border-slate-700">
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600 dark:text-slate-400">
             暂无接入配置，点击「自动接入」粘贴对接文档，接入助手自动写脚本接入模型或算法 API。
           </p>
           {onRestoreDefaults && (

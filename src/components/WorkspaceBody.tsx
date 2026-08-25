@@ -364,11 +364,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                   </span>
                   测试模型 / 算法选择
                 </h2>
-                <p className="mt-1 text-xs text-slate-400">
+                <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
                   勾选本次要被测试、被对比、被 AI 评价的模型或算法接口。
                 </p>
               </div>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-600 dark:text-slate-400">
                 已选 {targetIds.length} 个
               </span>
             </div>
@@ -381,7 +381,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                 onChange={setTargetIds}
               />
             </div>
-            <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-400 dark:border-slate-800">
+            <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-400">
               需要新增或编辑接口？前往
               <button
                 type="button"
@@ -404,7 +404,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           )}
 
           {/* 跑批后引导去结果板块查看，再从结果进入 AI 评价 */}
-          <p className="text-center text-xs text-slate-400">
+          <p className="text-center text-xs text-slate-600 dark:text-slate-400">
             运行后在
             <button
               type="button"

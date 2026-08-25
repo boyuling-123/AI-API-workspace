@@ -90,7 +90,7 @@ export function TopToolbar({
             <h1 className="font-mono text-sm font-bold leading-none text-brand-800 dark:text-brand-300">
               模型评测平台
             </h1>
-            <p className="mt-0.5 text-[10px] leading-none text-slate-400">
+            <p className="mt-0.5 text-[10px] leading-none text-slate-600 dark:text-slate-400">
               EVALUATION PLATFORM
             </p>
           </div>
@@ -208,7 +208,7 @@ export function TopToolbar({
 function SaveStatusBadge({ status }: { status: SaveStatus }) {
   if (status === "saved" || status === "idle") {
     return (
-      <span className="hidden items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 md:flex">
+      <span className="hidden items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 md:flex">
         <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
         {status === "saved" ? "已自动保存" : "等待编辑"}
       </span>

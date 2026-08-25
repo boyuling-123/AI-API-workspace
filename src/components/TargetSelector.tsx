@@ -100,7 +100,7 @@ export function TargetSelector({
     const isLlm = config.contentKind === "text" || config.contentKind === "multimodal";
     const tagStyle = isLlm
       ? "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
-      : "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400";
+      : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400";
     const tagLabel = isLlm ? "大模型" : "算法 API";
     const subtitle = isLlm
       ? config.contentKind === "multimodal"
@@ -112,6 +112,7 @@ export function TargetSelector({
 
     return (
       <button
+        aria-pressed={checked}
         key={config.id}
         type="button"
         onClick={() => toggle(config.id, disabled)}
@@ -124,13 +125,16 @@ export function TargetSelector({
               : "cursor-pointer border-slate-200 bg-white hover:border-slate-300 hover:shadow-card dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600"
         }`}
       >
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={disabled}
-          readOnly
-          className="h-4 w-4 accent-brand-600"
-        />
+        <span
+          aria-hidden="true"
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border text-[10px] font-bold ${
+            checked
+              ? "border-brand-600 bg-brand-600 text-white"
+              : "border-slate-400 bg-white text-transparent dark:bg-slate-900"
+          }`}
+        >
+          ✓
+        </span>
         <div className="flex min-w-0 flex-col">
           <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
             {config.name}
@@ -138,11 +142,11 @@ export function TargetSelector({
               {tagLabel}
             </span>
           </span>
-          <span className="mt-0.5 truncate text-xs text-slate-400">
+          <span className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-400">
             {subtitle}
           </span>
           {disabled && reason && (
-            <span className="mt-1 text-xs text-amber-600 dark:text-amber-400">{reason}</span>
+            <span className="mt-1 text-xs text-amber-800 dark:text-amber-400">{reason}</span>
           )}
         </div>
       </button>
@@ -158,7 +162,7 @@ export function TargetSelector({
 
       {llmConfigs.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
             可测试大模型
           </h3>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -169,7 +173,7 @@ export function TargetSelector({
 
       {apiConfigs.length > 0 && (
         <div className="flex flex-col gap-1.5">
-          <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <h3 className="text-xs font-semibold text-slate-600 dark:text-slate-400">
             可测试算法 / 生图 API
           </h3>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -179,13 +183,13 @@ export function TargetSelector({
       )}
 
       {algoConfigs.length === 0 && (
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-600 dark:text-slate-400">
           暂无接入配置，可在「接入管理」中添加模型或算法 API。
         </p>
       )}
 
       {selectedIds.length > 0 && (
-        <p className="text-center text-xs text-slate-400">
+        <p className="text-center text-xs text-slate-600 dark:text-slate-400">
           ↕ 模型较多时可在此区域内滚动查看与选择
         </p>
       )}

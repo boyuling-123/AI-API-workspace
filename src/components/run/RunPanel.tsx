@@ -212,12 +212,12 @@ export function RunPanel({
       </div>
 
       {validInputs.length === 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-amber-800 dark:text-amber-400">
           请先在输入区填写至少一条有效输入
         </p>
       )}
       {targetIds.length === 0 && (
-        <p className="text-xs text-amber-600 dark:text-amber-400">
+        <p className="text-xs text-amber-800 dark:text-amber-400">
           请先在目标选择区勾选至少一个模型
         </p>
       )}
