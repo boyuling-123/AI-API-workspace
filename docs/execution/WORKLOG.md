@@ -19,4 +19,6 @@
 - Playwright 验收首页和“接口创建&管理”用户路径通过；四个规划路由状态准确，控制台无错误，未触发模型调用。
 - 验收截图：`docs/evidence/pr-01/api-capability-status.png`。
 
-下一步：暂存区复核、提交、推送分支并创建 PR 01。
+- 暂存区 Diff 和二次敏感信息扫描通过，提交 `792c857` 已推送至远端分支 `codex/chore-baseline-sync`。
+
+下一步：GitHub 网页登录完成后创建 PR 01。

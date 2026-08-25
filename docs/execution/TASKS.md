@@ -13,7 +13,8 @@
 - [x] 校准 README 和 v5.0 文档入口。
 - [x] 执行敏感信息扫描和迁移 Diff 复核。
 - [x] 安装干净依赖并完成 typecheck、build 和基础 UI 验收。
-- [ ] 提交、推送分支并创建 Pull Request。
+- [x] 提交并推送 `codex/chore-baseline-sync` 分支。
+- [ ] 创建 Pull Request（等待 GitHub 网页登录）。
 
 ## 下一任务：PR 02 真实测试与质量门禁
 
