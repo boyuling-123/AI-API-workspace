@@ -23,7 +23,10 @@ export async function runWithPool<TItem, TResult>(
 ): Promise<PoolItemOutcome<TResult>[]> {
   const { items, concurrency, runOne, onProgress, signal } = params;
 
-  const safeConcurrency = Math.max(1, Math.floor(concurrency));
+  const normalizedConcurrency = Number.isFinite(concurrency)
+    ? Math.floor(concurrency)
+    : 1;
+  const safeConcurrency = Math.max(1, normalizedConcurrency);
   const outcomes: PoolItemOutcome<TResult>[] = new Array(items.length);
   let nextIndex = 0;
 

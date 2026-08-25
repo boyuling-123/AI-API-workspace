@@ -21,4 +21,21 @@
 
 - 暂存区 Diff 和二次敏感信息扫描通过，提交 `792c857` 已推送至远端分支 `codex/chore-baseline-sync`。
 
-下一步：GitHub 网页登录完成后创建 PR 01。
+## 2026-08-25：PR 01 合并
+
+- 创建 [PR #9](https://github.com/boyuling-123/AI-API-workspace/pull/9)，目标为 `main`，来源为 `codex/chore-baseline-sync`。
+- PR 内容、2 个提交、101 个文件、回滚方案和测试证据核对无误。
+- 远端 `main` 未发生并行更新，以非强推 fast-forward 方式推进，GitHub 已确认状态为 Merged。
+
+## 2026-08-25：PR 02A 启动
+
+- 从最新 `main` 创建短生命周期分支 `codex/test-real-source-ci`。
+- 删除 `testTaskRunner.mjs` 和 `stressTaskRunner.mjs` 中的复制实现，Vitest 直接导入 `src/lib/taskRunner.ts`。
+- 新增 11 项真实单元测试和 2 项压力测试，覆盖失败隔离、取消、进度、非法并发和 2,000 任务场景。
+- 真实测试发现并修复 `NaN` 并发不会启动 worker 的缺陷。
+- 新增 Secret Scan，覆盖仓库新文件、环境文件、常见 Token 和私钥，并保证失败日志不回显 Token。
+- 新增 GitHub Actions，按 secret scan、lint、typecheck、unit、stress、build 顺序执行，不调用模型。
+- `npm audit` 当前报告 8 个高危依赖问题，继续作为后续独立修复项，不执行 `--force`。
+- 本地 `npm run quality` 完整通过：179 个仓库文件扫描、11 项单测、2 项压力测试、lint、typecheck 和 19 路由生产构建均成功。
+
+下一步：完整质量门禁、干净环境复验、证据归档和 PR 02A。
