@@ -31,6 +31,8 @@ GitHub Actions 文件：`.github/workflows/quality.yml`。PR 创建后以 GitHub
 
 本地 `npm run quality` 已按 Secret Scan → lint → typecheck → unit → stress → build 顺序完整通过。
 
+提交 `275aea2` 另建独立干净工作树后，重新执行 `npm ci` 与 `npm run quality` 仍完整通过，证明门禁不依赖原工作区缓存、`.next` 或旧依赖。
+
 ## 回滚
 
 回滚本 PR 即可恢复旧测试入口和任务池并发归一化行为。Secret Scan 与 CI 均为只读检查，不修改业务数据或外部服务。
