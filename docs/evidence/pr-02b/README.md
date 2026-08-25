@@ -39,7 +39,7 @@
 
 Playwright 配置在失败时保留 Trace 与截图，并生成 HTML 报告。GitHub Actions 的独立浏览器 Job 会安装 Chromium、执行 `npm run test:e2e`，失败时上传 `playwright-report/` 和 `test-results/`，保留 7 天。
 
-GitHub CI 通过前，DOC-006 不升级为“已验证”。
+[PR #11](https://github.com/boyuling-123/AI-API-workspace/pull/11) 的核心质量门禁与 `Playwright user paths and accessibility` 两个 Job 均已通过。DOC-006 因代码、真实用户路径、异常防护、无障碍、干净环境和 CI Trace 齐全，已升级为“已验证”。
 
 ## 回滚
 

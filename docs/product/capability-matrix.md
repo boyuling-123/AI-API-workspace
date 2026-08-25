@@ -31,7 +31,7 @@
 | DOC-003 | 明确当前维度生成只使用需求和内部预设 | 已实现 | `src/services/genDimensionsService.ts` | 待补：服务单测 | 文档与请求结构准确描述当前输入，不声称使用样本或人工标注 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-004 | 七个 Skill、MCP、Judge 校准和排行榜使用真实状态 | 已实现 | 本矩阵相关条目 | 待补：文档口径检查 | 所有未落地能力均为设计中、Demo 或部分实现 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-005 | 统一多人标注一致性口径 | 设计中 | 无 | 无 | 明确是否支持多人标注，并提供一致性指标与测试 | Judge 校准 | 待关联 |
-| DOC-006 | 区分产品方案、Demo 与当前代码 | 已实现 | 本矩阵；`ExternalApiCapabilities.tsx` | `tests/e2e/workspace.spec.ts` 已覆盖四个规划路由状态，待 PR 02B CI | 页面和当前 PRD 不再把规划路由显示为可调用接口 | PR 01 / 02B | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；PR 02B（当前分支） |
+| DOC-006 | 区分产品方案、Demo 与当前代码 | 已验证 | 本矩阵；`ExternalApiCapabilities.tsx` | `tests/e2e/workspace.spec.ts` 覆盖四个规划路由状态、无 API 调用与 WCAG；PR #11 两道 CI 通过 | 页面和当前 PRD 不再把规划路由显示为可调用接口 | PR 01 / 02B | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#11](https://github.com/boyuling-123/AI-API-workspace/pull/11) |
 | DIM-001 | 建立 evaluation-dimension-generator Skill 并接入 OpenJudge | 设计中 | 无 | 无 | Skill 可独立运行并通过 OpenJudge 产出结构化候选维度 | 维度 Skill | 待关联 |
 | DIM-002 | 输入评测目标、业务场景和任务类型 | Demo | `EvaluationPanel.tsx`；`genDimensionsService.ts` | 无直接源文件测试 | 三类输入字段均有明确 Schema、校验和 UI 引导 | 维度 Skill | 待关联 |
 | DIM-003 | 从测试集或跑批结果抽取代表性样本 | 设计中 | 无 | 无 | 可配置抽样策略并预览被选样本，结果可复现 | 维度 Skill | 待关联 |
@@ -91,7 +91,7 @@
 | CLI-002 | 连接 Claude Code、Codex 等本地 CLI Agent | Demo | 外部导入 Skill 与 `/api/import-evaluation-workspace` 可联动，平台内未连接 CLI | 无 | 平台可建立、显示和结束本地 CLI 会话 | CLI Agent | 待关联 |
 | CLI-003 | 选择并编辑 CLAUDE.md、AGENTS.md | 设计中 | 无 | 无 | 文件选择受工作区限制，修改前后有 Diff | CLI Agent | 待关联 |
 | CLI-004 | 预览最终 System Prompt 和上下文来源 | 设计中 | 无 | 无 | 展示合并顺序、来源、截断和最终文本 | CLI Agent | 待关联 |
-| CLI-005 | 向 CLI Agent 传递测试集、模型、规则和结果 | Demo | 导入 Skill 可把外部数据送入平台，反向交接未实现 | `tests/e2e/workspace.spec.ts` 验证仅含引用的深链进入批量模式且不自动评价 | 四类上下文可按引用传递且不把大数据塞 URL | CLI Agent | PR 02B（当前分支） |
+| CLI-005 | 向 CLI Agent 传递测试集、模型、规则和结果 | Demo | 导入 Skill 可把外部数据送入平台，反向交接未实现 | `tests/e2e/workspace.spec.ts` 验证仅含引用的深链进入批量模式且不自动评价；PR #11 CI 通过 | 四类上下文可按引用传递且不把大数据塞 URL | CLI Agent | [#11](https://github.com/boyuling-123/AI-API-workspace/pull/11) |
 | CLI-006 | CLI Agent 修改文件前展示 Diff 并由用户确认 | 设计中 | 无 | 无 | 未确认时文件不变，确认记录进入审计日志 | CLI Agent | 待关联 |
 | CLI-007 | 记录 Agent 日志、文件变更和运行结果 | Demo | `agentConnectService.ts` 有接入 Agent SSE 日志，非 CLI 文件日志 | 无 | 会话日志、工具调用、Diff 和结果可统一回看 | CLI Agent | 待关联 |
 | CLI-008 | 明确终端权限、工作目录和文件范围 | 设计中 | 脚本执行器有局部边界，CLI 会话边界缺失 | 无 | 每次会话展示并强制执行权限与目录白名单 | CLI Agent | 待关联 |
@@ -105,6 +105,7 @@
 ## 当前审计结论
 
 - TASK-001 已满足代码证据、真实源码测试、异常路径、压力测试、干净环境复验和 PR #10 CI Trace，状态为“已验证”。
+- DOC-006 已满足真实页面状态断言、Mock 防误调用、WCAG 扫描、干净环境复验和 PR #11 CI Trace，状态为“已验证”。
 - TASK-002 尚缺 QPS 调度，SEC-003 尚缺完整日志与外部生成物泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。
 - 四个不存在的规划 API 必须持续显示为“设计中”或“Demo”，直至对应 route、契约测试和文档全部完成。

@@ -62,3 +62,12 @@
 - 提交 `b9e203c` 后建立独立 `/tmp` 工作树，执行全新 `npm ci`、完整 `npm run quality` 和 `npm run test:e2e`，结果全部通过。
 
 下一步：回写干净环境证据、推送分支并创建 PR 02B，等待 GitHub CI。
+
+## 2026-08-26：PR 02B 验收
+
+- 创建 [PR #11](https://github.com/boyuling-123/AI-API-workspace/pull/11)，目标为 `main`，来源为 `codex/test-playwright-a11y`。
+- GitHub Actions 的核心质量门禁与 `Playwright user paths and accessibility` 两个 Job 均通过。
+- DOC-006 同时具备页面代码、四个规划路由状态断言、真实浏览器路径、无 API 调用约束、无障碍扫描、干净环境复验和 GitHub CI Trace，升级为“已验证”。
+- CLI-005 只验证了引用式导入深链，反向交接仍未实现，因此继续保持 Demo。
+
+下一步：提交验收回写，等待最终 CI 通过后合并 PR #11，再开始 PR 02C。

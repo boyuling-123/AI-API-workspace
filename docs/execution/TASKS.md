@@ -32,7 +32,7 @@
 - [x] GitHub Actions 质量门禁通过，并将 TASK-001 升级为“已验证”。
 - [x] 非强推 fast-forward 合并 PR #10，GitHub 已确认 Merged。
 
-## 当前执行：PR 02B 浏览器用户路径门禁
+## 已完成：PR 02B 浏览器用户路径门禁
 
 分支：`codex/test-playwright-a11y`
 
@@ -43,11 +43,12 @@
 - [x] 修复目标卡片嵌套交互控件、Tab 语义和已覆盖页面的颜色对比问题。
 - [x] 本地 6 项 Playwright 用户路径与可访问性测试通过。
 - [x] 独立干净工作树执行全新 `npm ci`、完整 quality 和 6 项 Playwright 测试。
-- [ ] 推送分支、创建 PR 02B 并等待 GitHub CI 通过。
+- [x] 推送分支并创建 [PR #11](https://github.com/boyuling-123/AI-API-workspace/pull/11)。
+- [x] 核心质量与 Playwright 两道 GitHub CI 通过，DOC-006 升级为“已验证”。
 
 ## 下一任务：PR 02C 质量债务与日志脱敏
 
-状态：Ready（PR 02B 合并后开始）
+状态：Ready（PR #11 合并后开始）
 
 - 清理现有 React Hook 与 `<img>` lint 警告。
 - 评估并逐项处理剩余 8 个高危依赖问题，禁止直接使用破坏性 `--force` 升级。
