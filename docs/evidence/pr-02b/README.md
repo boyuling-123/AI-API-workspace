@@ -26,6 +26,8 @@
 
 本地命令：`npm run test:e2e`，结果为 6 项全部通过。
 
+提交 `b9e203c` 后另建独立 `/tmp` 工作树，重新执行全新 `npm ci`、`npm run quality` 与 `npm run test:e2e`，核心门禁和 6 项浏览器测试仍全部通过，证明结果不依赖原工作区的 `node_modules`、`.next` 或测试产物。
+
 ## 真实缺陷与修复
 
 - 首轮 Trace 发现 `getByRole` 的 Tab 名称存在模糊匹配，测试改为精确可访问名称。
