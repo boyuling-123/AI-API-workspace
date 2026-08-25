@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import type { BaseModelConfig } from "@/types";
 import { parseApiDoc } from "@/services/parseDocService";
 
 export const runtime = "nodejs";
@@ -7,13 +6,12 @@ export const maxDuration = 60;
 
 interface ParseDocBody {
   doc: string;
-  /** v4.8：前端传入的基础大模型配置（baseUrl + apiKey 明文 + modelName）。 */
-  baseModel: BaseModelConfig;
+  modelId: string;
 }
 
 /**
- * AI 解读 API 文档（v4.8）：接收前端传入的基础大模型配置，调用大模型结构化解读文档。
- * 不再读 process.env，不再依赖写死的 modelId。
+ * AI 解读 API 文档（简化版，M8b）：只返回结构化解读结果用于展示，不回写 ApiConfig。
+ * 解读复用 DashScope 网关大模型（DeepSeek/Kimi），不额外配 key。
  */
 export async function POST(request: Request) {
   let body: ParseDocBody;
@@ -29,15 +27,12 @@ export async function POST(request: Request) {
   if (!body.doc?.trim()) {
     return NextResponse.json({ error: "请粘贴 API 对接文档内容" }, { status: 400 });
   }
-  if (!body.baseModel) {
-    return NextResponse.json(
-      { error: "缺少基础大模型配置，请先在「接口与模型管理」接入并选择一个基础大模型" },
-      { status: 400 }
-    );
+  if (!body.modelId) {
+    return NextResponse.json({ error: "缺少解读模型 modelId" }, { status: 400 });
   }
 
   try {
-    const result = await parseApiDoc(body.doc, body.baseModel);
+    const result = await parseApiDoc(body.doc, body.modelId);
     return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "未知错误";

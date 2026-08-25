@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>模型评测平台 · 设计预览版</title>
+
+  <!-- Fira 字体（设计系统推荐：Fira Code 标题/代码 + Fira Sans 正文） -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // 主题：class 策略；进页面前先定调，避免闪烁
+    (function () {
+      const saved = localStorage.getItem("eval-theme");
+      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+      if (saved === "dark" || (!saved && prefersDark)) {
+        document.documentElement.classList.add("dark");
+      }
+    })();
+
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ["Fira Sans", "system-ui", "sans-serif"],
+            mono: ["Fira Code", "ui-monospace", "monospace"],
+          },
+          colors: {
+            // 设计系统令牌：专业蓝 + 琥珀点缀
+            brand: {
+              50: "#EFF6FF",
+              100: "#DBEAFE",
+              200: "#BFDBFE",
+              300: "#93C5FD",
+              400: "#60A5FA",
+              500: "#3B82F6", // secondary
+              600: "#2563EB",
+              700: "#1E40AF", // primary
+              800: "#1E3A8A", // text-strong
+              900: "#172554",
+            },
+            amber: {
+              400: "#FBBF24",
+              500: "#F59E0B", // CTA / highlight
+              600: "#D97706",
+            },
+          },
+          boxShadow: {
+            card: "0 1px 2px 0 rgb(0 0 0 / 0.04), 0 1px 3px 0 rgb(0 0 0 / 0.08)",
+            "card-hover": "0 4px 12px -2px rgb(0 0 0 / 0.12)",
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    /* 数据密集仪表盘：自定义滚动条 + 基础过渡 */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #475569; }
+    @media (prefers-reduced-motion: reduce) {
+      * { animation: none !important; transition: none !important; }
+    }
+    [x-cloak] { display: none !important; }
+  </style>
+</head>
+
+<body class="font-sans bg-slate-50 text-slate-800 antialiased dark:bg-slate-950 dark:text-slate-200 transition-colors duration-200">
+
+  <!-- ============ 顶部工具栏 ============ -->
+  <header class="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
+    <div class="mx-auto flex h-14 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+      <!-- Logo -->
+      <div class="flex items-center gap-2.5">
+        <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 text-white shadow-card">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+        </div>
+        <div class="hidden sm:block">
+          <h1 class="font-mono text-sm font-bold leading-none text-brand-800 dark:text-brand-300">模型评测平台</h1>
+          <p class="mt-0.5 text-[10px] leading-none text-slate-400">EVALUATION PLATFORM</p>
+        </div>
+      </div>
+
+      <!-- 项目名（可编辑态示意） -->
+      <div class="ml-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800">
+        <svg class="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v16H4z" opacity="0"/><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7L9.4 4.6A2 2 0 0 0 8 4H5a2 2 0 0 0-2 2z"/></svg>
+        <input value="电商搜索召回评测 · 2026Q2" class="w-44 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200" />
+      </div>
+
+      <!-- 保存状态 -->
+      <span class="hidden items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 md:flex">
+        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>已自动保存
+      </span>
+
+      <div class="ml-auto flex items-center gap-1.5">
+        <button class="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="hidden sm:inline">新建</span>
+        </button>
+        <button class="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span class="hidden sm:inline">导入</span>
+        </button>
+
+        <!-- 主题切换 -->
+        <button id="themeToggle" class="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800" aria-label="切换主题">
+          <svg class="h-4 w-4 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+          <svg class="hidden h-4 w-4 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============ 主体内容（占位，后续分步填充） ============ -->
+  <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+    <div id="app-grid" class="grid grid-cols-1 gap-5 lg:grid-cols-12">
+
+      <!-- ========== 左侧主工作区（8 列） ========== -->
+      <div class="flex flex-col gap-5 lg:col-span-8">
+
+        <!-- 步骤指示条 -->
+        <ol class="flex items-center gap-1 overflow-x-auto text-xs font-medium">
+          <li class="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-700 px-3 py-1.5 text-white">
+            <span class="flex h-4 w-4 items-center justify-center rounded-full bg-white/25 text-[10px]">1</span>输入
+          </li>
+          <span class="h-px w-4 bg-slate-300 dark:bg-slate-700"></span>
+          <li class="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-100 px-3 py-1.5 text-brand-800 dark:bg-slate-800 dark:text-slate-300">
+            <span class="flex h-4 w-4 items-center justify-center rounded-full bg-brand-700 text-[10px] text-white">2</span>选目标
+          </li>
+          <span class="h-px w-4 bg-slate-300 dark:bg-slate-700"></span>
+          <li class="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-brand-100 px-3 py-1.5 text-brand-800 dark:bg-slate-800 dark:text-slate-300">
+            <span class="flex h-4 w-4 items-center justify-center rounded-full bg-brand-700 text-[10px] text-white">3</span>运行
+          </li>
+          <span class="h-px w-4 bg-slate-300 dark:bg-slate-700"></span>
+          <li class="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1.5 text-slate-500 dark:bg-slate-800/50 dark:text-slate-500">
+            <span class="flex h-4 w-4 items-center justify-center rounded-full bg-slate-300 text-[10px] text-white dark:bg-slate-600">4</span>评价
+          </li>
+        </ol>
+
+        <!-- ===== 输入区 ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <h2 class="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <svg class="h-4 w-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              输入数据
+            </h2>
+            <!-- 单条/批量 Tab -->
+            <div class="flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+              <button class="cursor-pointer rounded-md bg-white px-3 py-1 text-xs font-medium text-brand-700 shadow-sm transition-all duration-150 dark:bg-slate-700 dark:text-brand-300">单条</button>
+              <button class="cursor-pointer rounded-md px-3 py-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700 dark:hover:text-slate-300">批量导入</button>
+            </div>
+          </div>
+          <div class="space-y-4 p-5">
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">输入文本 / Query</label>
+              <textarea rows="3" placeholder="输入待评测的内容，例如：iPhone 15 Pro 256G 钛金属" class="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none transition-colors duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:focus:bg-slate-800">iPhone 15 Pro 256G 钛金属 自然色</textarea>
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">图片输入（可选）</label>
+              <div class="flex items-center gap-3 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/50">
+                <div class="flex h-14 w-14 items-center justify-center overflow-hidden rounded-lg bg-gradient-to-br from-brand-100 to-brand-200 dark:from-slate-700 dark:to-slate-600">
+                  <svg class="h-6 w-6 text-brand-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg>
+                </div>
+                <div class="flex-1 text-xs text-slate-500 dark:text-slate-400">
+                  <p class="font-medium text-slate-600 dark:text-slate-300">product_main.jpg</p>
+                  <p class="mt-0.5">已上传 · 1024×1024 · 218 KB</p>
+                </div>
+                <button class="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700">更换</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== 算法参数 ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <svg class="h-4 w-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <h2 class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">算法参数</h2>
+            <span class="ml-auto rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">作用于已选算法</span>
+          </div>
+          <div class="grid grid-cols-2 gap-4 p-5">
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">topK</label>
+              <input type="number" value="20" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700 outline-none transition-colors duration-150 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" />
+            </div>
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">召回阈值</label>
+              <input type="number" value="0.65" step="0.01" class="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700 outline-none transition-colors duration-150 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200" />
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== API 接入 + 目标选择 ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <svg class="h-4 w-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <h2 class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">评测目标</h2>
+            <span class="ml-auto text-xs text-slate-400">已选 <span class="font-semibold text-brand-600 dark:text-brand-400">3</span> 个</span>
+          </div>
+          <div class="p-5">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <!-- 选中卡片 -->
+              <label class="group relative flex cursor-pointer items-start gap-3 rounded-lg border-2 border-brand-500 bg-brand-50/60 p-3.5 transition-all duration-150 dark:border-brand-500 dark:bg-brand-500/10">
+                <input type="checkbox" checked class="mt-0.5 h-4 w-4 cursor-pointer accent-brand-600" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">向量召回 v3</span>
+                    <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">内置</span>
+                  </div>
+                  <p class="mt-1 truncate font-mono text-xs text-slate-400">embedding · ann-search</p>
+                </div>
+              </label>
+              <label class="group relative flex cursor-pointer items-start gap-3 rounded-lg border-2 border-brand-500 bg-brand-50/60 p-3.5 transition-all duration-150 dark:border-brand-500 dark:bg-brand-500/10">
+                <input type="checkbox" checked class="mt-0.5 h-4 w-4 cursor-pointer accent-brand-600" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">BM25 基线</span>
+                    <span class="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">内置</span>
+                  </div>
+                  <p class="mt-1 truncate font-mono text-xs text-slate-400">lexical · sparse</p>
+                </div>
+              </label>
+              <label class="group relative flex cursor-pointer items-start gap-3 rounded-lg border-2 border-brand-500 bg-brand-50/60 p-3.5 transition-all duration-150 dark:border-brand-500 dark:bg-brand-500/10">
+                <input type="checkbox" checked class="mt-0.5 h-4 w-4 cursor-pointer accent-brand-600" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">自研混排 API</span>
+                    <span class="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">自定义</span>
+                  </div>
+                  <p class="mt-1 truncate font-mono text-xs text-slate-400">POST /v1/rank</p>
+                </div>
+              </label>
+              <!-- 未选 -->
+              <label class="group relative flex cursor-pointer items-start gap-3 rounded-lg border-2 border-slate-200 bg-white p-3.5 transition-all duration-150 hover:border-brand-300 dark:border-slate-700 dark:bg-slate-900 dark:hover:border-brand-700">
+                <input type="checkbox" class="mt-0.5 h-4 w-4 cursor-pointer accent-brand-600" />
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-1.5">
+                    <span class="truncate text-sm font-semibold text-slate-600 dark:text-slate-400">语义重排 v2</span>
+                  </div>
+                  <p class="mt-1 truncate font-mono text-xs text-slate-400">cross-encoder</p>
+                </div>
+              </label>
+            </div>
+            <button class="mt-3 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 py-2.5 text-xs font-medium text-slate-500 transition-colors duration-150 hover:border-brand-400 hover:text-brand-600 dark:border-slate-700 dark:text-slate-400 dark:hover:border-brand-600 dark:hover:text-brand-400">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+              接入新的算法 / API（支持解析接口文档）
+            </button>
+          </div>
+        </section>
+
+        <!-- ===== 运行面板 ===== -->
+        <section class="overflow-hidden rounded-xl border border-brand-200 bg-gradient-to-br from-brand-700 to-brand-800 shadow-card dark:border-brand-800">
+          <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
+            <div class="flex-1">
+              <h2 class="font-mono text-sm font-semibold text-white">运行评测</h2>
+              <p class="mt-1 text-xs text-brand-100">3 个目标 · 单条输入 · 预计 3 次调用</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 backdrop-blur">
+                <span class="text-xs font-medium text-brand-100">并发</span>
+                <input type="number" value="5" class="w-12 rounded bg-white/20 px-2 py-1 text-center font-mono text-sm font-semibold text-white outline-none" />
+              </div>
+              <button class="cursor-pointer rounded-lg bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur transition-colors duration-150 hover:bg-white/25">试运行</button>
+              <button class="flex cursor-pointer items-center gap-2 rounded-lg bg-amber-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg transition-colors duration-150 hover:bg-amber-600">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                批量运行
+              </button>
+            </div>
+          </div>
+          <!-- 进度条 -->
+          <div class="border-t border-white/10 bg-black/10 px-5 py-3">
+            <div class="flex items-center justify-between text-xs text-brand-100">
+              <span class="flex items-center gap-1.5">
+                <svg class="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56" stroke-linecap="round"/></svg>
+                运行中 18 / 24
+              </span>
+              <span class="font-mono font-semibold text-white">75%</span>
+            </div>
+            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-white/15">
+              <div class="h-full rounded-full bg-amber-400 transition-all duration-300" style="width: 75%"></div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- ========== 右侧侧栏（4 列）：后续填充评价面板 + 历史 ========== -->
+      <aside class="flex flex-col gap-5 lg:col-span-4">
+
+        <!-- ===== AI 评价面板 ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <svg class="h-4 w-4 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 9.2 8.6 2 9.2l5.4 4.7L5.8 21 12 17.3 18.2 21l-1.6-7.1L22 9.2l-7.2-.6z"/></svg>
+            <h2 class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">AI 智能评价</h2>
+            <!-- 开关 -->
+            <label class="ml-auto inline-flex cursor-pointer items-center">
+              <input type="checkbox" checked class="peer sr-only" />
+              <span class="relative h-5 w-9 rounded-full bg-slate-300 transition-colors duration-200 after:absolute after:left-0.5 after:top-0.5 after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all after:duration-200 after:content-[''] peer-checked:bg-brand-600 peer-checked:after:translate-x-4 dark:bg-slate-700"></span>
+            </label>
+          </div>
+          <div class="space-y-4 p-5">
+            <div>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">测评需求</label>
+              <textarea rows="2" placeholder="描述你希望如何评判结果好坏…" class="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition-colors duration-150 placeholder:text-slate-400 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">关注召回结果与 Query 的相关性、商品多样性，标题精准优先。</textarea>
+            </div>
+            <div>
+              <div class="mb-1.5 flex items-center justify-between">
+                <label class="text-xs font-medium text-slate-500 dark:text-slate-400">评价 Prompt</label>
+                <button class="flex cursor-pointer items-center gap-1 text-xs font-medium text-brand-600 transition-colors duration-150 hover:text-brand-700 dark:text-brand-400">
+                  <svg class="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 9.2 8.6 2 9.2l5.4 4.7L5.8 21 12 17.3 18.2 21l-1.6-7.1L22 9.2l-7.2-.6z"/></svg>
+                  AI 自动生成
+                </button>
+              </div>
+              <textarea rows="3" class="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs leading-relaxed text-slate-600 outline-none transition-colors duration-150 focus:border-brand-500 focus:bg-white focus:ring-2 focus:ring-brand-500/20 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">你是搜索相关性评审专家。请对每个算法的召回结果按相关性(40%)、多样性(30%)、标题精准度(30%)打分(0-10)，给出点评…</textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">裁判模型</label>
+                <select class="w-full cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition-colors duration-150 focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <option>GPT-4o</option>
+                  <option>Claude 3.5 Sonnet</option>
+                  <option>Qwen-Max</option>
+                </select>
+              </div>
+              <div>
+                <label class="mb-1.5 block text-xs font-medium text-slate-500 dark:text-slate-400">评价范围</label>
+                <select class="w-full cursor-pointer rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 outline-none transition-colors duration-150 focus:border-brand-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                  <option>全部输入</option>
+                  <option>仅勾选项</option>
+                </select>
+              </div>
+            </div>
+            <button class="flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg bg-brand-700 py-2.5 text-sm font-semibold text-white shadow-card transition-colors duration-150 hover:bg-brand-800">
+              <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 9.2 8.6 2 9.2l5.4 4.7L5.8 21 12 17.3 18.2 21l-1.6-7.1L22 9.2l-7.2-.6z"/></svg>
+              开始逐条评价
+            </button>
+          </div>
+        </section>
+
+        <!-- ===== 评价结果（评分卡片） ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <svg class="h-4 w-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            <h2 class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">评价结果</h2>
+            <span class="ml-auto rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">已完成</span>
+          </div>
+          <div class="space-y-3 p-5">
+            <!-- 推荐项 -->
+            <div class="flex items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/30 dark:bg-amber-500/10">
+              <svg class="h-5 w-5 shrink-0 text-amber-500" viewBox="0 0 24 24" fill="currentColor"><path d="M5 16 3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 2h14v2H5v-2z"/></svg>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-amber-700 dark:text-amber-400">综合推荐</p>
+                <p class="truncate text-sm font-semibold text-slate-700 dark:text-slate-200">向量召回 v3</p>
+              </div>
+              <span class="font-mono text-lg font-bold text-amber-600 dark:text-amber-400">8.7</span>
+            </div>
+            <!-- 各目标评分 -->
+            <div class="space-y-2">
+              <div class="flex items-center gap-3">
+                <span class="w-24 shrink-0 truncate text-xs font-medium text-slate-600 dark:text-slate-300">向量召回 v3</span>
+                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-emerald-500" style="width:87%"></div>
+                </div>
+                <span class="w-8 shrink-0 text-right font-mono text-sm font-bold text-emerald-600 dark:text-emerald-400">8.7</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-24 shrink-0 truncate text-xs font-medium text-slate-600 dark:text-slate-300">自研混排 API</span>
+                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-brand-500" style="width:79%"></div>
+                </div>
+                <span class="w-8 shrink-0 text-right font-mono text-sm font-bold text-brand-600 dark:text-brand-400">7.9</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="w-24 shrink-0 truncate text-xs font-medium text-slate-600 dark:text-slate-300">BM25 基线</span>
+                <div class="h-2 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                  <div class="h-full rounded-full bg-amber-500" style="width:62%"></div>
+                </div>
+                <span class="w-8 shrink-0 text-right font-mono text-sm font-bold text-amber-600 dark:text-amber-400">6.2</span>
+              </div>
+            </div>
+            <!-- 总体结论 -->
+            <div class="rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/50 dark:text-slate-300">
+              <span class="font-semibold text-slate-700 dark:text-slate-200">总体结论：</span>向量召回 v3 在相关性与多样性上均领先，标题精准度略优于自研混排；BM25 在长尾 Query 上召回不足，建议作为兜底。
+            </div>
+          </div>
+        </section>
+
+        <!-- ===== 历史任务 ===== -->
+        <section class="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+            <svg class="h-4 w-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+            <h2 class="font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">历史任务</h2>
+            <span class="ml-auto text-xs text-slate-400">共 12 次</span>
+          </div>
+          <ul class="divide-y divide-slate-100 dark:divide-slate-800">
+            <li class="group flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">批量 · 24 条输入</p>
+                <p class="text-xs text-slate-400">今天 14:32 · 3 个目标</p>
+              </div>
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">已评价</span>
+            </li>
+            <li class="group flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">试运行 · 1 条</p>
+                <p class="text-xs text-slate-400">今天 11:08 · 2 个目标</p>
+              </div>
+            </li>
+            <li class="group flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors duration-150 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400">
+                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-medium text-slate-700 dark:text-slate-200">批量 · 50 条输入</p>
+                <p class="text-xs text-slate-400">昨天 19:45 · 部分失败</p>
+              </div>
+            </li>
+          </ul>
+        </section>
+
+      </aside>
+
+    </div>
+
+    <!-- ========== 结果区（整宽） ========== -->
+    <section class="mt-5 rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
+      <div class="flex flex-wrap items-center gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
+        <h2 class="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <svg class="h-4 w-4 text-brand-600 dark:text-brand-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          运行结果对比
+        </h2>
+        <span class="rounded-full bg-brand-100 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">1 条输入 × 3 目标</span>
+
+        <div class="ml-auto flex items-center gap-2">
+          <!-- 卡片/表格切换 -->
+          <div class="flex rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800">
+            <button class="flex cursor-pointer items-center gap-1.5 rounded-md bg-white px-3 py-1 text-xs font-medium text-brand-700 shadow-sm transition-all duration-150 dark:bg-slate-700 dark:text-brand-300">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              卡片
+            </button>
+            <button class="flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium text-slate-500 transition-colors duration-150 hover:text-slate-700 dark:hover:text-slate-300">
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              表格
+            </button>
+          </div>
+          <button class="flex cursor-pointer items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-card transition-colors duration-150 hover:bg-emerald-700">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出 Excel
+          </button>
+        </div>
+      </div>
+
+      <!-- 卡片视图：3 目标横向对比 -->
+      <div class="grid grid-cols-1 gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+        <!-- 目标 1（推荐高亮） -->
+        <div class="relative flex flex-col overflow-hidden rounded-xl border-2 border-amber-300 bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover dark:border-amber-500/40 dark:bg-slate-900">
+          <span class="absolute right-3 top-3 z-10 flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
+            <svg class="h-3 w-3" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 9.2 8.6 2 9.2l5.4 4.7L5.8 21 12 17.3 18.2 21l-1.6-7.1L22 9.2l-7.2-.6z"/></svg>推荐
+          </span>
+          <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">向量召回 v3</span>
+            <span class="ml-auto font-mono text-xs text-slate-400">342ms</span>
+          </div>
+          <div class="flex-1 space-y-2.5 p-4">
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-600 font-mono text-[10px] font-bold text-white">1</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">iPhone 15 Pro 256GB 钛金属原色</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-500 font-mono text-[10px] font-bold text-white">2</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">Apple iPhone 15 Pro 自然钛色</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-slate-400 font-mono text-[10px] font-bold text-white">3</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">iPhone15 Pro 钛合金 256G 国行</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+            <span class="text-xs text-slate-400">AI 评分</span>
+            <span class="font-mono text-base font-bold text-emerald-600 dark:text-emerald-400">8.7</span>
+          </div>
+        </div>
+
+        <!-- 目标 2 -->
+        <div class="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">自研混排 API</span>
+            <span class="ml-auto font-mono text-xs text-slate-400">518ms</span>
+          </div>
+          <div class="flex-1 space-y-2.5 p-4">
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-600 font-mono text-[10px] font-bold text-white">1</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">Apple iPhone 15 Pro 256G 钛金属</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-500 font-mono text-[10px] font-bold text-white">2</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">iPhone 15 Pro Max 256G 钛色</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-slate-400 font-mono text-[10px] font-bold text-white">3</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">苹果15 Pro 256 自然色 全网通</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+            <span class="text-xs text-slate-400">AI 评分</span>
+            <span class="font-mono text-base font-bold text-brand-600 dark:text-brand-400">7.9</span>
+          </div>
+        </div>
+
+        <!-- 目标 3 -->
+        <div class="flex flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-card transition-shadow duration-200 hover:shadow-card-hover dark:border-slate-800 dark:bg-slate-900">
+          <div class="flex items-center gap-2 border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+            <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+            <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">BM25 基线</span>
+            <span class="ml-auto font-mono text-xs text-slate-400">89ms</span>
+          </div>
+          <div class="flex-1 space-y-2.5 p-4">
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-600 font-mono text-[10px] font-bold text-white">1</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">iPhone 15 Pro 手机壳 钛金属色</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-brand-500 font-mono text-[10px] font-bold text-white">2</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">iPhone 15 Pro 256GB 原装</span>
+            </div>
+            <div class="flex items-center gap-2 rounded-lg bg-slate-50 p-2 dark:bg-slate-800/50">
+              <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-slate-400 font-mono text-[10px] font-bold text-white">3</span>
+              <span class="truncate text-sm text-slate-600 dark:text-slate-300">钛金属 数据线 适用 iPhone</span>
+            </div>
+          </div>
+          <div class="flex items-center justify-between border-t border-slate-100 px-4 py-2.5 dark:border-slate-800">
+            <span class="text-xs text-slate-400">AI 评分</span>
+            <span class="font-mono text-base font-bold text-amber-600 dark:text-amber-400">6.2</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="mx-auto max-w-7xl px-4 py-8 text-center text-xs text-slate-400 sm:px-6 lg:px-8">
+      模型评测平台 · 设计预览版 ·
+      <span class="font-mono">Data-Dense Dashboard</span> 风格 · 由 ui-ux-pro-max 设计系统驱动
+    </footer>
+  </main>
+
+  <script>
+    // 主题切换
+    document.getElementById("themeToggle").addEventListener("click", function () {
+      const root = document.documentElement;
+      root.classList.toggle("dark");
+      localStorage.setItem("eval-theme", root.classList.contains("dark") ? "dark" : "light");
+    });
+  </script>
+</body>
+</html>

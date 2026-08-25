@@ -1,6 +1,6 @@
 "use client";
 
-import type { BaseModelConfig, ContentMode, RunMode, TaskInput } from "@/types";
+import type { ContentMode, RunMode, TaskInput } from "@/types";
 import { SingleInput } from "./SingleInput";
 import { BatchInput } from "./BatchInput";
 
@@ -16,8 +16,6 @@ interface InputAreaProps {
   setBatchInputs: (inputs: TaskInput[]) => void;
   /** 选中目标所需列，传给 AI 造数据作为列约束。 */
   targetColumns: string[];
-  /** v4.8：AI 造数据可用的基础大模型候选（已按内容模式过滤）。 */
-  genDataModels: { id: string; name: string; baseModel: BaseModelConfig }[];
   isReady: boolean;
 }
 
@@ -37,7 +35,6 @@ export function InputArea({
   updateSingleInput,
   setBatchInputs,
   targetColumns,
-  genDataModels,
   isReady,
 }: InputAreaProps) {
   return (
@@ -94,7 +91,6 @@ export function InputArea({
             onChange={setBatchInputs}
             contentMode={contentMode}
             targetColumns={targetColumns}
-            genDataModels={genDataModels}
           />
         )}
       </div>

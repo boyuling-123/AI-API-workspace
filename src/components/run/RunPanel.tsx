@@ -23,14 +23,14 @@ interface RunPanelProps {
 
 /** 生图目标：仅 contentKind==='image'。只有这类目标产生生图费用（multimodal 出文字，不算）。 */
 function isImageTarget(target: TargetConfig): boolean {
-  return (target.contentKind ?? target.capability) === "image";
+  return target.contentKind === "image";
 }
 
 /** 从目标的 num_images 入参默认值推断每次生成图片数，取所选目标的最大值（至少 1）。 */
 function inferImagesPerCall(targets: TargetConfig[]): number {
   let maxImages = 1;
   for (const target of targets) {
-    const def = (target.inputParams ?? []).find((param) => param.name === "num_images");
+    const def = target.inputParams.find((param) => param.name === "num_images");
     const value = Number(def?.defaultValue);
     if (Number.isFinite(value) && value > maxImages) {
       maxImages = value;
@@ -120,9 +120,23 @@ export function RunPanel({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-4 rounded-xl bg-brand-700 px-5 py-3 shadow-card dark:bg-brand-800">
+      <div className="rounded-xl border border-brand-500/20 bg-brand-700 px-5 py-4 shadow-card dark:bg-brand-800">
+        <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p className="font-mono text-xs font-semibold uppercase tracking-wide text-brand-200">
+              批量运行控制台
+            </p>
+            <p className="mt-1 text-sm text-brand-100">
+              先配好输入和测试目标，这里会统一发起试运行或批量运行。
+            </p>
+          </div>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white">
+            {validInputs.length} 条输入 · {targetIds.length} 个目标
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
         {/* 左侧状态文案 */}
-        <div className="flex-1">
+        <div className="min-w-[180px] flex-1">
           <p className="text-sm font-semibold text-white">{statusLabel}</p>
           {statusDetail && (
             <p className="text-xs text-brand-200">{statusDetail}</p>
@@ -194,6 +208,7 @@ export function RunPanel({
             取消
           </button>
         )}
+        </div>
       </div>
 
       {validInputs.length === 0 && (

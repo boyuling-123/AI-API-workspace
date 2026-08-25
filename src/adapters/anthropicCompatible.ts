@@ -1,10 +1,6 @@
 import type { ImageItem, NormalizedLlmOutput } from "@/types";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import type { AdapterCallParams } from "./types";
-import {
-  buildAnthropicMessagesUrl,
-  parseJsonResponse,
-} from "./baseModelProtocol";
 
 interface AnthropicCompatibleOptions {
   baseUrl: string;
@@ -95,7 +91,7 @@ export async function callAnthropicCompatible(
 
   const startTime = Date.now();
   try {
-    const response = await fetch(buildAnthropicMessagesUrl(baseUrl), {
+    const response = await fetch(`${baseUrl}/v1/messages`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -104,7 +100,7 @@ export async function callAnthropicCompatible(
       },
       body: JSON.stringify({
         model: apiModelName,
-        max_tokens: RUNTIME_CONFIG.maxTokens,
+        max_tokens: params.maxTokens ?? RUNTIME_CONFIG.maxTokens,
         messages: [
           { role: "user", content: buildUserContent(prompt, images) },
         ],
@@ -113,10 +109,7 @@ export async function callAnthropicCompatible(
       signal: mergedSignal,
     });
 
-    const data = await parseJsonResponse<AnthropicMessageResponse>(
-      response,
-      "Anthropic"
-    );
+    const data = (await response.json()) as AnthropicMessageResponse;
     if (!response.ok) {
       const message =
         data.error?.message ?? data.message ?? `HTTP ${response.status}`;

@@ -1,13 +1,12 @@
-import type { BaseModelConfig, EvalDimension } from "@/types";
+import type { EvalDimension } from "@/types";
 
 /**
- * 前端调用 /api/gen-eval-prompt（v4.5 按维度；v4.8 传完整基础模型配置）：
- * 用户描述测评场景 + 选定维度 + 选定的基础大模型 → 大模型生成可编辑的评价 Prompt（按维度逐项打分、无总分）。
- * key 仅本地存储、走本地后端代理。
+ * 前端调用 /api/gen-eval-prompt（v4.5 按维度）：用户描述测评场景 + 选定维度
+ * → 大模型生成可编辑的评价 Prompt（按维度逐项打分、无总分）。
  */
 export async function generateEvalPromptClient(
   scenario: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   dimensions: EvalDimension[] = [],
   targetNames: string[] = [],
   signal?: AbortSignal
@@ -15,7 +14,7 @@ export async function generateEvalPromptClient(
   const response = await fetch("/api/gen-eval-prompt", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ scenario, baseModel, dimensions, targetNames }),
+    body: JSON.stringify({ scenario, modelId, dimensions, targetNames }),
     signal,
   });
   const data = await response.json();

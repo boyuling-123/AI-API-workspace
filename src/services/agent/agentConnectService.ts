@@ -1,7 +1,6 @@
 import type {
   AgentStreamEvent,
   AgentToolName,
-  BaseModelConfig,
   ContentKind,
   ParamDef,
   PendingTarget,
@@ -11,25 +10,16 @@ import {
   AGENT_SYSTEM_PROMPT,
   AGENT_TOOLS,
 } from "@/config/agent";
-import {
-  buildAnthropicMessagesUrl,
-  buildOpenAIChatCompletionsUrl,
-  getBaseModelProtocolOrder,
-  normalizeBaseModelConfig,
-  parseJsonResponse,
-  type ResolvedBaseModelProtocol,
-  withResolvedProtocol,
-} from "@/adapters/baseModelProtocol";
+import { getApiKey } from "@/services/getApiKey";
 import { runScript } from "@/services/script/runScriptService";
 import { installPackages } from "@/services/script/installPackageService";
 
 /**
  * Agent 自动接入循环（v4.4 核心）。
  *
- * 支持 Anthropic / OpenAI 两套工具调用协议：
- *  - 会话启动时按 baseModel.protocol 与 baseUrl 自动探测可用协议
- *  - 探测成功后整轮会话锁定该协议，不在中途切换
- *  - 后端统一把 tool use / tool calls 归一化为同一套内部消息结构
+ * 走 DashScope Anthropic 兼容网关的 deepseek-v4-pro（实测支持 Anthropic tool use）：
+ *  调模型 → 解析 content[].tool_use → 后端执行工具 → tool_result block 喂回 → 循环，
+ *  直到模型不再调工具（完成）或达 maxSteps 上限。
  *
  * 每步通过 emit 回调把 AgentStreamEvent 推给上层（路由再转 SSE）。
  * 工具执行层统一保障安全约束（stdin 传参、超时杀进程、key 注入），复用 runScript / installPackages。
@@ -63,37 +53,6 @@ interface AnthropicResponse {
   message?: string;
 }
 
-interface OpenAITextPart {
-  type?: string;
-  text?: string;
-}
-
-interface OpenAIToolCall {
-  id?: string;
-  type?: string;
-  function?: {
-    name?: string;
-    arguments?: string;
-  };
-}
-
-interface OpenAIResponse {
-  choices?: {
-    message?: {
-      content?: string | OpenAITextPart[];
-      tool_calls?: OpenAIToolCall[];
-    };
-  }[];
-  error?: { message?: string };
-  message?: string;
-}
-
-interface AgentToolUse {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-}
-
 /** 喂回模型的 tool_result block。 */
 interface ToolResultBlock {
   type: "tool_result";
@@ -102,261 +61,40 @@ interface ToolResultBlock {
   is_error?: boolean;
 }
 
-type AgentMessage =
-  | { role: "user"; content: string }
-  | {
-      role: "assistant";
-      content: {
-        text: string;
-        toolUses: AgentToolUse[];
-      };
-    }
-  | { role: "tool"; content: ToolResultBlock[] };
-
-interface AgentModelResponse {
-  protocolUsed: ResolvedBaseModelProtocol;
-  text: string;
-  toolUses: AgentToolUse[];
+interface AgentMessage {
+  role: "user" | "assistant";
+  content: string | AnthropicContentBlock[] | ToolResultBlock[];
 }
 
 type EmitFn = (event: AgentStreamEvent) => void;
 
-/** 调一次基础大模型（按 baseModel.protocol / baseUrl 自动探测协议并返回归一化结果）。 */
-async function callAgentModel(
-  baseModel: BaseModelConfig,
+/** 调一次 DeepSeek（Anthropic 兼容网关）。 */
+async function callDeepseek(
   messages: AgentMessage[]
-): Promise<AgentModelResponse> {
-  const normalized = normalizeBaseModelConfig(baseModel);
-  const errors: string[] = [];
-
-  for (const protocol of getBaseModelProtocolOrder(normalized)) {
-    try {
-      return protocol === "openai"
-        ? await callOpenAIAgentModel(
-            withResolvedProtocol(normalized, protocol),
-            messages
-          )
-        : await callAnthropicAgentModel(
-            withResolvedProtocol(normalized, protocol),
-            messages
-          );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "未知错误";
-      errors.push(`${protocolLabel(protocol)} 调用失败：${message}`);
-    }
-  }
-
-  throw new Error(errors.join("；"));
-}
-
-async function callAnthropicAgentModel(
-  baseModel: BaseModelConfig,
-  messages: AgentMessage[]
-): Promise<AgentModelResponse> {
-  const response = await fetch(buildAnthropicMessagesUrl(baseModel.baseUrl), {
+): Promise<AnthropicResponse> {
+  const apiKey = getApiKey(AGENT_CONFIG.apiKeyEnvName);
+  const response = await fetch(`${AGENT_CONFIG.baseUrl}/v1/messages`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-api-key": baseModel.apiKey,
-      Authorization: `Bearer ${baseModel.apiKey}`,
+      "x-api-key": apiKey,
+      Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: baseModel.modelName,
+      model: AGENT_CONFIG.model,
       max_tokens: AGENT_CONFIG.maxTokens,
       system: AGENT_SYSTEM_PROMPT,
       tools: AGENT_TOOLS,
-      messages: toAnthropicMessages(messages),
+      messages,
     }),
   });
 
-  const data = await parseJsonResponse<AnthropicResponse>(response, "Anthropic");
+  const data = (await response.json()) as AnthropicResponse;
   if (!response.ok) {
     const message = data.error?.message ?? data.message ?? `HTTP ${response.status}`;
     throw new Error(message);
   }
-
-  const blocks = data.content ?? [];
-  return {
-    protocolUsed: "anthropic",
-    text: extractAnthropicText(blocks),
-    toolUses: blocks
-      .filter((block): block is AnthropicToolUseBlock => block.type === "tool_use")
-      .map((block) => ({
-        id: block.id,
-        name: block.name,
-        input: block.input,
-      })),
-  };
-}
-
-async function callOpenAIAgentModel(
-  baseModel: BaseModelConfig,
-  messages: AgentMessage[]
-): Promise<AgentModelResponse> {
-  const response = await fetch(buildOpenAIChatCompletionsUrl(baseModel.baseUrl), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${baseModel.apiKey}`,
-      "x-api-key": baseModel.apiKey,
-    },
-    body: JSON.stringify({
-      model: baseModel.modelName,
-      max_tokens: AGENT_CONFIG.maxTokens,
-      messages: toOpenAIMessages(messages),
-      tools: toOpenAITools(),
-      tool_choice: "auto",
-    }),
-  });
-
-  const data = await parseJsonResponse<OpenAIResponse>(response, "OpenAI");
-  if (!response.ok) {
-    const message = data.error?.message ?? data.message ?? `HTTP ${response.status}`;
-    throw new Error(message);
-  }
-
-  const message = data.choices?.[0]?.message;
-  const toolUses = (message?.tool_calls ?? []).map((toolCall) => ({
-    id: toolCall.id ?? `tool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: toolCall.function?.name ?? "unknown_tool",
-    input: parseToolArguments(toolCall.function?.arguments),
-  }));
-
-  return {
-    protocolUsed: "openai",
-    text: extractOpenAIText(message?.content),
-    toolUses,
-  };
-}
-
-function toAnthropicMessages(messages: AgentMessage[]): Array<Record<string, unknown>> {
-  return messages.map((message) => {
-    if (message.role === "user") {
-      return { role: "user", content: message.content };
-    }
-    if (message.role === "tool") {
-      return { role: "user", content: message.content };
-    }
-    const content: AnthropicContentBlock[] = [];
-    if (message.content.text.trim()) {
-      content.push({ type: "text", text: message.content.text });
-    }
-    content.push(
-      ...message.content.toolUses.map<AnthropicToolUseBlock>((toolUse) => ({
-        type: "tool_use",
-        id: toolUse.id,
-        name: toolUse.name,
-        input: toolUse.input,
-      }))
-    );
-    return { role: "assistant", content };
-  });
-}
-
-function toOpenAIMessages(messages: AgentMessage[]): Array<Record<string, unknown>> {
-  const payload: Array<Record<string, unknown>> = [
-    { role: "system", content: AGENT_SYSTEM_PROMPT },
-  ];
-
-  for (const message of messages) {
-    if (message.role === "user") {
-      payload.push({ role: "user", content: message.content });
-      continue;
-    }
-
-    if (message.role === "tool") {
-      payload.push(
-        ...message.content.map((toolResult) => ({
-          role: "tool",
-          tool_call_id: toolResult.tool_use_id,
-          content: toolResult.content,
-        }))
-      );
-      continue;
-    }
-
-    payload.push({
-      role: "assistant",
-      content: message.content.text || "",
-      ...(message.content.toolUses.length > 0
-        ? {
-            tool_calls: message.content.toolUses.map((toolUse) => ({
-              id: toolUse.id,
-              type: "function",
-              function: {
-                name: toolUse.name,
-                arguments: JSON.stringify(toolUse.input),
-              },
-            })),
-          }
-        : {}),
-    });
-  }
-
-  return payload;
-}
-
-function toOpenAITools(): Array<Record<string, unknown>> {
-  return AGENT_TOOLS.map((tool) => ({
-    type: "function",
-    function: {
-      name: tool.name,
-      description: tool.description,
-      parameters: tool.input_schema,
-    },
-  }));
-}
-
-function extractAnthropicText(blocks: AnthropicContentBlock[]): string {
-  return blocks
-    .flatMap((block) => {
-      if (block.type === "text" && typeof block.text === "string") {
-        return [block.text];
-      }
-      if (
-        block.type === "thinking" &&
-        typeof (block as AnthropicThinkingBlock).thinking === "string"
-      ) {
-        return [(block as AnthropicThinkingBlock).thinking!];
-      }
-      return [];
-    })
-    .join("\n")
-    .trim();
-}
-
-function extractOpenAIText(
-  content: string | OpenAITextPart[] | undefined
-): string {
-  if (typeof content === "string") {
-    return content.trim();
-  }
-  if (Array.isArray(content)) {
-    return content
-      .filter((part) => part.type === "text" && typeof part.text === "string")
-      .map((part) => part.text)
-      .join("\n")
-      .trim();
-  }
-  return "";
-}
-
-function parseToolArguments(
-  value: string | undefined
-): Record<string, unknown> {
-  if (!value) {
-    return {};
-  }
-  try {
-    const parsed = JSON.parse(value) as Record<string, unknown>;
-    return parsed && typeof parsed === "object" ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function protocolLabel(protocol: ResolvedBaseModelProtocol): string {
-  return protocol === "openai" ? "OpenAI" : "Anthropic";
+  return data;
 }
 
 /** 归一化 AI 给的入参清单为 ParamDef[]。 */
@@ -472,8 +210,6 @@ function summarizeToolInput(name: string, input: Record<string, unknown>): strin
  * 注：模块级内存存储，dev 热重载会丢失；本地自用可接受，多用户/生产需换外部存储。
  */
 interface SessionState {
-  /** v4.8：本会话使用的基础大模型配置，续跑时复用。 */
-  baseModel: BaseModelConfig;
   messages: AgentMessage[];
   lastSnapshot: LastRunSnapshot | null;
   /** 已执行步数，恢复后接着累计，防止 ask 来回拉满步数。 */
@@ -507,11 +243,7 @@ function pruneExpiredSessions(): void {
  * 运行 Agent 接入循环。doc 为用户粘贴的对接文档。
  * 完成时 emit done（附 pending 草稿）；缺信息时 emit ask（暂停会话）；失败 emit error。
  */
-export async function runAgentConnect(
-  doc: string,
-  baseModel: BaseModelConfig,
-  emit: EmitFn
-): Promise<void> {
+export async function runAgentConnect(doc: string, emit: EmitFn): Promise<void> {
   pruneExpiredSessions();
   const messages: AgentMessage[] = [
     {
@@ -519,7 +251,7 @@ export async function runAgentConnect(
       content: `这是需要接入的 API 对接文档，请按流程自主完成接入并最终调用 save_target：\n\n${doc}`,
     },
   ];
-  await runLoop(baseModel, messages, null, 0, emit);
+  await runLoop(messages, null, 0, emit);
 }
 
 /**
@@ -550,8 +282,8 @@ export async function resumeAgentConnect(
       content: `用户回复：${answer}`,
     },
   ];
-  const messages = [...state.messages, { role: "tool" as const, content: toolResults }];
-  await runLoop(state.baseModel, messages, state.lastSnapshot, state.stepsUsed, emit);
+  const messages = [...state.messages, { role: "user" as const, content: toolResults }];
+  await runLoop(messages, state.lastSnapshot, state.stepsUsed, emit);
 }
 
 /**
@@ -559,34 +291,46 @@ export async function resumeAgentConnect(
  * @param startStep 已用步数，用于在恢复时接着累计步数上限。
  */
 async function runLoop(
-  baseModel: BaseModelConfig,
   messages: AgentMessage[],
   initialSnapshot: LastRunSnapshot | null,
   startStep: number,
   emit: EmitFn
 ): Promise<void> {
   let lastSnapshot: LastRunSnapshot | null = initialSnapshot;
-  let activeBaseModel = baseModel;
 
   for (let step = startStep; step < AGENT_CONFIG.maxSteps; step += 1) {
-    let response: AgentModelResponse;
+    let response: AnthropicResponse;
     try {
-      response = await callAgentModel(activeBaseModel, messages);
-      activeBaseModel = withResolvedProtocol(activeBaseModel, response.protocolUsed);
+      response = await callDeepseek(messages);
     } catch (error) {
       emit({
         type: "error",
         error: `调用接入助手模型失败：${error instanceof Error ? error.message : "未知错误"}`,
-        suggestion: "请确认所选基础大模型的 baseUrl/apiKey 正确、支持 tool use 且网关可用，然后重试。",
+        suggestion: "请确认 .env.local 中 DASHSCOPE_API_KEY 已配置且网关可用，然后重试。",
       });
       return;
     }
 
-    if (response.text) {
-      emit({ type: "thinking", text: response.text });
+    const blocks = response.content ?? [];
+
+    // 透出思考/说明文本。
+    for (const block of blocks) {
+      if (block.type === "text" && typeof (block as AnthropicTextBlock).text === "string") {
+        const text = (block as AnthropicTextBlock).text.trim();
+        if (text) emit({ type: "thinking", text });
+      }
+      if (
+        block.type === "thinking" &&
+        typeof (block as AnthropicThinkingBlock).thinking === "string"
+      ) {
+        const text = (block as AnthropicThinkingBlock).thinking!.trim();
+        if (text) emit({ type: "thinking", text });
+      }
     }
 
-    const toolUses = response.toolUses;
+    const toolUses = blocks.filter(
+      (block): block is AnthropicToolUseBlock => block.type === "tool_use"
+    );
 
     // 模型不再调工具 → 结束。若已 save_target 过会在下面提前 return；走到这里说明未保存。
     if (toolUses.length === 0) {
@@ -598,10 +342,8 @@ async function runLoop(
       return;
     }
 
-    messages.push({
-      role: "assistant",
-      content: { text: response.text, toolUses },
-    });
+    // 把本轮 assistant 消息（含 tool_use）加入历史。
+    messages.push({ role: "assistant", content: blocks });
 
     const toolResults: ToolResultBlock[] = [];
 
@@ -720,7 +462,6 @@ async function runLoop(
         // 等用户回答后由 resumeAgentConnect 把答案作为 ask_user 的 tool_result 喂回继续。
         const sessionId = newSessionId();
         sessionStore.set(sessionId, {
-          baseModel: activeBaseModel,
           messages,
           lastSnapshot,
           stepsUsed: step + 1,
@@ -741,8 +482,8 @@ async function runLoop(
       });
     }
 
-    // 把工具结果作为下一轮工具反馈消息喂回。
-    messages.push({ role: "tool", content: toolResults });
+    // 把工具结果作为下一轮 user 消息喂回。
+    messages.push({ role: "user", content: toolResults });
   }
 
   emit({

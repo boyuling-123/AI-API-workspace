@@ -24,11 +24,23 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+*.log
 
 # local env files
 .env
 .env.*
 .env*.local
+!.env.example
+!.env.local.example
+
+# generated outputs and local agent state
+/output/
+/outputs/
+/.playwright-cli/
+/.aone_copilot/
+/.omc/
+/.claude/
+/skills/ui-ux-pro-max/
 
 # vercel
 .vercel
@@ -37,5 +49,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local tool state
-.claude/
+# generated document bundles
+*.zip

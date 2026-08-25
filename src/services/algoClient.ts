@@ -147,7 +147,7 @@ export async function callAlgorithmApi(
   if (!template?.url) {
     throw new Error(`目标 ${target.name} 缺少 requestTemplate.url`);
   }
-  const payload = buildPayload(target.inputParams ?? [], paramValues);
+  const payload = buildPayload(target.inputParams, paramValues);
   const headers = buildHeaders(target);
 
   const isGet = template.method === "GET";

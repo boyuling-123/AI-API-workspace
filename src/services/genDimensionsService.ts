@@ -1,4 +1,4 @@
-import type { BaseModelConfig, EvalDimension } from "@/types";
+import type { EvalDimension } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
 import { DIMENSION_PRESETS } from "@/config/dimensionPresets";
 
@@ -55,12 +55,12 @@ function normalizeDimension(raw: unknown): EvalDimension | null {
 
 export async function generateDimensions(
   userRequirement: string,
-  baseModel: BaseModelConfig
+  modelId: string
 ): Promise<EvalDimension[]> {
   const presetReference = buildPresetReference();
   const prompt = `${GEN_DIMENSIONS_GUIDE}${presetReference}\n\n=== 用户测评需求 ===\n${userRequirement}\n=== 结束 ===\n\n请输出候选维度的 JSON 数组。`;
 
-  const output = await chatWithModel({ baseModel, prompt });
+  const output = await chatWithModel({ modelId, prompt });
   const jsonText = extractJsonArray(output.outputText);
 
   let parsed: unknown;

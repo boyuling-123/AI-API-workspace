@@ -38,8 +38,6 @@ export const PRESET_TARGETS: TargetConfig[] = [
   {
     id: "deepseek-v4-pro",
     name: "DeepSeek V4 Pro",
-    kind: "target",
-    capability: "text",
     type: "custom",
     contentKind: "text",
     source: "manual",
@@ -52,8 +50,6 @@ export const PRESET_TARGETS: TargetConfig[] = [
   {
     id: "kimi-k2.6",
     name: "Kimi K2.6（多模态）",
-    kind: "target",
-    capability: "multimodal",
     type: "custom",
     contentKind: "multimodal",
     source: "manual",
@@ -69,8 +65,6 @@ export const PRESET_TARGETS: TargetConfig[] = [
   {
     id: "qwen3.6-plus",
     name: "Qwen3.6 Plus（多模态 · 默认裁判）",
-    kind: "target",
-    capability: "multimodal",
     type: "custom",
     contentKind: "multimodal",
     source: "manual",
@@ -86,8 +80,6 @@ export const PRESET_TARGETS: TargetConfig[] = [
   {
     id: "builtin-mock-algo",
     name: "Mock 生图算法（内置样例）",
-    kind: "target",
-    capability: "image",
     type: "custom",
     contentKind: "image",
     source: "manual",
@@ -128,6 +120,6 @@ export function getDefaultTargetConfigs(): TargetConfig[] {
  * 用于「输入含图时纯文本目标置灰」与「含图裁判」判断。
  * 注意：image（生图）输出图片，不接图片输入做理解，故不算支持图片输入。
  */
-export function targetSupportsImage(target: Pick<TargetConfig, "capability" | "contentKind">): boolean {
-  return (target.capability ?? target.contentKind) === "multimodal";
+export function targetSupportsImage(target: Pick<TargetConfig, "contentKind">): boolean {
+  return target.contentKind === "multimodal";
 }

@@ -1,14 +1,11 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/hooks/useProject";
 import { TopToolbar } from "@/components/TopToolbar";
 import { WorkspaceBody } from "@/components/WorkspaceBody";
 import { PetDog } from "@/components/pet/PetDog";
-import { SetupGuard } from "@/components/SetupGuard";
-import { hasAnyBaseModel } from "@/lib/modelFilter";
-import type { ModelEndpoint } from "@/types";
-import type { WorkspaceTab } from "@/components/WorkspaceBody";
+import { consumeWorkspaceImport } from "@/services/importWorkspaceClient";
 
 export function AppShell() {
   const {
@@ -20,19 +17,37 @@ export function AppShell() {
     replaceProject,
     createNew,
   } = useProject();
+  const processedImportId = useRef<string | null>(null);
+  const [importNotice, setImportNotice] = useState<string | null>(null);
 
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("run");
+  useEffect(() => {
+    if (!isLoaded || !project) return;
+    const params = new URLSearchParams(window.location.search);
+    const importId = params.get("import_id");
+    if (!importId || processedImportId.current === importId) return;
+    processedImportId.current = importId;
+    const confirmedImportId = importId;
 
-  /** 首次配置引导完成：把验证通过的 endpoint 存入项目 endpoints。 */
-  const handleSetupComplete = useCallback(
-    (endpoint: ModelEndpoint) => {
-      updateProject((current) => ({
-        ...current,
-        endpoints: [...current.endpoints, endpoint],
-      }));
-    },
-    [updateProject]
-  );
+    async function consume() {
+      try {
+        const result = await consumeWorkspaceImport(confirmedImportId);
+        replaceProject(result.project);
+        window.history.replaceState(null, "", result.openPath);
+        const skipped =
+          result.summary.skipped > 0 ? `，跳过 ${result.summary.skipped} 条` : "";
+        const warnings =
+          result.warnings.length > 0 ? `；提醒：${result.warnings.join("；")}` : "";
+        setImportNotice(
+          `已导入 ${result.summary.imported} 条评测数据${skipped}${warnings}`
+        );
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "导入失败";
+        setImportNotice(`导入失败：${message}`);
+      }
+    }
+
+    consume();
+  }, [isLoaded, project, replaceProject]);
 
   if (!isLoaded || !project) {
     return (
@@ -40,11 +55,6 @@ export function AppShell() {
         正在加载本地项目…
       </div>
     );
-  }
-
-  // 首次使用引导：没有任何 base-model 时，展示全屏配置页
-  if (!hasAnyBaseModel(project.endpoints)) {
-    return <SetupGuard onComplete={handleSetupComplete} />;
   }
 
   return (
@@ -62,12 +72,15 @@ export function AppShell() {
         />
       </header>
       <main className="flex-1">
+        {importNotice && (
+          <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-center text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+            {importNotice}
+          </div>
+        )}
         <WorkspaceBody
           key={project.id}
           project={project}
           updateProject={updateProject}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
         />
       </main>
 

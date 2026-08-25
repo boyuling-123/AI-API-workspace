@@ -16,6 +16,7 @@ export interface CustomAdapterParams {
   /** 其余入参真实值（来自 TaskInput.extraFields）。 */
   paramValues?: Record<string, unknown>;
   signal?: AbortSignal;
+  maxTokens?: number;
   /** 服务端调用源 origin，用于把内置相对路由补全为绝对 url。 */
   baseOrigin?: string;
 }
@@ -67,7 +68,15 @@ function mergeAbortSignals(
 export async function runCustomTarget(
   params: CustomAdapterParams
 ): Promise<NormalizedLlmOutput> {
-  const { target, prompt, images, paramValues = {}, signal, baseOrigin } = params;
+  const {
+    target,
+    prompt,
+    images,
+    paramValues = {},
+    signal,
+    maxTokens,
+    baseOrigin,
+  } = params;
   const template = target.requestTemplate;
   if (!template) {
     throw new Error(`目标 ${target.name} 缺少 requestTemplate，无法执行`);
@@ -81,7 +90,7 @@ export async function runCustomTarget(
         apiKey: getApiKey(target.apiKeyRef),
         apiModelName,
       },
-      { prompt, images, signal }
+      { prompt, images, signal, maxTokens }
     );
   }
 

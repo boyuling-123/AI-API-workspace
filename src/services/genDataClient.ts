@@ -1,18 +1,17 @@
-import type { BaseModelConfig, GenDataRequest, TaskInput } from "@/types";
+import type { GenDataRequest, TaskInput } from "@/types";
 
 /**
- * 前端调用 /api/gen-data（v4.8）：把造数据需求 + 选定的基础大模型配置交给后端，
- * 后端调用大模型生成数据，返回归一化的 TaskInput[]。key 仅本地存储、走本地后端代理。
+ * 前端调用 /api/gen-data：把造数据需求交给大模型，返回归一化的 TaskInput[]。
  */
 export async function generateTaskData(
   request: GenDataRequest,
-  baseModel: BaseModelConfig,
+  modelId: string,
   signal?: AbortSignal
 ): Promise<TaskInput[]> {
   const response = await fetch("/api/gen-data", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ request, baseModel }),
+    body: JSON.stringify({ request, modelId }),
     signal,
   });
 

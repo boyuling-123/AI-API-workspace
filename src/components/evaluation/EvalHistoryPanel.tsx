@@ -5,6 +5,7 @@ import type { EvaluationRecord, ResultItem, Task, TaskInput } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 import { exportResultsToExcel } from "@/services/excel";
 import { ImageLightbox } from "@/components/result/ImageLightbox";
+import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
 
 interface EvalHistoryPanelProps {
   /** 唯一数据来源：Project.evaluations（v4.3 增量2）。 */
@@ -116,6 +117,11 @@ export function EvalHistoryPanel({
                   <span className="text-xs text-gray-500">
                     裁判：{resolveModelName(record, task)}
                   </span>
+                  <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
+                    {record.evaluationMode === "reference"
+                      ? `标准答案${formatExpectedColumn(record.expectedAnswerColumn)}`
+                      : "横向对比"}
+                  </span>
                   <span className="text-xs text-gray-500">
                     {record.count} 条
                   </span>
@@ -183,6 +189,12 @@ function resolveModelName(record: EvaluationRecord, task?: Task): string {
     }
   }
   return record.evalModelId;
+}
+
+function formatExpectedColumn(column?: string): string {
+  if (!column) return "";
+  if (column === AUTO_EXPECTED_ANSWER_KEY) return "：自动识别";
+  return `：${column}`;
 }
 
 interface EvalDetailTableProps {

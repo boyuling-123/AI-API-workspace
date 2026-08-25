@@ -1,4 +1,4 @@
-import type { ApiDocParseResult, BaseModelConfig } from "@/types";
+import type { ApiDocParseResult } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
 
 /**
@@ -91,11 +91,11 @@ function normalizeResult(raw: unknown): ApiDocParseResult {
 
 export async function parseApiDoc(
   doc: string,
-  baseModel: BaseModelConfig
+  modelId: string
 ): Promise<ApiDocParseResult> {
   const prompt = `${PARSE_SYSTEM_GUIDE}\n\n=== API 对接文档开始 ===\n${doc}\n=== API 对接文档结束 ===`;
 
-  const output = await chatWithModel({ baseModel, prompt });
+  const output = await chatWithModel({ modelId, prompt });
   const jsonText = extractJsonBlock(output.outputText);
 
   let parsed: unknown;

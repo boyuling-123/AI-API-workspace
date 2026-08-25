@@ -7,7 +7,8 @@ import { formatTimestamp } from "@/lib/datetime";
  * 批量模式基础列。算法 API 参数列将在 M8 按选中目标动态扩展。
  * 列名使用固定英文 key。
  */
-export const BASE_TEMPLATE_COLUMNS = ["prompt", "image_url"] as const;
+export const BASE_TEMPLATE_COLUMNS = ["prompt", "image_url", "expected_output"] as const;
+const STRUCTURAL_COLUMNS = new Set<string>(["prompt", "image_url"]);
 
 export interface ImportParseResult {
   inputs: TaskInput[];
@@ -43,15 +44,13 @@ export function parseImportedExcel(fileBuffer: ArrayBuffer): ImportParseResult {
 
   const warnings: string[] = [];
   const unmatchedColumns = new Set<string>();
-  const baseColumns = new Set<string>(BASE_TEMPLATE_COLUMNS);
-
   const inputs: TaskInput[] = rows.map((row, rowIndex) => {
     const prompt = toStringValue(row["prompt"]);
     const imageUrl = toStringValue(row["image_url"]).trim();
 
     const extraFields: Record<string, unknown> = {};
     for (const [columnName, rawValue] of Object.entries(row)) {
-      if (baseColumns.has(columnName)) {
+      if (STRUCTURAL_COLUMNS.has(columnName)) {
         continue;
       }
       unmatchedColumns.add(columnName);
@@ -90,12 +89,58 @@ export function parseImportedExcel(fileBuffer: ArrayBuffer): ImportParseResult {
 }
 
 /**
- * 把 AI 造的数据（TaskInput[]）导出为本地 Excel。
- * 列：prompt / image_url + 出现过的 extraFields 列（按出现顺序）。
+ * 解析 JSON / JSONL 微调测试集，兼容：
+ * - {"messages":[{"role":"user","content":"..."},{"role":"assistant","content":"..."}]}
+ * - {"prompt":"...","expected_output":"..."}
+ * - JSON 数组或 {items:[...]} / {data:[...]} 包裹。
  */
+export function parseImportedJsonText(
+  jsonText: string,
+  fileName = "dataset.jsonl"
+): ImportParseResult {
+  const warnings: string[] = [];
+  let records: unknown[];
+
+  try {
+    records = fileName.toLowerCase().endsWith(".jsonl")
+      ? parseJsonl(jsonText)
+      : parseJsonRecords(jsonText);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "未知错误";
+    return {
+      inputs: [],
+      unmatchedColumns: [],
+      warnings: [`JSON/JSONL 解析失败：${message}`],
+    };
+  }
+
+  const unmatchedColumns = new Set<string>();
+  const inputs = records.map((record, index) => {
+    const normalized = normalizeJsonRecord(record);
+    for (const key of Object.keys(normalized.extraFields ?? {})) {
+      unmatchedColumns.add(key);
+    }
+    if (!normalized.prompt.trim()) {
+      warnings.push(`第 ${index + 1} 条 prompt 为空`);
+    }
+    if (!normalized.extraFields?.expected_output) {
+      warnings.push(`第 ${index + 1} 条未识别到 expected_output/标准答案`);
+    }
+    return normalized;
+  });
+
+  return {
+    inputs,
+    unmatchedColumns: Array.from(unmatchedColumns),
+    warnings,
+  };
+}
+
+/** 把当前输入数据（TaskInput[]）导出为本地 Excel。 */
 export function exportInputsToExcel(
   projectName: string,
-  inputs: TaskInput[]
+  inputs: TaskInput[],
+  fileLabel = "输入数据"
 ): void {
   const extraColumns: string[] = [];
   const seen = new Set<string>();
@@ -122,7 +167,7 @@ export function exportInputsToExcel(
   const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "inputs");
-  const fileName = `${sanitizeFileName(projectName)}_AI数据_${formatTimestamp()}.xlsx`;
+  const fileName = `${sanitizeFileName(projectName)}_${sanitizeFileName(fileLabel)}_${formatTimestamp()}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 }
 
@@ -313,6 +358,116 @@ function formatOutputCell(item?: ResultItem): string {
     return text;
   }
   return [text, `图片: ${images.join(", ")}`].filter(Boolean).join("\n");
+}
+
+function parseJsonl(jsonText: string): unknown[] {
+  return jsonText
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, index) => {
+      try {
+        return JSON.parse(line) as unknown;
+      } catch {
+        throw new Error(`第 ${index + 1} 行不是合法 JSON`);
+      }
+    });
+}
+
+function parseJsonRecords(jsonText: string): unknown[] {
+  const parsed = JSON.parse(jsonText) as unknown;
+  if (Array.isArray(parsed)) return parsed;
+  const obj = parsed as Record<string, unknown>;
+  if (Array.isArray(obj?.items)) return obj.items;
+  if (Array.isArray(obj?.data)) return obj.data;
+  return [parsed];
+}
+
+function normalizeJsonRecord(raw: unknown): TaskInput {
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  const messages = Array.isArray(obj.messages) ? obj.messages : [];
+  const userMessage = [...messages]
+    .reverse()
+    .find((message) => readMessageRole(message) === "user");
+  const assistantMessage = [...messages]
+    .reverse()
+    .find((message) => readMessageRole(message) === "assistant");
+
+  const prompt =
+    stringifyDatasetValue(readMessageContent(userMessage)) ||
+    stringifyDatasetValue(obj.prompt) ||
+    stringifyDatasetValue(obj.input) ||
+    stringifyDatasetValue(obj.question) ||
+    stringifyDatasetValue(obj.user);
+
+  const expected =
+    stringifyDatasetValue(readMessageContent(assistantMessage)) ||
+    stringifyDatasetValue(obj.expected_output) ||
+    stringifyDatasetValue(obj.expected) ||
+    stringifyDatasetValue(obj.standard_answer) ||
+    stringifyDatasetValue(obj.reference_answer) ||
+    stringifyDatasetValue(obj.answer) ||
+    stringifyDatasetValue(obj.output) ||
+    stringifyDatasetValue(obj.completion);
+
+  const imageUrl =
+    stringifyDatasetValue(obj.image_url) ||
+    stringifyDatasetValue(obj.image) ||
+    stringifyDatasetValue(obj.imageUrl);
+
+  const extraFields: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    if (
+      [
+        "messages",
+        "prompt",
+        "input",
+        "question",
+        "user",
+        "image_url",
+        "image",
+        "imageUrl",
+      ].includes(key)
+    ) {
+      continue;
+    }
+    extraFields[key] = value;
+  }
+  if (expected) {
+    extraFields.expected_output = expected;
+  }
+
+  return {
+    id: generateId(),
+    prompt,
+    images: imageUrl
+      ? [
+          {
+            id: generateId(),
+            name: imageUrl.split("/").pop() ?? "image",
+            source: "url",
+            value: imageUrl,
+          },
+        ]
+      : [],
+    extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
+  };
+}
+
+function readMessageRole(message: unknown): string {
+  const obj = (message ?? {}) as Record<string, unknown>;
+  return typeof obj.role === "string" ? obj.role : "";
+}
+
+function readMessageContent(message: unknown): unknown {
+  const obj = (message ?? {}) as Record<string, unknown>;
+  return obj.content;
+}
+
+function stringifyDatasetValue(value: unknown): string {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string") return value.trim();
+  return JSON.stringify(value);
 }
 
 function formatLatencyCell(item?: ResultItem): string {

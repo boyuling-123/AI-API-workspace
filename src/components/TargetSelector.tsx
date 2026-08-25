@@ -1,12 +1,7 @@
 "use client";
 
-import type { ContentKind, ContentMode, TargetConfig } from "@/types";
+import type { ContentMode, TargetConfig } from "@/types";
 import type { InputImageState } from "@/lib/inputImageState";
-
-/** 统一读取能力标签（兼容 capability / contentKind 两个字段名）。 */
-function getCapability(config: TargetConfig): ContentKind {
-  return config.capability ?? config.contentKind ?? "text";
-}
 
 interface TargetSelectorProps {
   selectedIds: string[];
@@ -50,7 +45,7 @@ export function TargetSelector({
   }
 
   function evaluateAlgoDisabled(config: TargetConfig): TargetDisabledInfo {
-    if (config.status !== "tested_ok" && config.status !== "unverified") {
+    if (!config.preset && config.status !== "tested_ok") {
       return {
         disabled: true,
         reason:
@@ -66,20 +61,19 @@ export function TargetSelector({
    * （multimodal 输出文字，绝不进生图模式。）
    */
   function matchesContentMode(config: TargetConfig): boolean {
-    const cap = getCapability(config);
     if (contentMode === "text") {
-      return cap === "text" || cap === "multimodal";
+      return config.contentKind === "text" || config.contentKind === "multimodal";
     }
-    return cap === "image";
+    return config.contentKind === "image";
   }
 
   const visibleConfigs = algoConfigs.filter(matchesContentMode);
 
   // 出文字的（text / multimodal）归「大模型」组，生图归「算法 API」组。
   const llmConfigs = visibleConfigs.filter(
-    (c) => { const cap = getCapability(c); return cap === "text" || cap === "multimodal"; }
+    (c) => c.contentKind === "text" || c.contentKind === "multimodal"
   );
-  const apiConfigs = visibleConfigs.filter((c) => getCapability(c) === "image");
+  const apiConfigs = visibleConfigs.filter((c) => c.contentKind === "image");
 
   /**
    * 输入含图时的置灰（显示但点不了 + 提示）——规则表：
@@ -91,7 +85,7 @@ export function TargetSelector({
     if (baseInfo.disabled) {
       return baseInfo;
     }
-    if (imageState.hasImage && getCapability(config) === "text") {
+    if (imageState.hasImage && config.contentKind === "text") {
       return {
         disabled: true,
         reason: "该目标不支持图片输入，已传入图片",
@@ -103,14 +97,13 @@ export function TargetSelector({
   function renderCard(config: TargetConfig) {
     const { disabled, reason } = evaluateConfigDisabled(config);
     const checked = selectedIds.includes(config.id);
-    const cap = getCapability(config);
-    const isLlm = cap === "text" || cap === "multimodal";
+    const isLlm = config.contentKind === "text" || config.contentKind === "multimodal";
     const tagStyle = isLlm
       ? "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
       : "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400";
     const tagLabel = isLlm ? "大模型" : "算法 API";
     const subtitle = isLlm
-      ? cap === "multimodal"
+      ? config.contentKind === "multimodal"
         ? "多模态 · 看图+chat"
         : "文本 · chat"
       : config.requestTemplate
@@ -158,10 +151,15 @@ export function TargetSelector({
 
   return (
     <div className="flex flex-col gap-3">
+      <div className="rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-300">
+        这里选择“被测试对象”：可以是大模型、你接入的算法 API，或生图/多模态接口。
+        平台会把同一批输入发给已勾选目标，后续在跑批历史里做结果对比和 AI 评价。
+      </div>
+
       {llmConfigs.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            大模型
+            可测试大模型
           </h3>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {llmConfigs.map(renderCard)}
@@ -172,7 +170,7 @@ export function TargetSelector({
       {apiConfigs.length > 0 && (
         <div className="flex flex-col gap-1.5">
           <h3 className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-            算法 API
+            可测试算法 / 生图 API
           </h3>
           <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             {apiConfigs.map(renderCard)}

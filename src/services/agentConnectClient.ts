@@ -1,20 +1,19 @@
-import type { AgentStreamEvent, BaseModelConfig, PendingTarget, TargetConfig } from "@/types";
+import type { AgentStreamEvent, PendingTarget, TargetConfig } from "@/types";
 import { emitPetStatus } from "@/lib/petBus";
 
 /**
- * 前端发起 Agent 自动接入（v4.8），消费 /api/agent-connect 的 SSE 流。
+ * 前端发起 Agent 自动接入（v4.4），消费 /api/agent-connect 的 SSE 流。
  * 每收到一个 AgentStreamEvent 调一次 onEvent，由 UI 实时展示进度。
  * 支持 AbortSignal 取消。
  */
 export async function startAgentConnect(
   doc: string,
-  baseModel: BaseModelConfig,
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {
   // 彩蛋：接入开始 → 宠物忙碌（只读状态、不影响业务）。
   emitPetStatus({ status: "busy", scene: "agent" });
-  await streamAgentConnect({ doc, baseModel }, withPetStatus(onEvent), signal);
+  await streamAgentConnect({ doc }, withPetStatus(onEvent), signal);
 }
 
 /**
@@ -50,9 +49,7 @@ export async function resumeAgentConnect(
 
 /** 统一发起请求并消费 SSE 流。 */
 async function streamAgentConnect(
-  body:
-    | { doc: string; baseModel: BaseModelConfig }
-    | { sessionId: string; answer: string },
+  body: { doc: string } | { sessionId: string; answer: string },
   onEvent: (event: AgentStreamEvent) => void,
   signal?: AbortSignal
 ): Promise<void> {

@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { ApiDocParseResult, BaseModelConfig } from "@/types";
+import type { ApiDocParseResult } from "@/types";
 import { parseApiDoc } from "@/services/parseDocClient";
 
 interface ParserModel {
   id: string;
   name: string;
-  baseModel: BaseModelConfig;
 }
 
 interface ApiDocParserProps {
@@ -40,12 +39,7 @@ export function ApiDocParser({ models, onApply }: ApiDocParserProps) {
     setError(null);
     setResult(null);
     try {
-      const selectedModel = models.find((m) => m.id === modelId);
-      if (!selectedModel) {
-        setError("请先选择一个可用模型");
-        return;
-      }
-      const parsed = await parseApiDoc(doc, selectedModel.baseModel);
+      const parsed = await parseApiDoc(doc, modelId);
       setResult(parsed);
     } catch (err) {
       setError(err instanceof Error ? err.message : "解读失败");

@@ -1,18 +1,18 @@
-import type { BaseModelConfig, EvalDimension } from "@/types";
+import type { EvalDimension } from "@/types";
 
 /**
- * 前端调用 /api/gen-dimensions（v4.8）：用户描述测评需求 + 选定的基础大模型配置 → 后端生成若干候选维度。
- * 内置预设维度集仅作模型内部参考，不透出给用户。key 仅本地存储、走本地后端代理。
+ * 前端调用 /api/gen-dimensions（v4.5）：用户描述测评需求 → 大模型生成若干候选维度。
+ * 内置预设维度集仅作模型内部参考，不透出给用户。
  */
 export async function generateDimensionsClient(
   userRequirement: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   signal?: AbortSignal
 ): Promise<EvalDimension[]> {
   const response = await fetch("/api/gen-dimensions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userRequirement, baseModel }),
+    body: JSON.stringify({ userRequirement, modelId }),
     signal,
   });
   const data = await response.json();

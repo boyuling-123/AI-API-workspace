@@ -1,59 +1,70 @@
 "use client";
 
 import { useState } from "react";
-import type { ModelEndpoint, ModelKind, ContentKind } from "@/types";
-import { toBaseModelConfig } from "@/types";
-import { hasAiConfig } from "@/lib/modelFilter";
+import type { TargetConfig } from "@/types";
+import { getDefaultTargets } from "@/config/builtinAlgos";
 import { ApiConfigForm } from "./ApiConfigForm";
 import { ScriptAccessPanel } from "./ScriptAccessPanel";
 
 interface ApiAccessPanelProps {
-  /** 所有接入项（含 base-model 和 target） */
-  endpoints: ModelEndpoint[];
-  onChange: (endpoints: ModelEndpoint[]) => void;
+  /** 所有接入目标（预置 + 用户接入），统一可增删改。 */
+  configs: TargetConfig[];
+  onChange: (configs: TargetConfig[]) => void;
 }
 
 /**
- * 接入管理面板（v4.8 重构）：
- * 统一入口，用户在接入时必须明确标记是“基础大模型”还是“被测接口”。
+ * 接入管理面板：每条接入目标 = 一条独立 TargetConfig。
+ * 所有配置（包括默认的大模型和算法）均可编辑/删除/新增。
  */
-export function ApiAccessPanel({ endpoints, onChange }: ApiAccessPanelProps) {
-  const [editing, setEditing] = useState<ModelEndpoint | null>(null);
+export function ApiAccessPanel({ configs, onChange }: ApiAccessPanelProps) {
+  const [editing, setEditing] = useState<TargetConfig | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isScriptCreating, setIsScriptCreating] = useState(false);
 
-  function handleCreateFromScript(target: ModelEndpoint) {
-    onChange([...endpoints, target]);
+  function handleCreateFromScript(target: TargetConfig) {
+    onChange([...configs, target]);
     setIsScriptCreating(false);
   }
 
-  function handleSave(config: ModelEndpoint) {
-    const exists = endpoints.some((item) => item.id === config.id);
+  function handleSave(config: TargetConfig) {
+    const exists = configs.some((item) => item.id === config.id);
     onChange(
       exists
-        ? endpoints.map((item) => (item.id === config.id ? config : item))
-        : [...endpoints, config]
+        ? configs.map((item) => (item.id === config.id ? config : item))
+        : [...configs, config]
     );
     setEditing(null);
     setIsCreating(false);
   }
 
   function handleDelete(id: string) {
-    onChange(endpoints.filter((item) => item.id !== id));
+    onChange(configs.filter((item) => item.id !== id));
     if (editing?.id === id) setEditing(null);
   }
+
+  // 恢复默认配置：仅补回被删掉的默认项（按 id 去重），不覆盖用户已存在的同 id 配置。
+  function handleRestoreDefaults() {
+    const existingIds = new Set(configs.map((item) => item.id));
+    const missingDefaults = getDefaultTargets().filter(
+      (item) => !existingIds.has(item.id)
+    );
+    if (missingDefaults.length === 0) return;
+    onChange([...configs, ...missingDefaults]);
+  }
+
+  const missingDefaultCount = (() => {
+    const existingIds = new Set(configs.map((item) => item.id));
+    return getDefaultTargets().filter((item) => !existingIds.has(item.id))
+      .length;
+  })();
 
   const showForm = isCreating || editing !== null;
 
   if (isScriptCreating) {
-    const agentModels = endpoints
-      .filter((ep) => hasAiConfig(ep) && ep.supportsToolUse)
-      .map((ep) => ({ id: ep.id, name: ep.name, baseModel: toBaseModelConfig(ep) }));
     return (
       <ScriptAccessPanel
         onCreate={handleCreateFromScript}
         onCancel={() => setIsScriptCreating(false)}
-        agentModels={agentModels}
       />
     );
   }
@@ -62,13 +73,23 @@ export function ApiAccessPanel({ endpoints, onChange }: ApiAccessPanelProps) {
     <section className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-          接口与模型管理
+          接入管理
         </h2>
         <span className="text-xs text-slate-400">
-          在此配置驱动 AI 功能的“基础大模型”以及待测的“算法接口”
+          一条配置 = 一个评测目标（均可编辑/删除）
         </span>
         {!showForm && (
           <div className="ml-auto flex gap-2">
+            {missingDefaultCount > 0 && (
+              <button
+                type="button"
+                onClick={handleRestoreDefaults}
+                title="把被删掉的内置大模型 / Mock 算法补回来，不影响你已新增或改过的配置"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                恢复默认（{missingDefaultCount}）
+              </button>
+            )}
             <button
               type="button"
               onClick={() => {
@@ -78,17 +99,7 @@ export function ApiAccessPanel({ endpoints, onChange }: ApiAccessPanelProps) {
               }}
               className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-800"
             >
-              智能接入助手
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setEditing(null);
-                setIsCreating(true);
-              }}
-              className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
-              手动新增
+              自动接入
             </button>
           </div>
         )}
@@ -105,12 +116,15 @@ export function ApiAccessPanel({ endpoints, onChange }: ApiAccessPanelProps) {
         />
       ) : (
         <ApiConfigList
-          endpoints={endpoints}
-          onEdit={(ep) => {
+          configs={configs}
+          onEdit={(config) => {
             setIsCreating(false);
-            setEditing(ep);
+            setEditing(config);
           }}
           onDelete={handleDelete}
+          onRestoreDefaults={
+            missingDefaultCount > 0 ? handleRestoreDefaults : undefined
+          }
         />
       )}
     </section>
@@ -118,66 +132,71 @@ export function ApiAccessPanel({ endpoints, onChange }: ApiAccessPanelProps) {
 }
 
 function ApiConfigList({
-  endpoints,
+  configs,
   onEdit,
   onDelete,
+  onRestoreDefaults,
 }: {
-  endpoints: ModelEndpoint[];
-  onEdit: (ep: ModelEndpoint) => void;
+  configs: TargetConfig[];
+  onEdit: (config: TargetConfig) => void;
   onDelete: (id: string) => void;
+  onRestoreDefaults?: () => void;
 }) {
-  const statusLabel: Record<ModelEndpoint["status"], string> = {
+  const statusLabel: Record<TargetConfig["status"], string> = {
     unverified: "未测试",
-    tested_ok: "已就绪",
+    tested_ok: "测试通过",
     tested_fail: "测试失败",
     unsupported: "不支持",
   };
-  
+  const statusClass: Record<TargetConfig["status"], string> = {
+    unverified: "bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400",
+    tested_ok: "bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400",
+    tested_fail: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400",
+    unsupported: "bg-slate-100 text-slate-400 dark:bg-slate-700 dark:text-slate-500",
+  };
+  const kindClass: Record<string, { label: string; className: string }> = {
+    text: { label: "文本", className: "bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400" },
+    multimodal: { label: "多模态", className: "bg-indigo-100 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400" },
+    image: { label: "生图", className: "bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400" },
+  };
+
   return (
     <div className="flex flex-col gap-2">
       <ul className="flex flex-col gap-2">
-        {endpoints.map((ep) => {
-          const kindLabel = ep.kind === "base-model" 
-            ? { text: "基础模型", class: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400" }
-            : { text: "被测接口", class: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400" };
-          
-          const capLabel = ep.capability === "image" ? "生图" : ep.capability === "multimodal" ? "多模态" : "文本";
-
+        {configs.map((config) => {
+          const kind = kindClass[config.contentKind] ?? kindClass.text;
           return (
             <li
-              key={ep.id}
+              key={config.id}
               className="flex items-center gap-3 rounded-lg border border-slate-200 p-3 dark:border-slate-700"
             >
               <div className="flex min-w-0 flex-col">
                 <span className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-                  {ep.name}
-                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${kindLabel.class}`}>
-                    {kindLabel.text}
+                  {config.name}
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${statusClass[config.status]}`}>
+                    {statusLabel[config.status]}
                   </span>
-                  <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                    {capLabel}
+                  <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${kind.className}`}>
+                    {kind.label}
                   </span>
-                  {ep.kind === "base-model" && ep.supportsToolUse && (
-                    <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-600 dark:bg-purple-500/15 dark:text-purple-400">
-                      Agent
-                    </span>
-                  )}
                 </span>
                 <span className="truncate text-xs text-slate-400">
-                  {ep.baseUrl || ep.requestTemplate?.url || "本地脚本"}
+                  {config.requestTemplate
+                    ? `${config.requestTemplate.method} ${config.requestTemplate.url}`
+                    : "通过平台内置通道调用"}
                 </span>
               </div>
               <div className="ml-auto flex gap-2">
                 <button
                   type="button"
-                  onClick={() => onEdit(ep)}
+                  onClick={() => onEdit(config)}
                   className="rounded-md border border-slate-200 px-3 py-1 text-xs text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
                 >
                   编辑
                 </button>
                 <button
                   type="button"
-                  onClick={() => onDelete(ep.id)}
+                  onClick={() => onDelete(config.id)}
                   className="rounded-md border border-red-200 px-3 py-1 text-xs text-red-600 hover:bg-red-50 dark:border-red-500/30 dark:text-red-400 dark:hover:bg-red-500/10"
                 >
                   删除
@@ -187,11 +206,20 @@ function ApiConfigList({
           );
         })}
       </ul>
-      {endpoints.length === 0 && (
+      {configs.length === 0 && (
         <div className="flex flex-col items-start gap-2 rounded-lg border border-dashed border-slate-200 p-4 dark:border-slate-700">
           <p className="text-xs text-slate-400">
-            暂无配置。请先接入至少一个“基础大模型”以启用 AI 功能。
+            暂无接入配置，点击「自动接入」粘贴对接文档，接入助手自动写脚本接入模型或算法 API。
           </p>
+          {onRestoreDefaults && (
+            <button
+              type="button"
+              onClick={onRestoreDefaults}
+              className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-brand-800"
+            >
+              一键恢复默认配置（大模型 + Mock 算法）
+            </button>
+          )}
         </div>
       )}
     </div>

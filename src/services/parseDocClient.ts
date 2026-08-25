@@ -1,18 +1,18 @@
-import type { ApiDocParseResult, BaseModelConfig } from "@/types";
+import type { ApiDocParseResult } from "@/types";
 
 /**
- * 前端调用 /api/parse-doc（v4.8）：把粘贴的 API 文档 + 选定的基础大模型配置交给后端，
- * 后端调用大模型结构化解读，返回结果用于透出展示。key 仅本地存储、随请求走本地后端代理。
+ * 前端调用 /api/parse-doc：把粘贴的 API 文档交给大模型解读，返回结构化结果用于透出展示。
+ * 仅展示，不回写 ApiConfig。
  */
 export async function parseApiDoc(
   doc: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   signal?: AbortSignal
 ): Promise<ApiDocParseResult> {
   const response = await fetch("/api/parse-doc", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ doc, baseModel }),
+    body: JSON.stringify({ doc, modelId }),
     signal,
   });
 

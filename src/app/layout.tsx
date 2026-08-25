@@ -1,15 +1,17 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { Fira_Sans, Fira_Code } from "next/font/google";
 import "./globals.css";
 
-// 使用仓库内本地字体，避免 build/dev 依赖外网字体服务。
-const bodyFont = localFont({
-  src: "./fonts/GeistVF.woff",
+// Fira 字体：正文用 Fira Sans，代码/数值用 Fira Code（延展性 C：换字体只改这里 + tailwind config）
+const firaSans = Fira_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
   variable: "--font-fira-sans",
   display: "swap",
 });
-const monoFont = localFont({
-  src: "./fonts/GeistMonoVF.woff",
+const firaCode = Fira_Code({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
   variable: "--font-fira-code",
   display: "swap",
 });
@@ -26,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={`${bodyFont.variable} ${monoFont.variable} antialiased`}>
+      <body className={`${firaSans.variable} ${firaCode.variable} antialiased`}>
         {children}
       </body>
     </html>

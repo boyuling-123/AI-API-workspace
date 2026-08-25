@@ -1,6 +1,6 @@
 import type {
-  BaseModelConfig,
   EvalDimension,
+  EvaluationMode,
   ImageItem,
   TargetDimensionScores,
 } from "@/types";
@@ -14,6 +14,9 @@ import { chatWithModel } from "@/services/llmClient";
 export interface EvaluateInputItem {
   inputId: string;
   prompt: string;
+  /** 标准答案模式：从该输入 extraFields 读取到的参考答案。 */
+  expectedOutput?: string;
+  expectedOutputKey?: string;
   /** 已压缩的图片副本（仅传裁判用，原图不经此处）。 */
   images?: ImageItem[];
   targets: {
@@ -43,18 +46,30 @@ function buildDimensionsBlock(dimensions: EvalDimension[]): string {
 
 function buildEvalGuide(
   evalPrompt: string,
-  dimensions: EvalDimension[]
+  dimensions: EvalDimension[],
+  evaluationMode: EvaluationMode
 ): string {
   const dimensionNames = dimensions.map((dimension) => dimension.name);
   const dimensionsJsonHint = dimensionNames
     .map((name) => `{ "dimension": "${name}", "score": 0-10, "comment": "该维度的简短理由" }`)
     .join(", ");
 
-  return `你是一个严格、客观的测评裁判。请依据下方「评价要求」，对同一条输入下多个目标的输出进行横向对比，并按每个维度独立打分。
+  const modeInstruction =
+    evaluationMode === "reference"
+      ? `你是一个严格、客观的测评裁判。请依据下方「评价要求」和本条输入的「标准答案」，分别判断每个目标输出是否满足标准答案与业务规则。重点是逐个目标对照标准答案判分，不要只做目标之间的相对比较。`
+      : `你是一个严格、客观的测评裁判。请依据下方「评价要求」，对同一条输入下多个目标的输出进行横向对比，并按每个维度独立打分。`;
+
+  const referenceInstruction =
+    evaluationMode === "reference"
+      ? `\n标准答案模式要求：\n- 必须把「标准答案」作为主要判分依据，允许语义等价但不允许关键字段缺失、格式错误或类别错判。\n- 如果标准答案是 JSON / 工具调用，请重点检查 JSON 可解析性、字段名、字段值、工具名、参数与追问逻辑是否一致。\n- 评分可参考：10=完全正确可直接上线；6-8=基本正确但有轻微缺陷；1-5=部分相关但关键问题明显；0=错误、不可用或答非所问。\n`
+      : "";
+
+  return `${modeInstruction}
 
 === 评价要求 ===
 ${evalPrompt}
 === 结束 ===
+${referenceInstruction}
 
 === 评价维度（必须对每个目标、在每个维度上单独打分，不要总分）===
 ${buildDimensionsBlock(dimensions)}
@@ -77,6 +92,14 @@ function buildTargetsBlock(item: EvaluateInputItem): string {
     return `目标 ${index + 1}: targetId="${target.targetId}" 名称="${target.targetName}"\n输出文本：${target.outputText ?? "(无文本)"} ${imageNote}`;
   });
   return lines.join("\n\n");
+}
+
+function buildExpectedBlock(item: EvaluateInputItem): string {
+  if (!item.expectedOutput?.trim()) {
+    return "";
+  }
+  const keyNote = item.expectedOutputKey ? `（字段：${item.expectedOutputKey}）` : "";
+  return `\n\n=== 标准答案 ${keyNote}===\n${item.expectedOutput}\n=== 结束 ===`;
 }
 
 function extractJsonBlock(text: string): string {
@@ -170,14 +193,15 @@ function normalizeResult(
 export async function evaluateOneInput(
   item: EvaluateInputItem,
   evalPrompt: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   dimensions: EvalDimension[],
+  evaluationMode: EvaluationMode = "comparison",
   signal?: AbortSignal
 ): Promise<EvaluateResultPerInput> {
-  const prompt = `${buildEvalGuide(evalPrompt, dimensions)}\n\n=== 输入 prompt ===\n${item.prompt}\n\n=== 各目标输出 ===\n${buildTargetsBlock(item)}`;
+  const prompt = `${buildEvalGuide(evalPrompt, dimensions, evaluationMode)}\n\n=== 输入 prompt ===\n${item.prompt}${buildExpectedBlock(item)}\n\n=== 各目标输出 ===\n${buildTargetsBlock(item)}`;
 
   const output = await chatWithModel(
-    { baseModel, prompt, images: item.images },
+    { modelId, prompt, images: item.images },
     signal
   );
   const jsonText = extractJsonBlock(output.outputText);

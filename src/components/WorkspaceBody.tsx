@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Project, Task, TargetConfig } from "@/types";
 import type { EvaluationRecord } from "@/types";
-import { toBaseModelConfig } from "@/types";
 import { useInputDraft } from "@/hooks/useInputDraft";
 import { useTargetSelection } from "@/hooks/useTargetSelection";
 import { useTaskRunner } from "@/hooks/useTaskRunner";
@@ -19,6 +18,7 @@ import { InputArea } from "@/components/input/InputArea";
 import { AlgoParamsInput } from "@/components/input/AlgoParamsInput";
 import { TargetSelector } from "@/components/TargetSelector";
 import { ApiAccessPanel } from "@/components/api/ApiAccessPanel";
+import { ExternalApiCapabilities } from "@/components/api/ExternalApiCapabilities";
 import { RunPanel } from "@/components/run/RunPanel";
 import { ResultArea } from "@/components/result/ResultArea";
 import { EvaluationPanel } from "@/components/evaluation/EvaluationPanel";
@@ -26,32 +26,44 @@ import { HistoryPanel } from "@/components/history/HistoryPanel";
 import { AppTabs } from "@/components/layout/AppTabs";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import { targetSupportsImage } from "@/config/presetTargets";
-import { hasAiConfig } from "@/lib/modelFilter";
 
 // 5 板块导航（v4.3）：① 跑批 ② 接口创建&管理 ③ 跑批历史 ④ AI 评价 ⑤ AI历史评价。
 // 评价入口只在 ③→④（结果区进入），不在跑批板块；⑤ 为历史仓库可随便进。
-export type WorkspaceTab = "run" | "access" | "result" | "evaluate" | "evalHistory";
+type WorkspaceTab = "run" | "access" | "result" | "evaluate" | "evalHistory";
 
 interface WorkspaceBodyProps {
   project: Project;
   updateProject: (updater: (current: Project) => Project) => void;
-  activeTab?: WorkspaceTab;
-  onTabChange?: (tab: WorkspaceTab) => void;
 }
 
-export function WorkspaceBody({ project, updateProject, activeTab: externalActiveTab, onTabChange }: WorkspaceBodyProps) {
+export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   const draft = useInputDraft(project.id);
   const { targetIds, setTargetIds } = useTargetSelection(project.id);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   // 需求二：AI 评价数据源洁癖——仅当从③带入批次时有值，离开板块④即清空。
   const [evaluatingTask, setEvaluatingTask] = useState<Task | null>(null);
-  const [internalActiveTab, setInternalActiveTab] = useState<WorkspaceTab>("run");
-  
-  const activeTab = externalActiveTab ?? internalActiveTab;
-  const setActiveTab = (tab: WorkspaceTab) => {
-    setInternalActiveTab(tab);
-    onTabChange?.(tab);
-  };
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("run");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    const contentMode = params.get("content_mode");
+    if (
+      tab === "run" ||
+      tab === "access" ||
+      tab === "result" ||
+      tab === "evaluate" ||
+      tab === "evalHistory"
+    ) {
+      setActiveTab(tab);
+    }
+    if (params.get("draft_id") || params.get("import_id")) {
+      draft.setRunMode("batch");
+      if (contentMode === "text" || contentMode === "image") {
+        draft.setContentMode(contentMode);
+      }
+    }
+  }, []);
   const handleRunComplete = useCallback(
     (payload: RunCompletePayload) => {
       const task: Task = {
@@ -75,15 +87,12 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
     [updateProject]
   );
 
-  // v4.8: 使用 endpoints 替代 targetConfigs
-  const endpoints = project.endpoints ?? [];
-
-  // 统一模型池：所有 endpoint 都可作为跑批目标，按 capability 过滤显示。
-  const algoConfigs = useMemo(() => endpoints, [endpoints]);
+  // 兜底：极端情况下（脏数据 / 迁移中途）targetConfigs 可能缺失，避免渲染崩溃。
+  const algoConfigs = project.targetConfigs ?? [];
 
   const handleApiConfigsChange = useCallback(
     (configs: TargetConfig[]) => {
-      updateProject((current) => ({ ...current, endpoints: configs }));
+      updateProject((current) => ({ ...current, targetConfigs: configs }));
     },
     [updateProject]
   );
@@ -97,42 +106,25 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
   const targetColumns = useMemo(() => {
     const columns = new Set<string>(["prompt"]);
     for (const config of selectedAlgoConfigs) {
-      for (const param of config.inputParams ?? []) {
+      for (const param of config.inputParams) {
         if (param.name) columns.add(param.name);
       }
     }
     return Array.from(columns);
   }, [selectedAlgoConfigs]);
 
-  // 统一模型池：裁判模型 = 有 AI 配置 + 文本/多模态能力。
+  // 可作裁判的目标：出文字的目标（text / multimodal）。
+  // supportsImage（能否当含图裁判）= 仅 multimodal，由 targetSupportsImage 判断。
   const judgeModels = useMemo(
     () =>
-      endpoints
-        .filter((ep) => hasAiConfig(ep) && (ep.capability === "text" || ep.capability === "multimodal"))
-        .map((ep) => ({
-          id: ep.id,
-          name: ep.name,
-          supportsImage: ep.capability === "multimodal",
-          baseModel: toBaseModelConfig(ep),
+      algoConfigs
+        .filter((config) => config.contentKind === "text" || config.contentKind === "multimodal")
+        .map((config) => ({
+          id: config.id,
+          name: config.name,
+          supportsImage: targetSupportsImage(config),
         })),
-    [endpoints]
-  );
-
-  // 统一模型池：AI 造数据候选 = 有 AI 配置 + 匹配内容模式。
-  const genDataModels = useMemo(
-    () =>
-      endpoints
-        .filter((ep) => {
-          if (!hasAiConfig(ep)) return false;
-          if (draft.contentMode === "image") return ep.capability === "image";
-          return ep.capability === "text" || ep.capability === "multimodal";
-        })
-        .map((ep) => ({
-          id: ep.id,
-          name: ep.name,
-          baseModel: toBaseModelConfig(ep),
-        })),
-    [endpoints, draft.contentMode]
+    [algoConfigs]
   );
 
   const runner = useTaskRunner({
@@ -180,15 +172,16 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
 
   // 需求二+四：离开板块④清空评测批次；切到结果板块外清空查看批次。
   const handleTabChange = useCallback((next: WorkspaceTab) => {
-    if (activeTab === "evaluate" && next !== "evaluate") {
-      setEvaluatingTask(null);
-    }
-    if (activeTab === "result" && next !== "result") {
-      setViewingTask(null);
-    }
-    setActiveTab(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+    setActiveTab((prev) => {
+      if (prev === "evaluate" && next !== "evaluate") {
+        setEvaluatingTask(null);
+      }
+      if (prev === "result" && next !== "result") {
+        setViewingTask(null);
+      }
+      return next;
+    });
+  }, []);
 
   // 需求三：点击历史某条 → 下方展开该批次结果对比。
   const handleViewTask = useCallback((task: Task) => {
@@ -227,6 +220,8 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
         selectedInputIds: payload.selectedInputIds,
         count: payload.results.length,
         status: "done",
+        evaluationMode: payload.evaluationMode,
+        expectedAnswerColumn: payload.expectedAnswerColumn,
         results: payload.results.map((item) => ({
           inputId: item.inputId,
           scores: item.scores.map((score) => ({
@@ -331,6 +326,19 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
 
       {activeTab === "run" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+          {/* 顶部运行控制台：先给用户明确当前能不能跑、还缺什么。 */}
+          <RunPanel
+            inputs={currentInputs}
+            targetIds={targetIds}
+            selectedTargets={selectedAlgoConfigs}
+            runStatus={runner.runStatus}
+            lastRunMode={runner.lastRunMode}
+            trialResults={runner.results}
+            onRunTrial={runner.runTrial}
+            onRunBatch={runner.runBatch}
+            onCancel={runner.cancel}
+          />
+
           {/* 1. 输入数据 */}
           <InputArea
             projectName={project.name}
@@ -343,19 +351,23 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
             updateSingleInput={draft.updateSingleInput}
             setBatchInputs={draft.setBatchInputs}
             targetColumns={targetColumns}
-            genDataModels={genDataModels}
             isReady={draft.isReady}
           />
 
-          {/* 2. 模型/算法选择 */}
+          {/* 2. 测试模型/算法选择 */}
           <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
-              <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
-                  2
-                </span>
-                模型 / 算法选择
-              </h2>
+              <div>
+                <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
+                    2
+                  </span>
+                  测试模型 / 算法选择
+                </h2>
+                <p className="mt-1 text-xs text-slate-400">
+                  勾选本次要被测试、被对比、被 AI 评价的模型或算法接口。
+                </p>
+              </div>
               <span className="text-xs text-slate-400">
                 已选 {targetIds.length} 个
               </span>
@@ -391,19 +403,6 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
             />
           )}
 
-          {/* 运行条 */}
-          <RunPanel
-            inputs={currentInputs}
-            targetIds={targetIds}
-            selectedTargets={selectedAlgoConfigs}
-            runStatus={runner.runStatus}
-            lastRunMode={runner.lastRunMode}
-            trialResults={runner.results}
-            onRunTrial={runner.runTrial}
-            onRunBatch={runner.runBatch}
-            onCancel={runner.cancel}
-          />
-
           {/* 跑批后引导去结果板块查看，再从结果进入 AI 评价 */}
           <p className="text-center text-xs text-slate-400">
             运行后在
@@ -426,16 +425,17 @@ export function WorkspaceBody({ project, updateProject, activeTab: externalActiv
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
                   ②
                 </span>
-                接口与模型管理
+                接口创建&管理
               </h2>
             </div>
             <div className="p-5">
               <ApiAccessPanel
-                endpoints={project.endpoints}
-                onChange={(nextEndpoints) => updateProject((current) => ({ ...current, endpoints: nextEndpoints }))}
+                configs={algoConfigs}
+                onChange={handleApiConfigsChange}
               />
             </div>
           </section>
+          <ExternalApiCapabilities />
         </div>
       ) : activeTab === "result" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">

@@ -1,4 +1,4 @@
-import type { AgentStreamEvent, BaseModelConfig } from "@/types";
+import type { AgentStreamEvent } from "@/types";
 import {
   runAgentConnect,
   resumeAgentConnect,
@@ -10,8 +10,6 @@ export const maxDuration = 300;
 interface AgentConnectBody {
   /** 新建接入：用户粘贴的对接文档原文。 */
   doc?: string;
-  /** v4.8：前端传入的基础大模型配置（须支持 tool use）。仅新建接入时必传，续跑复用会话内配置。 */
-  baseModel?: BaseModelConfig;
   /** 续跑接入：Agent 提问后用户回答时回传的会话 id。 */
   sessionId?: string;
   /** 续跑接入：用户对 ask_user 提问的回答文本。 */
@@ -19,12 +17,13 @@ interface AgentConnectBody {
 }
 
 /**
- * Agent 自动接入（v4.8），SSE 流式。支持两种入参：
- *  - { doc, baseModel }       新建接入，用前端传入的基础大模型启动 Agent 循环。
- *  - { sessionId, answer }    Agent 调 ask_user 暂停后，用户回答续跑同一会话（复用会话内 baseModel）。
+ * Agent 自动接入（v4.4），SSE 流式。支持两种入参：
+ *  - { doc }                  新建接入，启动 Agent 循环。
+ *  - { sessionId, answer }    Agent 调 ask_user 暂停后，用户回答续跑同一会话。
  *
  * 循环中按需执行 run_script / install_package / save_target / ask_user。
- * 每步 AgentStreamEvent 以 SSE（data: <json>）实时推给前端。
+ * 每步 AgentStreamEvent 以 SSE（data: <json>）实时推给前端；
+ * done 附 pending 草稿待确认，ask 附 sessionId+question 暂停等用户回答。
  */
 export async function POST(request: Request) {
   let body: AgentConnectBody;
@@ -41,12 +40,6 @@ export async function POST(request: Request) {
 
   if (!isResume && !doc) {
     return jsonError("缺少对接文档 doc（或续跑所需的 sessionId）", 400);
-  }
-  if (!isResume && !body.baseModel) {
-    return jsonError(
-      "缺少基础大模型配置，请先在「接口与模型管理」接入并选择一个支持 tool use 的基础大模型",
-      400
-    );
   }
   if (isResume && !answer.trim()) {
     return jsonError("续跑需要 answer（用户对提问的回答）", 400);
@@ -65,7 +58,7 @@ export async function POST(request: Request) {
         if (isResume) {
           await resumeAgentConnect(sessionId, answer, emit);
         } else {
-          await runAgentConnect(doc, body.baseModel!, emit);
+          await runAgentConnect(doc, emit);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : "未知错误";

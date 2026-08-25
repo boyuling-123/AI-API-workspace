@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
 import { generateEvalPrompt } from "@/services/evalPromptService";
-import type { BaseModelConfig, EvalDimension } from "@/types";
+import type { EvalDimension } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
 interface GenEvalPromptBody {
   scenario: string;
-  /** v4.8：前端传入的基础大模型完整配置（baseUrl/apiKey/modelName）。 */
-  baseModel: BaseModelConfig;
+  modelId: string;
   /** 本次选定维度（v4.5），裁判须逐项打分。 */
   dimensions?: EvalDimension[];
   /** 本次将对比的目标名单（v4.5）。 */
@@ -33,17 +32,14 @@ export async function POST(request: Request) {
   if (!body.scenario?.trim()) {
     return NextResponse.json({ error: "请描述测评场景/要求" }, { status: 400 });
   }
-  if (!body.baseModel?.baseUrl || !body.baseModel?.apiKey || !body.baseModel?.modelName) {
-    return NextResponse.json(
-      { error: "缺少基础大模型配置（baseUrl/apiKey/modelName）" },
-      { status: 400 }
-    );
+  if (!body.modelId) {
+    return NextResponse.json({ error: "缺少生成模型 modelId" }, { status: 400 });
   }
 
   try {
     const evalPrompt = await generateEvalPrompt(
       body.scenario,
-      body.baseModel,
+      body.modelId,
       body.dimensions ?? [],
       body.targetNames ?? []
     );

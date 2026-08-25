@@ -4,6 +4,7 @@ export interface AdapterCallParams {
   prompt: string;
   images?: ImageItem[];
   signal?: AbortSignal;
+  maxTokens?: number;
 }
 
 export interface LlmAdapter {

@@ -3,7 +3,6 @@
 import { useRef, useState } from "react";
 import type {
   AgentStreamEvent,
-  BaseModelConfig,
   ContentKind,
   ParamDef,
   PendingTarget,
@@ -19,8 +18,6 @@ interface ScriptAccessPanelProps {
   /** 用户「确认接入」后回调，返回组装好的正式目标。 */
   onCreate: (target: TargetConfig) => void;
   onCancel: () => void;
-  /** v4.8：可作 Agent 驱动的基础大模型候选（kind='base-model' 且 supportsToolUse）。 */
-  agentModels: { id: string; name: string; baseModel: BaseModelConfig }[];
 }
 
 /** 接入流程阶段。asking = Agent 缺信息提问、等用户回答。 */
@@ -50,10 +47,9 @@ const KIND_LABEL: Record<ContentKind, string> = {
  * 粘贴对接文档 → 开始 → 实时进度区（消费 SSE）→ 跑通后三项确认页 → 用户「确认接入」存为目标。
  * 失败时展示原因 + 建议，支持重试 / 手动编辑后接入 / 强存未验证。
  */
-export function ScriptAccessPanel({ onCreate, onCancel, agentModels }: ScriptAccessPanelProps) {
+export function ScriptAccessPanel({ onCreate, onCancel }: ScriptAccessPanelProps) {
   const [phase, setPhase] = useState<Phase>("input");
   const [doc, setDoc] = useState("");
-  const [selectedModelId, setSelectedModelId] = useState(agentModels[0]?.id ?? "");
   const [progress, setProgress] = useState<ProgressItem[]>([]);
   const [pending, setPending] = useState<PendingTarget | null>(null);
   const [doneMessage, setDoneMessage] = useState("");
@@ -105,15 +101,6 @@ export function ScriptAccessPanel({ onCreate, onCancel, agentModels }: ScriptAcc
 
   async function handleStart() {
     if (!doc.trim()) return;
-    const selected = agentModels.find((m) => m.id === selectedModelId);
-    if (!selected) {
-      setFailure({
-        error: "请先选择一个支持 Tool Use 的基础大模型作为接入助手的驱动模型",
-        suggestion: "若下拉为空，请先在「接口与模型管理」接入一个勾选了「支持 Function Calling」的基础大模型。",
-      });
-      setPhase("failed");
-      return;
-    }
     setProgress([]);
     setPending(null);
     setFailure(null);
@@ -123,7 +110,7 @@ export function ScriptAccessPanel({ onCreate, onCancel, agentModels }: ScriptAcc
     const controller = new AbortController();
     abortRef.current = controller;
     try {
-      await startAgentConnect(doc, selected.baseModel, handleEvent, controller.signal);
+      await startAgentConnect(doc, handleEvent, controller.signal);
     } catch (error) {
       if (controller.signal.aborted) return;
       setFailure({
@@ -186,14 +173,7 @@ export function ScriptAccessPanel({ onCreate, onCancel, agentModels }: ScriptAcc
       <ScriptAccessHeader onCancel={onCancel} />
 
       {phase === "input" && (
-        <InputStage
-          doc={doc}
-          onDocChange={setDoc}
-          onStart={handleStart}
-          agentModels={agentModels}
-          selectedModelId={selectedModelId}
-          onSelectModel={setSelectedModelId}
-        />
+        <InputStage doc={doc} onDocChange={setDoc} onStart={handleStart} />
       )}
 
       {(phase === "running" || phase === "asking") && (
@@ -245,8 +225,6 @@ function buildUnverifiedTarget(pending: PendingTarget, rawDoc: string): TargetCo
         ? crypto.randomUUID()
         : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
     name: pending.name?.trim() || "未命名接口",
-    kind: "target",
-    capability: coerceCapability(pending.capability),
     type: "custom",
     contentKind: coerceCapability(pending.capability),
     source: "agent",
@@ -311,41 +289,13 @@ function InputStage({
   doc,
   onDocChange,
   onStart,
-  agentModels,
-  selectedModelId,
-  onSelectModel,
 }: {
   doc: string;
   onDocChange: (value: string) => void;
   onStart: () => void;
-  agentModels: { id: string; name: string; baseModel: BaseModelConfig }[];
-  selectedModelId: string;
-  onSelectModel: (id: string) => void;
 }) {
-  const hasAgentModel = agentModels.length > 0;
   return (
     <div className="flex flex-col gap-3">
-      <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
-        驱动接入助手的基础大模型（需支持 Tool Use）
-      </label>
-      {hasAgentModel ? (
-        <select
-          value={selectedModelId}
-          onChange={(event) => onSelectModel(event.target.value)}
-          className="w-full rounded-lg border border-slate-200 bg-white p-2 text-xs text-slate-700 outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-        >
-          {agentModels.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.name}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
-          暂无可用模型。请先在「接口与模型管理」接入一个勾选了「支持 Function Calling」的基础大模型。
-        </div>
-      )}
-
       <label className="text-xs font-medium text-slate-600 dark:text-slate-300">
         对接文档（粘贴接口说明、鉴权方式、请求/响应示例等）
       </label>
@@ -359,14 +309,14 @@ function InputStage({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          disabled={!doc.trim() || !hasAgentModel}
+          disabled={!doc.trim()}
           onClick={onStart}
           className="rounded-lg bg-brand-700 px-4 py-2 text-xs font-medium text-white transition hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-40"
         >
           开始自动接入
         </button>
         <span className="text-xs text-slate-400">
-          接入助手将使用你选择的基础大模型驱动（key 仅本地存储、走本地后端代理）
+          接入助手固定使用 DeepSeek，需在 .env.local 配置 DASHSCOPE_API_KEY
         </span>
       </div>
     </div>

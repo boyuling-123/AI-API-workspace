@@ -1,10 +1,7 @@
 {
-  "name": "ai-api-workspace",
-  "version": "1.0.0",
-  "description": "AI 接口跑批评测平台 — 统一模型池管理、批量调用对比、AI 自动评分，全本地运行，数据不上传。",
-  "author": "卢柄元",
-  "license": "MIT",
-  "private": false,
+  "name": "llm-eval-platform",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",

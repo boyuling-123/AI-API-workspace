@@ -1,4 +1,4 @@
-export const SCHEMA_VERSION = 8;
+export const SCHEMA_VERSION = 7;
 
 /** 内容模式：文本 / 生图。与 RunMode 正交，各自维护独立草稿。 */
 export type ContentMode = "text" | "image";
@@ -6,13 +6,15 @@ export type ContentMode = "text" | "image";
 /** 运行模式：单条 / 批量。与 ContentMode 正交。 */
 export type RunMode = "single" | "batch";
 
+/** AI 评价模式：横向对比 / 按每条样本标准答案判分。 */
+export type EvaluationMode = "comparison" | "reference";
+
 /**
- * 统一目标类型（v4.8 重构核心）：
- * - 'base-model'：基础大模型，作为平台 AI 能力的驱动源（Agent、裁判、生成器等）。
- * - 'target'：被测算法接口或第三方服务，是测评的对象。
+ * 统一目标类型（v4 重构核心）：
+ * - 'custom'：所有通过接入机制（AI 解析或手动）配置的目标，涵盖大模型/多模态/生图/算法 API。
+ * - 'comfyui'：固定形态（LoRA + prompt + checkpoint），性质不同独立保留。
  */
-export type ModelKind = "base-model" | "target";
-export type BaseModelProtocol = "auto" | "openai" | "anthropic";
+export type TargetType = "custom" | "comfyui";
 
 /**
  * 内容能力标签（置灰/筛选依据），与可用性 status 独立两维。
@@ -28,86 +30,14 @@ export interface Project {
   name: string;
   createTime: number;
   updateTime: number;
-  /** 所有模型/接口接入项（含 base-model 和 target）统一存这里。 */
-  endpoints: ModelEndpoint[];
+  /** 所有目标（含 preset 预置项 + 用户接入项）统一存这里，只存定义。 */
+  targetConfigs: TargetConfig[];
   tasks: Task[];
   /**
    * 所有历史评价（v4.3 板块⑤唯一数据来源）。
    * ④ 评价完成后追加一条 EvaluationRecord，⑤ 从此列表读取。同一 Task 可被多次评价、独立留存不覆盖。
    */
   evaluations: EvaluationRecord[];
-}
-
-/**
- * 统一模型/接口接入项（v4.8 核心数据模型）。
- * 区分“基础大模型”与“被测接口”，是所有 AI 场景过滤和调用的基石。
- */
-export interface ModelEndpoint {
-  id: string;
-  name: string;
-  kind: ModelKind; // 'base-model' | 'target'
-  capability: ContentKind; // 'text' | 'multimodal' | 'image'
-  supportsToolUse?: boolean; // 是否支持 function calling (仅 base-model 有意义)
-  
-  // base-model 专用字段（v4.8 方案1：key 明文存 IndexedDB，随请求传后端）
-  baseUrl?: string;
-  /** 明文 API Key，仅存本地 IndexedDB，绝不写入代码库；调用时随请求传给本地后端。 */
-  apiKey?: string;
-  modelName?: string;
-  /** 基础大模型协议：auto 自动探测，或显式指定 OpenAI / Anthropic。 */
-  protocol?: BaseModelProtocol;
-
-  // target 专用字段（沿用原 TargetConfig 的部分逻辑）
-  type?: "custom" | "comfyui";
-  inputParams?: ParamDef[];
-  requestTemplate?: RequestTemplate;
-  script?: ScriptConfig;
-  comfyui?: ComfyuiConfig;
-  /** target 接入若需鉴权，仍用引用名（服务端 .env.local 注入），与 base-model 的明文 key 区分。 */
-  apiKeyRef?: string;
-
-  // ---- 兼容旧代码的别名 / 冗余字段 ----
-  /** capability 的旧名（部分旧组件仍读此字段），与 capability 保持同值。 */
-  contentKind?: ContentKind;
-  /** 内置预置目标标记（v4.2 遗留，preset=true 走 built-in adapter）。 */
-  preset?: boolean;
-  /** 来源标记（agent 自动接入 / manual 手动填写），仅标记、行为一致。 */
-  source?: "agent" | "manual";
-
-  status: "unverified" | "tested_ok" | "tested_fail" | "unsupported";
-  rawDoc?: string;
-}
-
-/**
- * 从一个 base-model 的 ModelEndpoint 抽取出运行时配置（v4.8）。
- * 供前端在调用 AI 功能时，把选定模型的配置打包随请求传给后端。
- */
-export function toBaseModelConfig(endpoint: ModelEndpoint): BaseModelConfig {
-  return {
-    baseUrl: endpoint.baseUrl ?? "",
-    apiKey: endpoint.apiKey ?? "",
-    modelName: endpoint.modelName ?? "",
-    protocol: endpoint.protocol ?? "auto",
-  };
-}
-
-// 为了兼容旧代码，保留部分别名引用
-export type TargetConfig = ModelEndpoint;
-
-/**
- * 基础大模型运行时配置（v4.8 方案1）。
- * 前端从 IndexedDB 取出选定的 base-model 配置，随每次 AI 请求 body 传给后端。
- * 后端直接用该配置调用模型，不再读 process.env。key 仅存本地、走本地后端代理。
- */
-export interface BaseModelConfig {
-  /** 模型网关地址；可填 OpenAI 兼容或 Anthropic 兼容入口。 */
-  baseUrl: string;
-  /** 明文 API Key（仅本地存储 + 随请求传给本地后端，绝不写入代码库）。 */
-  apiKey: string;
-  /** 实际模型名，如 qwen-max / deepseek-chat。 */
-  modelName: string;
-  /** 协议类型：auto 自动探测，或显式指定 openai / anthropic。 */
-  protocol?: BaseModelProtocol;
 }
 
 export interface Task {
@@ -163,7 +93,48 @@ export interface ResultItem {
   error?: string;
 }
 
-/* 旧 interface TargetConfig 已合并入 ModelEndpoint，此处仅保留类型别名（行83）。 */
+/**
+ * 统一目标配置（v4 重构核心）：一个结构装下所有 custom 目标 + comfyui。
+ * Agent 自动接入（source='agent'）与手动填写（source='manual'）产出结构完全相同，仅来源标记不同，行为一致。
+ * 核心数据原则：此处只存定义，绝不把运行时「值」写回；真值存 TaskInput。
+ */
+export interface TargetConfig {
+  id: string;
+  name: string;
+  type: TargetType;
+  /** 内容能力标签：text | multimodal | image。与 status 独立两维。 */
+  contentKind: ContentKind;
+  /** 由 Agent 自动接入得来 还是 手动填写（仅标记来源，行为完全一致）。 */
+  source: "agent" | "manual";
+  /** 入参定义（AI 解析或手动定义；跑批时由 TaskInput 提供真实值）。 */
+  inputParams: ParamDef[];
+
+  /**
+   * built-in 路径专用（v4.2）：preset 内置目标的写死 HTTP 调用描述。
+   * 由 built-in adapter 读取，平台内部配置、不暴露给用户。preset=true 的目标带此字段。
+   */
+  requestTemplate?: RequestTemplate;
+
+  /**
+   * script 路径专用（v4.2）：用户接入目标的脚本。非 preset 的 custom 目标带此字段。
+   * preset 目标禁止带 script（禁走脚本路径）。
+   */
+  script?: ScriptConfig;
+
+  /** comfyui 专用（固定形态：LoRA + prompt + checkpoint）。 */
+  comfyui?: ComfyuiConfig;
+
+  /**
+   * key 的环境变量引用名（如 'MY_API_KEY'）。前端只存引用名，
+   * 真值在服务端 .env.local，由 getApiKey(keyRef) 注入。为空表示无需鉴权。
+   */
+  apiKeyRef?: string;
+  status: "unverified" | "tested_ok" | "tested_fail" | "unsupported";
+  /** AI 解析时粘贴的文档原文（手动填则可空）。 */
+  rawDoc?: string;
+  /** true=内置预置目标（来自 presetTargets，一般只读/不可删，status 视为 tested_ok）。 */
+  preset?: boolean;
+}
 
 /** custom 目标的请求描述模板。本期仅支持非流式（stream 恒为 false）。 */
 export interface RequestTemplate {
@@ -311,6 +282,10 @@ export interface EvaluationRecord {
   /** 评价条数。 */
   count: number;
   status: "done" | "error";
+  /** 评价模式。旧记录为空时按 comparison 兼容。 */
+  evaluationMode?: EvaluationMode;
+  /** 标准答案模式下使用的 extraFields 列名；auto 表示自动识别。 */
+  expectedAnswerColumn?: string;
   results: {
     inputId: string;
     /** 各目标的多维度评分（v4.5，无总分）。 */
@@ -327,10 +302,10 @@ export interface NormalizedLlmOutput {
 }
 
 export interface LlmChatParams {
-  /** v4.8：前端传入的基础大模型完整配置。 */
-  baseModel: BaseModelConfig;
+  modelId: string;
   prompt: string;
   images?: ImageItem[];
+  maxTokens?: number;
 }
 
 /**

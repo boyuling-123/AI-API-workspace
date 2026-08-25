@@ -1,6 +1,8 @@
-import type { BaseModelConfig, GenDataRequest, TaskInput } from "@/types";
+import type { GenDataRequest, TaskInput } from "@/types";
 import { generateId } from "@/lib/id";
 import { chatWithModel } from "@/services/llmClient";
+
+const GEN_DATA_MAX_TOKENS = 4096;
 
 /**
  * AI 造数据服务（服务端，v4 M10）：复用 DashScope 大模型，强制结构化 JSON 输出，
@@ -86,13 +88,17 @@ function normalizeItem(raw: unknown, wantImage: boolean): TaskInput {
  */
 export async function generateTaskData(
   request: GenDataRequest,
-  baseModel: BaseModelConfig
+  modelId: string
 ): Promise<TaskInput[]> {
   const count = targetCount(request);
   const guide = buildSystemGuide(request);
   const prompt = `${guide}\n\n=== 用户需求 ===\n${request.requirement}\n\n请生成恰好 ${count} 条数据，输出 JSON 数组。`;
 
-  const output = await chatWithModel({ baseModel, prompt });
+  const output = await chatWithModel({
+    modelId,
+    prompt,
+    maxTokens: GEN_DATA_MAX_TOKENS,
+  });
   const jsonText = extractJsonArray(output.outputText);
 
   let parsed: unknown;

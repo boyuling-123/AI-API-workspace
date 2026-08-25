@@ -61,7 +61,7 @@ function isProjectShape(value: unknown): value is Project {
     typeof candidate.id === "string" &&
     typeof candidate.version === "number" &&
     typeof candidate.name === "string" &&
-    Array.isArray(candidate.endpoints) &&
+    Array.isArray(candidate.targetConfigs) &&
     Array.isArray(candidate.tasks)
   );
 }

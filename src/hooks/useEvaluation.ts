@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { BaseModelConfig, EvalDimension, ResultRow, TaskInput } from "@/types";
+import type {
+  EvalDimension,
+  EvaluationMode,
+  ResultRow,
+  TaskInput,
+} from "@/types";
 import type { EvaluateResultPerInput } from "@/services/evaluateService";
 import { runEvaluation } from "@/services/evaluateClient";
 import { generateEvalPromptClient } from "@/services/evalPromptClient";
@@ -22,11 +27,11 @@ export interface UseEvaluationResult {
   error: string | null;
   genDimensions: (
     userRequirement: string,
-    baseModel: BaseModelConfig
+    modelId: string
   ) => Promise<EvalDimension[]>;
   generatePrompt: (
     scenario: string,
-    baseModel: BaseModelConfig,
+    modelId: string,
     dimensions: EvalDimension[],
     targetNames: string[]
   ) => Promise<string>;
@@ -35,8 +40,10 @@ export interface UseEvaluationResult {
     results: ResultRow[];
     scopeInputIds?: string[];
     evalPrompt: string;
-    baseModel: BaseModelConfig;
+    modelId: string;
     dimensions: EvalDimension[];
+    evaluationMode?: EvaluationMode;
+    expectedAnswerKey?: string;
     concurrency: number;
   }) => Promise<EvaluateResultPerInput[]>;
   cancel: () => void;
@@ -54,13 +61,13 @@ export function useEvaluation(): UseEvaluationResult {
   const abortRef = useRef<AbortController | null>(null);
 
   const genDimensions = useCallback<UseEvaluationResult["genDimensions"]>(
-    async (userRequirement, baseModel) => {
+    async (userRequirement, modelId) => {
       setStatus("gen-dim");
       setError(null);
       try {
         const dimensions = await generateDimensionsClient(
           userRequirement,
-          baseModel
+          modelId
         );
         setStatus("idle");
         return dimensions;
@@ -75,13 +82,13 @@ export function useEvaluation(): UseEvaluationResult {
   );
 
   const generatePrompt = useCallback<UseEvaluationResult["generatePrompt"]>(
-    async (scenario, baseModel, dimensions, targetNames): Promise<string> => {
+    async (scenario, modelId, dimensions, targetNames): Promise<string> => {
       setStatus("generating");
       setError(null);
       try {
         const prompt = await generateEvalPromptClient(
           scenario,
-          baseModel,
+          modelId,
           dimensions,
           targetNames
         );
@@ -103,8 +110,10 @@ export function useEvaluation(): UseEvaluationResult {
       results,
       scopeInputIds,
       evalPrompt,
-      baseModel,
+      modelId,
       dimensions,
+      evaluationMode,
+      expectedAnswerKey,
       concurrency,
     }) => {
       const controller = new AbortController();
@@ -121,8 +130,10 @@ export function useEvaluation(): UseEvaluationResult {
           results,
           scopeInputIds,
           evalPrompt,
-          baseModel,
+          modelId,
           dimensions,
+          evaluationMode,
+          expectedAnswerKey,
           concurrency,
           signal: controller.signal,
           onItemDone: (result) => {

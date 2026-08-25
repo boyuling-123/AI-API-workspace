@@ -1,13 +1,23 @@
 "use client";
 
 import { useRef, useState } from "react";
-import type { BaseModelConfig, ContentMode, TaskInput } from "@/types";
+import type { ContentMode, TaskInput } from "@/types";
 import { generateId } from "@/lib/id";
 import {
   downloadImportTemplate,
   parseImportedExcel,
+  parseImportedJsonText,
 } from "@/services/excel";
 import { GenDataPanel } from "./GenDataPanel";
+
+const TABLE_PAGE_SIZE = 50;
+
+type GeneratedTableFocus = "first" | "last" | "keep";
+
+interface GeneratedOptions {
+  focus?: GeneratedTableFocus;
+  message?: string;
+}
 
 interface BatchInputProps {
   projectName: string;
@@ -17,8 +27,10 @@ interface BatchInputProps {
   contentMode: ContentMode;
   /** 选中目标所需列，作为 AI 造数据的列约束。 */
   targetColumns: string[];
-  /** v4.8：AI 造数据可用的基础大模型候选（已按内容模式过滤）。 */
-  genDataModels: { id: string; name: string; baseModel: BaseModelConfig }[];
+}
+
+function pageForLength(length: number): number {
+  return Math.max(1, Math.ceil(length / TABLE_PAGE_SIZE));
 }
 
 export function BatchInput({
@@ -27,10 +39,14 @@ export function BatchInput({
   onChange,
   contentMode,
   targetColumns,
-  genDataModels,
 }: BatchInputProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importMessage, setImportMessage] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const totalPages = pageForLength(inputs.length);
+  const safePage = Math.min(page, totalPages);
+  const pageStart = (safePage - 1) * TABLE_PAGE_SIZE;
+  const pageItems = inputs.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
 
   async function handleFileChange(
     event: React.ChangeEvent<HTMLInputElement>
@@ -41,14 +57,18 @@ export function BatchInput({
       return;
     }
     try {
-      const buffer = await file.arrayBuffer();
-      const result = parseImportedExcel(buffer);
+      const lowerName = file.name.toLowerCase();
+      const result =
+        lowerName.endsWith(".json") || lowerName.endsWith(".jsonl")
+          ? parseImportedJsonText(await file.text(), file.name)
+          : parseImportedExcel(await file.arrayBuffer());
       onChange(result.inputs);
+      setPage(1);
 
       const messages: string[] = [`已导入 ${result.inputs.length} 条`];
       if (result.unmatchedColumns.length > 0) {
         messages.push(
-          `未识别列已暂存：${result.unmatchedColumns.join("、")}`
+          `额外列已暂存：${result.unmatchedColumns.join("、")}`
         );
       }
       if (result.warnings.length > 0) {
@@ -74,13 +94,27 @@ export function BatchInput({
 
   function addRow() {
     onChange([...inputs, { id: generateId(), prompt: "", images: [] }]);
+    setPage(Math.ceil((inputs.length + 1) / TABLE_PAGE_SIZE));
   }
 
-  function handleGenerated(items: TaskInput[], mode: "append" | "replace") {
+  function handleGenerated(
+    items: TaskInput[],
+    mode: "append" | "replace",
+    options: GeneratedOptions = {}
+  ) {
     const next = mode === "append" ? [...inputs, ...items] : items;
+    const focus = options.focus ?? (mode === "append" ? "last" : "first");
     onChange(next);
+    if (focus === "last") {
+      setPage(pageForLength(next.length));
+    } else if (focus === "keep") {
+      setPage(Math.min(page, pageForLength(next.length)));
+    } else {
+      setPage(1);
+    }
     setImportMessage(
-      `AI 造数据：${mode === "append" ? "追加" : "生成"} ${items.length} 条`
+      options.message ??
+        `AI 造数据：${mode === "append" ? "追加" : "生成"} ${items.length} 条`
     );
   }
 
@@ -99,7 +133,7 @@ export function BatchInput({
           onClick={() => fileInputRef.current?.click()}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm transition hover:bg-gray-50"
         >
-          导入 Excel
+          导入 Excel/JSONL
         </button>
         <button
           type="button"
@@ -112,7 +146,7 @@ export function BatchInput({
           projectName={projectName}
           contentMode={contentMode}
           targetColumns={targetColumns}
-          modelOptions={genDataModels}
+          currentInputs={inputs}
           onGenerated={handleGenerated}
         />
         <span className="ml-auto text-sm text-gray-500">
@@ -121,7 +155,7 @@ export function BatchInput({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".xlsx,.xls"
+          accept=".xlsx,.xls,.json,.jsonl"
           onChange={handleFileChange}
           className="hidden"
         />
@@ -137,6 +171,50 @@ export function BatchInput({
         </p>
       ) : (
         <div className="overflow-x-auto rounded-md border border-gray-200">
+          {inputs.length > TABLE_PAGE_SIZE && (
+            <div className="flex flex-wrap items-center gap-2 border-b border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-500">
+              <span>
+                当前只渲染第 {pageStart + 1} -{" "}
+                {Math.min(pageStart + TABLE_PAGE_SIZE, inputs.length)} 条，
+                共 {inputs.length} 条；下载 Excel 会包含全部数据
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(1)}
+                disabled={safePage <= 1}
+                className="ml-auto rounded border border-gray-300 px-2 py-1 disabled:opacity-40"
+              >
+                回到第一页
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage(Math.max(1, safePage - 1))}
+                disabled={safePage <= 1}
+                className="rounded border border-gray-300 px-2 py-1 disabled:opacity-40"
+              >
+                上一页
+              </button>
+              <span>
+                {safePage} / {totalPages}
+              </span>
+              <button
+                type="button"
+                onClick={() => setPage(Math.min(totalPages, safePage + 1))}
+                disabled={safePage >= totalPages}
+                className="rounded border border-gray-300 px-2 py-1 disabled:opacity-40"
+              >
+                下一页
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage(totalPages)}
+                disabled={safePage >= totalPages}
+                className="rounded border border-indigo-300 px-2 py-1 text-indigo-700 disabled:opacity-40"
+              >
+                跳到最新
+              </button>
+            </div>
+          )}
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-left">
               <tr>
@@ -147,9 +225,11 @@ export function BatchInput({
               </tr>
             </thead>
             <tbody>
-              {inputs.map((input, index) => (
+              {pageItems.map((input, index) => (
                 <tr key={input.id} className="border-t border-gray-100">
-                  <td className="px-3 py-2 text-gray-400">{index + 1}</td>
+                  <td className="px-3 py-2 text-gray-400">
+                    {pageStart + index + 1}
+                  </td>
                   <td className="px-3 py-2">
                     <input
                       value={input.prompt}

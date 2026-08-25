@@ -1,4 +1,4 @@
-import type { BaseModelConfig, EvalDimension } from "@/types";
+import type { EvalDimension } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
 
 /**
@@ -44,12 +44,12 @@ ${buildDimensionsBlock(dimensions)}
 
 export async function generateEvalPrompt(
   scenario: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   dimensions: EvalDimension[] = [],
   targetNames: string[] = []
 ): Promise<string> {
   const guide = buildGuide(dimensions, targetNames);
   const prompt = `${guide}\n\n=== 用户测评场景/要求 ===\n${scenario}\n=== 结束 ===`;
-  const output = await chatWithModel({ baseModel, prompt });
+  const output = await chatWithModel({ modelId, prompt });
   return output.outputText.trim();
 }

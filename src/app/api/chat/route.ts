@@ -16,22 +16,16 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!body.baseModel?.baseUrl || !body.baseModel?.apiKey || !body.baseModel?.modelName) {
+  if (!body.modelId || !body.prompt) {
     return NextResponse.json(
-      { error: "缺少基础大模型配置（baseUrl/apiKey/modelName）" },
-      { status: 400 }
-    );
-  }
-  if (!body.prompt) {
-    return NextResponse.json(
-      { error: "缺少必填参数 prompt" },
+      { error: "缺少必填参数 modelId 或 prompt" },
       { status: 400 }
     );
   }
 
   try {
     const result = await chatWithModel({
-      baseModel: body.baseModel,
+      modelId: body.modelId,
       prompt: body.prompt,
       images: body.images,
     });

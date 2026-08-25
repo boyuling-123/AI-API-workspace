@@ -19,6 +19,7 @@ export interface RunTargetParams {
   images?: ImageItem[];
   paramValues?: Record<string, unknown>;
   signal?: AbortSignal;
+  maxTokens?: number;
   /** 服务端调用源 origin，用于把内置相对路由（如 /api/mock-algo）补全为绝对 url。 */
   baseOrigin?: string;
 }
@@ -64,6 +65,7 @@ export async function runTarget(
     images: params.images,
     paramValues: params.paramValues,
     signal: params.signal,
+    maxTokens: params.maxTokens,
     baseOrigin: params.baseOrigin,
   });
 }

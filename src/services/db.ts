@@ -33,45 +33,21 @@ export async function listProjects(): Promise<Project[]> {
 
 /**
  * 判断一条持久化记录是否为当前 schema 版本且结构完整。
- * v4.8 迁移逻辑：如果检测到旧版 targetConfigs，自动将其转换为 endpoints。
+ * 旧版（缺 targetConfigs / 版本不匹配）的项目会被判定为不兼容，
+ * 上层据此弃用并重建，避免用 undefined 字段渲染导致崩溃。
  */
 export function isCompatibleProject(value: unknown): value is Project {
   if (typeof value !== "object" || value === null) {
     return false;
   }
   const candidate = value as Record<string, unknown>;
-
-  // 1. 基础字段校验
-  if (
-    typeof candidate.id !== "string" ||
-    typeof candidate.name !== "string" ||
-    !Array.isArray(candidate.tasks)
-  ) {
-    return false;
-  }
-
-  // 2. 版本与核心字段校验（v4.8 要求 endpoints）
-  if (candidate.version === SCHEMA_VERSION) {
-    return Array.isArray(candidate.endpoints);
-  }
-
-  // 3. 旧版本迁移逻辑 (v4.7 -> v4.8)
-  if (candidate.version === 7 && Array.isArray(candidate.targetConfigs)) {
-    // 执行原地迁移：将 targetConfigs 映射为 endpoints
-    const oldTargets = candidate.targetConfigs as any[];
-    candidate.endpoints = oldTargets.map((t) => ({
-      ...t,
-      kind: t.preset ? "base-model" : "target", // 简单启发式：预置的视为 base-model，用户接入的视为 target
-      capability: t.contentKind,
-      supportsToolUse: t.preset, // 预置模型假设支持 Tool Use
-      modelName: t.name,
-    }));
-    candidate.version = SCHEMA_VERSION;
-    delete candidate.targetConfigs;
-    return true;
-  }
-
-  return false;
+  return (
+    candidate.version === SCHEMA_VERSION &&
+    typeof candidate.id === "string" &&
+    typeof candidate.name === "string" &&
+    Array.isArray(candidate.targetConfigs) &&
+    Array.isArray(candidate.tasks)
+  );
 }
 
 /**

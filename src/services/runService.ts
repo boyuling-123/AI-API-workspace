@@ -6,7 +6,7 @@ interface CallUnit {
   inputId: string;
   targetId: string;
   targetName: string;
-  contentKind?: ContentKind;
+  contentKind: ContentKind;
   prompt: string;
   input: TaskInput;
   target: TargetConfig;
@@ -48,7 +48,7 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
         inputId: input.id,
         targetId,
         targetName: target.name,
-        contentKind: target.contentKind ?? target.capability,
+        contentKind: target.contentKind,
         prompt: input.prompt,
         input,
         target,
@@ -97,7 +97,7 @@ async function callTarget(
     const paramValues: Record<string, unknown> = {
       ...(unit.input.extraFields ?? {}),
     };
-    const hasPromptParam = (target.inputParams ?? []).some(
+    const hasPromptParam = target.inputParams.some(
       (def) => def.name === "prompt"
     );
     if (hasPromptParam && paramValues.prompt === undefined) {

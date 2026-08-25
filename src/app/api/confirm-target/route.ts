@@ -36,14 +36,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "草稿缺少脚本代码 code" }, { status: 400 });
   }
 
-  const resolvedCapability = coerceCapability(pending.capability);
   const target: TargetConfig = {
     id: generateId(),
     name: pending.name?.trim() || "未命名接口",
-    kind: "target",
-    capability: resolvedCapability,
     type: "custom",
-    contentKind: resolvedCapability,
+    contentKind: coerceCapability(pending.capability),
     source: "agent",
     inputParams: normalizeParams(pending.inputParams),
     apiKeyRef: pending.apiKeyRef || undefined,

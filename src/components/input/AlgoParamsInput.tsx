@@ -62,7 +62,7 @@ export function AlgoParamsInput({
 function collectExtraParams(algoConfigs: TargetConfig[]): ParamDef[] {
   const byName = new Map<string, ParamDef>();
   for (const config of algoConfigs) {
-    for (const param of config.inputParams ?? []) {
+    for (const param of config.inputParams) {
       if (param.name === "prompt") continue;
       if (param.type === "image") continue;
       if (!byName.has(param.name)) byName.set(param.name, param);

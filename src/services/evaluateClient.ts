@@ -1,10 +1,14 @@
-import type { BaseModelConfig, EvalDimension, ResultRow, TaskInput } from "@/types";
+import type { EvalDimension, EvaluationMode, ResultRow, TaskInput } from "@/types";
 import type {
   EvaluateInputItem,
   EvaluateResultPerInput,
 } from "@/services/evaluateService";
 import { runWithPool } from "@/lib/taskRunner";
 import { compressImagesForJudge } from "@/lib/imageCompress";
+import {
+  AUTO_EXPECTED_ANSWER_KEY,
+  resolveExpectedAnswer,
+} from "@/services/expectedAnswer";
 
 /**
  * 前端逐条评价编排（M9）：
@@ -19,10 +23,13 @@ export interface EvaluateRunParams {
   /** 评价范围：仅评这些 inputId；为空/undefined 表示全量。 */
   scopeInputIds?: string[];
   evalPrompt: string;
-  /** v4.8：前端选定的裁判模型完整配置。 */
-  baseModel: BaseModelConfig;
+  modelId: string;
   /** 本次选定维度（v4.5），裁判须逐项打分。 */
   dimensions: EvalDimension[];
+  /** 横向对比 / 标准答案模式。 */
+  evaluationMode?: EvaluationMode;
+  /** 标准答案模式下使用的 extraFields 列名。 */
+  expectedAnswerKey?: string;
   concurrency: number;
   signal?: AbortSignal;
   onItemDone?: (result: EvaluateResultPerInput) => void;
@@ -31,16 +38,20 @@ export interface EvaluateRunParams {
 
 async function buildEvaluateItem(
   input: TaskInput,
-  resultRow: ResultRow
+  resultRow: ResultRow,
+  expectedAnswerKey: string = AUTO_EXPECTED_ANSWER_KEY
 ): Promise<EvaluateInputItem> {
   const compressedImages =
     input.images.length > 0
       ? await compressImagesForJudge(input.images)
       : undefined;
 
+  const expected = resolveExpectedAnswer(input, expectedAnswerKey);
   return {
     inputId: input.id,
     prompt: input.prompt,
+    expectedOutput: expected.value || undefined,
+    expectedOutputKey: expected.key ?? undefined,
     images: compressedImages,
     targets: resultRow.items
       .filter((item) => item.status === "success")
@@ -56,14 +67,15 @@ async function buildEvaluateItem(
 async function callEvaluate(
   item: EvaluateInputItem,
   evalPrompt: string,
-  baseModel: BaseModelConfig,
+  modelId: string,
   dimensions: EvalDimension[],
+  evaluationMode: EvaluationMode,
   signal: AbortSignal
 ): Promise<EvaluateResultPerInput> {
   const response = await fetch("/api/evaluate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ item, evalPrompt, baseModel, dimensions }),
+    body: JSON.stringify({ item, evalPrompt, modelId, dimensions, evaluationMode }),
     signal,
   });
   const data = await response.json();
@@ -81,8 +93,10 @@ export async function runEvaluation(
     results,
     scopeInputIds,
     evalPrompt,
-    baseModel,
+    modelId,
     dimensions,
+    evaluationMode = "comparison",
+    expectedAnswerKey = AUTO_EXPECTED_ANSWER_KEY,
     concurrency,
     signal,
     onItemDone,
@@ -94,6 +108,12 @@ export async function runEvaluation(
 
   const targetInputs = inputs.filter((input) => {
     if (scopeSet && !scopeSet.has(input.id)) return false;
+    if (
+      evaluationMode === "reference" &&
+      !resolveExpectedAnswer(input, expectedAnswerKey).value
+    ) {
+      return false;
+    }
     const row = resultByInputId.get(input.id);
     return Boolean(row && row.items.some((item) => item.status === "success"));
   });
@@ -106,13 +126,14 @@ export async function runEvaluation(
     signal,
     runOne: async (input, runSignal) => {
       const row = resultByInputId.get(input.id)!;
-      const item = await buildEvaluateItem(input, row);
+      const item = await buildEvaluateItem(input, row, expectedAnswerKey);
       try {
         const evaluated = await callEvaluate(
           item,
           evalPrompt,
-          baseModel,
+          modelId,
           dimensions,
+          evaluationMode,
           runSignal
         );
         collected.push(evaluated);

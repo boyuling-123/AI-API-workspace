@@ -1,10 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { BaseModelConfig, EvalDimension, ResultRow, TaskInput } from "@/types";
+import type {
+  EvalDimension,
+  EvaluationMode,
+  ResultRow,
+  TaskInput,
+} from "@/types";
 import type { UseEvaluationResult } from "@/hooks/useEvaluation";
 import type { EvaluateResultPerInput } from "@/services/evaluateService";
 import { EvaluationResults } from "./EvaluationResults";
+import {
+  AUTO_EXPECTED_ANSWER_KEY,
+  collectExtraFieldKeys,
+  resolveExpectedAnswer,
+  sortExpectedAnswerKeys,
+} from "@/services/expectedAnswer";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -14,12 +25,40 @@ interface CandidateDimension extends EvalDimension {
 /** 候选维度总数上限（含 AI 生成 + 手动添加）。 */
 const MAX_DIMENSIONS = 15;
 
+const REFERENCE_DEFAULT_SCENARIO =
+  "对微调模型输出进行标准答案评测。逐条检查模型输出是否和标准答案语义一致、JSON/工具调用格式是否合规、关键字段是否完整，输出可直接用于上线判定。";
+
+const REFERENCE_DEFAULT_PROMPT = `你正在评测微调模型输出。请严格对照每条样本的标准答案，判断模型输出是否正确。
+
+评分重点：
+- 如果标准答案是 JSON / 工具调用，必须检查 JSON 可解析性、tool 是否正确、arguments 字段和值是否匹配、need_user_confirmation 逻辑是否正确。
+- 允许字段顺序不同、自然语言理由略有差异，但不允许类别/工具错判、关键参数缺失、格式不可用或臆测补全。
+- 信息不足时，模型应按标准答案追问；不能擅自生成缺失参数。
+- 只根据本条输入、标准答案和模型输出判分，不要因为其他目标表现较差而相对给高分。`;
+
+const REFERENCE_DEFAULT_DIMENSIONS: EvalDimension[] = [
+  {
+    name: "答案正确性",
+    desc: "模型输出是否与标准答案在语义、工具选择、类别判断或核心结论上匹配。",
+  },
+  {
+    name: "格式合规性",
+    desc: "输出格式是否满足要求，尤其是 JSON 可解析性、字段名、字段类型和白名单约束。",
+  },
+  {
+    name: "关键字段完整性",
+    desc: "是否包含标准答案要求的关键字段、参数、追问字段或必要理由。",
+  },
+  {
+    name: "可上线程度",
+    desc: "综合判断该输出是否可以直接进入业务链路，或仅需轻微人工修正。",
+  },
+];
+
 interface JudgeModel {
   id: string;
   name: string;
   supportsImage: boolean;
-  /** v4.8：该裁判模型对应的基础大模型完整配置（baseUrl/apiKey/modelName）。 */
-  baseModel: BaseModelConfig;
 }
 
 /** 一次评价完成后回传的元信息（v4.3；v4.5 加 dimensions：用于在上层构建 EvaluationRecord）。 */
@@ -28,6 +67,8 @@ export interface EvaluationCompletePayload {
   userRequirement: string;
   dimensions: EvalDimension[];
   evalPrompt: string;
+  evaluationMode: EvaluationMode;
+  expectedAnswerColumn?: string;
   scope: "all" | "selected";
   selectedInputIds?: string[];
   results: EvaluateResultPerInput[];
@@ -83,6 +124,11 @@ export function EvaluationPanel({
   const [scenario, setScenario] = useState("");
   const [evalPrompt, setEvalPrompt] = useState("");
   const [judgeModelId, setJudgeModelId] = useState("");
+  const [evaluationMode, setEvaluationMode] =
+    useState<EvaluationMode>("comparison");
+  const [expectedAnswerKey, setExpectedAnswerKey] = useState(
+    AUTO_EXPECTED_ANSWER_KEY
+  );
   const [scopeMode, setScopeMode] = useState<ScopeMode>("all");
   const [selectedInputIds, setSelectedInputIds] = useState<string[]>([]);
   // 候选维度列表（待办勾选式）：AI 生成或手动添加，selected 决定是否纳入本次评价。
@@ -94,12 +140,6 @@ export function EvaluationPanel({
   const multimodalModels = useMemo(
     () => judgeModels.filter((model) => model.supportsImage),
     [judgeModels]
-  );
-
-  // 当前选中裁判模型对应的基础大模型配置（v4.8：随请求传后端，不再用 modelId 让后端查环境变量）。
-  const selectedBaseModel = useMemo(
-    () => judgeModels.find((model) => model.id === judgeModelId)?.baseModel,
-    [judgeModels, judgeModelId]
   );
   const judgeDisabled =
     judgeModels.length === 0 || (hasImage && multimodalModels.length === 0);
@@ -113,6 +153,21 @@ export function EvaluationPanel({
     if (scopeMode === "all") return evaluableInputIds;
     return selectedInputIds.filter((id) => evaluableInputIds.includes(id));
   }, [scopeMode, selectedInputIds, evaluableInputIds]);
+
+  const extraFieldKeys = useMemo(
+    () => sortExpectedAnswerKeys(collectExtraFieldKeys(inputs)),
+    [inputs]
+  );
+
+  const expectedCoverage = useMemo(() => {
+    const scopedInputs = inputs.filter((input) =>
+      effectiveScopeIds.includes(input.id)
+    );
+    const withExpected = scopedInputs.filter(
+      (input) => resolveExpectedAnswer(input, expectedAnswerKey).value
+    );
+    return { total: scopedInputs.length, matched: withExpected.length };
+  }, [effectiveScopeIds, expectedAnswerKey, inputs]);
 
   // 本次将对比的目标名单（去重），用于喂给 AI 生成评价 Prompt。
   const targetNames = useMemo(() => {
@@ -136,10 +191,10 @@ export function EvaluationPanel({
   // AI 按测评需求生成候选维度 → 追加到待办列表（默认不勾选，由用户自行挑选）。
   // 再次点击为「追加一批」：不覆盖已有维度（尤其已勾选的），按维度名去重，总数封顶 15 条。
   const handleGenDimensions = async () => {
-    if (!scenario.trim() || !judgeModelId || !selectedBaseModel) return;
+    if (!scenario.trim() || !judgeModelId) return;
     if (candidates.length >= MAX_DIMENSIONS) return;
     try {
-      const generated = await genDimensions(scenario.trim(), selectedBaseModel);
+      const generated = await genDimensions(scenario.trim(), judgeModelId);
       setCandidates((prev) => {
         const existingNames = new Set(
           prev.map((dim) => dim.name.trim()).filter((name) => name.length > 0)
@@ -152,6 +207,22 @@ export function EvaluationPanel({
       });
     } catch {
       // 错误已由 hook 写入 error 状态
+    }
+  };
+
+  const handleModeChange = (mode: EvaluationMode) => {
+    setEvaluationMode(mode);
+    if (mode === "reference") {
+      if (!scenario.trim()) setScenario(REFERENCE_DEFAULT_SCENARIO);
+      if (!evalPrompt.trim()) setEvalPrompt(REFERENCE_DEFAULT_PROMPT);
+      if (candidates.length === 0) {
+        setCandidates(
+          REFERENCE_DEFAULT_DIMENSIONS.map((dimension) => ({
+            ...dimension,
+            selected: true,
+          }))
+        );
+      }
     }
   };
 
@@ -183,11 +254,11 @@ export function EvaluationPanel({
   };
 
   const handleGenerate = async () => {
-    if (!scenario.trim() || !judgeModelId || !selectedBaseModel) return;
+    if (!scenario.trim() || !judgeModelId) return;
     try {
       const prompt = await generatePrompt(
         scenario.trim(),
-        selectedBaseModel,
+        judgeModelId,
         validDimensions,
         targetNames
       );
@@ -198,7 +269,7 @@ export function EvaluationPanel({
   };
 
   const handleEvaluate = async () => {
-    if (!evalPrompt.trim() || !judgeModelId || !selectedBaseModel) return;
+    if (!evalPrompt.trim() || !judgeModelId) return;
     if (effectiveScopeIds.length === 0) return;
     if (validDimensions.length === 0) return;
     const collected = await evaluate({
@@ -206,8 +277,10 @@ export function EvaluationPanel({
       results,
       scopeInputIds: effectiveScopeIds,
       evalPrompt: evalPrompt.trim(),
-      baseModel: selectedBaseModel,
+      modelId: judgeModelId,
       dimensions: validDimensions,
+      evaluationMode,
+      expectedAnswerKey,
       concurrency,
     });
     // 评价跑完（非取消、有结果）→ 回传上层生成 EvaluationRecord 存盘（v4.3 板块⑤）。
@@ -217,6 +290,9 @@ export function EvaluationPanel({
         userRequirement: scenario.trim(),
         dimensions: validDimensions,
         evalPrompt: evalPrompt.trim(),
+        evaluationMode,
+        expectedAnswerColumn:
+          evaluationMode === "reference" ? expectedAnswerKey : undefined,
         scope: scopeMode,
         selectedInputIds:
           scopeMode === "selected" ? [...effectiveScopeIds] : undefined,
@@ -260,6 +336,7 @@ export function EvaluationPanel({
     !!evalPrompt.trim() &&
     !!judgeModelId &&
     validDimensions.length > 0 &&
+    (evaluationMode === "comparison" || expectedCoverage.matched > 0) &&
     effectiveScopeIds.length > 0 &&
     !isRunning;
 
@@ -326,6 +403,77 @@ export function EvaluationPanel({
               placeholder="例如：评价各模型对商品文案的吸引力、信息完整度与合规性，重点关注卖点突出程度。"
               className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
             />
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50/70 p-3">
+            <label className="text-sm font-medium text-gray-700">
+              评价模式
+            </label>
+            <div className="grid gap-2 md:grid-cols-2">
+              <label className="flex cursor-pointer gap-2 rounded-md border border-white bg-white px-3 py-2 text-sm shadow-sm">
+                <input
+                  type="radio"
+                  checked={evaluationMode === "comparison"}
+                  onChange={() => handleModeChange("comparison")}
+                  disabled={judgeDisabled}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block font-medium text-gray-800">
+                    横向对比
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    适合多个模型互相比质量，不依赖标准答案。
+                  </span>
+                </span>
+              </label>
+              <label className="flex cursor-pointer gap-2 rounded-md border border-white bg-white px-3 py-2 text-sm shadow-sm">
+                <input
+                  type="radio"
+                  checked={evaluationMode === "reference"}
+                  onChange={() => handleModeChange("reference")}
+                  disabled={judgeDisabled}
+                  className="mt-0.5"
+                />
+                <span>
+                  <span className="block font-medium text-gray-800">
+                    标准答案判分
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    逐条读取 expected_output / 标准答案列，让 AI 对照判分。
+                  </span>
+                </span>
+              </label>
+            </div>
+
+            {evaluationMode === "reference" && (
+              <div className="grid gap-2 md:grid-cols-[minmax(0,260px),1fr]">
+                <label className="flex flex-col gap-1 text-xs text-gray-600">
+                  标准答案字段
+                  <select
+                    value={expectedAnswerKey}
+                    onChange={(event) =>
+                      setExpectedAnswerKey(event.target.value)
+                    }
+                    disabled={judgeDisabled}
+                    className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm disabled:bg-gray-100"
+                  >
+                    <option value={AUTO_EXPECTED_ANSWER_KEY}>
+                      自动识别推荐字段
+                    </option>
+                    {extraFieldKeys.map((key) => (
+                      <option key={key} value={key}>
+                        {key}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="self-end rounded-md bg-white px-3 py-2 text-xs text-gray-500">
+                  当前范围内 {expectedCoverage.matched}/{expectedCoverage.total} 条有标准答案；
+                  无标准答案的行会自动跳过。推荐列名：expected_output、standard_answer、answer、标准答案。
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2.5 rounded-md border border-indigo-100 bg-indigo-50/40 p-3">

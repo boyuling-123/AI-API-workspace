@@ -33,16 +33,13 @@ export function mapParseResultToTargetConfig(
   const bodyTemplate =
     parsed.bodyTemplate ?? JSON.stringify({ prompt: "{{prompt}}" });
 
-  const resolvedCapability = parsed.contentKind ?? "text";
   return {
     id: generateId(),
     name: deriveName(parsed),
-    kind: "target" as const,
-    capability: resolvedCapability,
-    type: "custom" as const,
-    contentKind: resolvedCapability,
-    source: "agent" as const,
-    status: "unverified" as const,
+    type: "custom",
+    contentKind: parsed.contentKind ?? "text",
+    source: "agent",
+    status: "unverified",
     apiKeyRef: parsed.suggestedKeyRef ?? "",
     rawDoc,
     inputParams,
