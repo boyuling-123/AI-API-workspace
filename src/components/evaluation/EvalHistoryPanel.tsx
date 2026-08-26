@@ -476,6 +476,7 @@ function OutputCell({ item, onImageClick }: OutputCellProps) {
       {hasImages && (
         <div className="flex flex-wrap gap-2">
           {item.outputImages!.map((src, index) => (
+            // eslint-disable-next-line @next/next/no-img-element -- Output may use a data URL or an arbitrary user endpoint.
             <img
               key={`${item.targetId}-img-${index}`}
               src={src}

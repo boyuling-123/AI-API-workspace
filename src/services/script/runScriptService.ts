@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { join, extname } from "node:path";
 import type { RunScriptResult, ScriptLang } from "@/types";
 import { RUNTIME_CONFIG } from "@/config/runtime";
+import { redactSensitiveText } from "@/lib/redactSensitive";
 
 /**
  * 脚本子进程执行服务（服务端，v4.2 决策 2/3/5/6/7）。
@@ -134,6 +135,8 @@ function scanOutputDirImages(outputDir: string): string[] {
 export async function runScript(input: RunScriptInput): Promise<RunScriptResult> {
   const { lang, code, paramValues, apiKeyEnvName, apiKeyValue } = input;
   const startTime = Date.now();
+  const redactOutput = (value: string) =>
+    redactSensitiveText(value, { knownSecrets: [apiKeyValue] });
 
   // 每次执行独立子目录，避免并发产物互相覆盖（决策6）。
   const outputDir = mkdtempSync(join(tmpdir(), "evalscript-"));
@@ -192,8 +195,8 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
       clearTimeout(timer);
       resolve({
         ok: false,
-        error: `脚本启动失败：${err.message}`,
-        stderr,
+        error: redactOutput(`脚本启动失败：${err.message}`),
+        stderr: redactOutput(stderr),
         exitCode: null,
         envInfo: probeEnv(lang),
         latencyMs: Date.now() - startTime,
@@ -208,7 +211,7 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
         resolve({
           ok: false,
           error: `脚本执行超时（超过 ${RUNTIME_CONFIG.scriptTimeoutMs / 1000}s），已终止进程`,
-          stderr,
+          stderr: redactOutput(stderr),
           exitCode,
           envInfo: probeEnv(lang),
           latencyMs,
@@ -224,7 +227,7 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
             exitCode === 0
               ? "脚本未输出 RESULT_JSON 标记结果，无法判定成功（请检查脚本是否按约定输出）"
               : `脚本异常退出（exitCode=${exitCode}）`,
-          stderr,
+          stderr: redactOutput(stderr),
           exitCode,
           envInfo: probeEnv(lang),
           latencyMs,
@@ -239,7 +242,7 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
         resolve({
           ok: false,
           error: "RESULT_JSON 标记内的内容不是合法 JSON",
-          stderr,
+          stderr: redactOutput(stderr),
           exitCode,
           envInfo: probeEnv(lang),
           latencyMs,
@@ -247,9 +250,11 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
         return;
       }
 
-      const text = typeof parsed.text === "string" ? parsed.text : "";
+      const text = typeof parsed.text === "string" ? redactOutput(parsed.text) : "";
       const declaredImages = Array.isArray(parsed.images)
-        ? parsed.images.filter((i): i is string => typeof i === "string")
+        ? parsed.images
+            .filter((i): i is string => typeof i === "string")
+            .map(redactOutput)
         : [];
 
       const normalizedImages = declaredImages
@@ -264,7 +269,7 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
         resolve({
           ok: false,
           error: "脚本输出结果为空（text 与 images 均为空），判为失败",
-          stderr,
+          stderr: redactOutput(stderr),
           exitCode,
           envInfo: probeEnv(lang),
           latencyMs,
@@ -277,7 +282,7 @@ export async function runScript(input: RunScriptInput): Promise<RunScriptResult>
         text,
         images,
         outputDir,
-        rawOutput: stdout,
+        rawOutput: redactOutput(stdout),
         latencyMs,
       });
     });

@@ -71,3 +71,19 @@
 - CLI-005 只验证了引用式导入深链，反向交接仍未实现，因此继续保持 Demo。
 
 下一步：提交验收回写，等待最终 CI 通过后合并 PR #11，再开始 PR 02C。
+
+## 2026-08-26：PR 02C 启动
+
+- PR #11 两道 CI 通过后，以非强推 fast-forward 推进 `main`；GitHub 已确认 PR 状态为 Merged。
+- 从最新 `main` 创建短生命周期分支 `codex/chore-quality-debt`。
+- 修复 Hook 依赖不完整、不稳定数组依赖和动态用户图片 lint 说明，`npm run lint` 从 9 条警告降为零警告。
+- 新增统一 `redactSensitiveText`，在脚本成功输出、失败 stderr、安装输出、Agent Prompt、参数摘要与模型错误边界脱敏。
+- 新增 5 项脱敏测试，其中 2 项直接运行真实 Node 子进程，验证注入 Key 不会从成功结果、原始输出或失败 stderr 返回。
+- 首轮 Secret Scan 拦截到测试中的 AWS 形态假 Token；样例改为运行时拼接后通过，扫描规则未被放宽或绕过。
+- Vitest 增加 `@/` 别名解析并保留原有 Node 环境、测试范围和 30 秒超时约束，使服务级测试可直接导入真实源码。
+- 执行非破坏性 `npm audit fix`，升级 `js-yaml` 与三处 `brace-expansion`，高危依赖由 8 个降为 6 个。
+- 剩余风险中，Next/PostCSS 与 ESLint/Glob 只能通过框架大版本迁移处理，`xlsx@0.18.5` 无 npm 官方修复版；本 PR 不使用 `--force` 制造破坏性升级。
+- 本地 `npm run quality` 通过：185 个仓库文件扫描、零 lint 警告、类型检查、16 项单测、2 项压力测试和 19 路由生产构建全部成功。
+- 本地 6 项 Playwright 用户路径与可访问性回归通过，未触发任何 `/api/**` 或付费模型调用。
+
+下一步：独立干净工作树复验、提交并推送分支、创建 PR 02C，等待 GitHub CI。

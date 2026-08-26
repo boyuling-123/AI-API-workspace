@@ -45,14 +45,21 @@
 - [x] 独立干净工作树执行全新 `npm ci`、完整 quality 和 6 项 Playwright 测试。
 - [x] 推送分支并创建 [PR #11](https://github.com/boyuling-123/AI-API-workspace/pull/11)。
 - [x] 核心质量与 Playwright 两道 GitHub CI 通过，DOC-006 升级为“已验证”。
+- [x] 非强推 fast-forward 合并 PR #11，GitHub 已确认 Merged。
 
-## 下一任务：PR 02C 质量债务与日志脱敏
+## 进行中：PR 02C 质量债务与日志脱敏
 
-状态：Ready（PR #11 合并后开始）
+分支：`codex/chore-quality-debt`
 
-- 清理现有 React Hook 与 `<img>` lint 警告。
-- 评估并逐项处理剩余 8 个高危依赖问题，禁止直接使用破坏性 `--force` 升级。
-- 增加统一运行日志脱敏底线测试。
+- [x] 清理 9 条 React Hook 与动态 `<img>` lint 警告，lint 达到零警告。
+- [x] 使用非破坏性 `npm audit fix` 更新 4 个传递依赖，高危项由 8 个降为 6 个。
+- [x] 不使用 `--force`；将 Next/ESLint 大版本迁移和无修复版的 `xlsx` 风险登记为后续专题。
+- [x] 增加统一服务端脱敏器并接入脚本输出、安装输出、Agent Prompt 与反馈边界。
+- [x] 增加脱敏单测和真实 Node 子进程成功、失败泄漏测试。
+- [x] 本地完整 quality 与 6 项 Playwright 回归通过。
+- [ ] 独立干净工作树执行全新 `npm ci`、完整 quality 和 Playwright。
+- [ ] 提交、推送并创建 PR 02C。
+- [ ] GitHub CI 通过后更新证据并合并。
 
 ## 硬门禁
 

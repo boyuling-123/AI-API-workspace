@@ -38,6 +38,7 @@ interface WorkspaceBodyProps {
 
 export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   const draft = useInputDraft(project.id);
+  const { setContentMode, setRunMode } = draft;
   const { targetIds, setTargetIds } = useTargetSelection(project.id);
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   // 需求二：AI 评价数据源洁癖——仅当从③带入批次时有值，离开板块④即清空。
@@ -58,12 +59,12 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       setActiveTab(tab);
     }
     if (params.get("draft_id") || params.get("import_id")) {
-      draft.setRunMode("batch");
+      setRunMode("batch");
       if (contentMode === "text" || contentMode === "image") {
-        draft.setContentMode(contentMode);
+        setContentMode(contentMode);
       }
     }
-  }, []);
+  }, [setContentMode, setRunMode]);
   const handleRunComplete = useCallback(
     (payload: RunCompletePayload) => {
       const task: Task = {
@@ -84,11 +85,14 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
         tasks: [...current.tasks, task],
       }));
     },
-    [updateProject]
+    [draft.contentMode, updateProject]
   );
 
   // 兜底：极端情况下（脏数据 / 迁移中途）targetConfigs 可能缺失，避免渲染崩溃。
-  const algoConfigs = project.targetConfigs ?? [];
+  const algoConfigs = useMemo(
+    () => project.targetConfigs ?? [],
+    [project.targetConfigs]
+  );
 
   const handleApiConfigsChange = useCallback(
     (configs: TargetConfig[]) => {

@@ -13,6 +13,7 @@ import {
 import { getApiKey } from "@/services/getApiKey";
 import { runScript } from "@/services/script/runScriptService";
 import { installPackages } from "@/services/script/installPackageService";
+import { redactSensitiveText } from "@/lib/redactSensitive";
 
 /**
  * Agent 自动接入循环（v4.4 核心）。
@@ -92,7 +93,7 @@ async function callDeepseek(
   const data = (await response.json()) as AnthropicResponse;
   if (!response.ok) {
     const message = data.error?.message ?? data.message ?? `HTTP ${response.status}`;
-    throw new Error(message);
+    throw new Error(redactSensitiveText(message, { knownSecrets: [apiKey] }));
   }
   return data;
 }
@@ -144,7 +145,9 @@ async function execRunScript(
   const snapshot: LastRunSnapshot = {
     code,
     apiKeyRef: apiKeyEnvName,
-    lastTestInput: JSON.stringify(paramValues),
+    lastTestInput: redactSensitiveText(JSON.stringify(paramValues), {
+      knownSecrets: [apiKeyValue],
+    }),
   };
 
   if (result.ok) {
@@ -189,7 +192,9 @@ function truncate(text: string, max: number): string {
 /** 简短摘要某次 tool_use 的入参，用于 SSE 进度展示。 */
 function summarizeToolInput(name: string, input: Record<string, unknown>): string {
   if (name === "run_script") {
-    const params = input.paramValues ? JSON.stringify(input.paramValues) : "{}";
+    const params = redactSensitiveText(
+      input.paramValues ? JSON.stringify(input.paramValues) : "{}"
+    );
     return `运行脚本测试，参数 ${truncate(params, 120)}`;
   }
   if (name === "install_package") {
@@ -245,10 +250,11 @@ function pruneExpiredSessions(): void {
  */
 export async function runAgentConnect(doc: string, emit: EmitFn): Promise<void> {
   pruneExpiredSessions();
+  const safeDoc = redactSensitiveText(doc);
   const messages: AgentMessage[] = [
     {
       role: "user",
-      content: `这是需要接入的 API 对接文档，请按流程自主完成接入并最终调用 save_target：\n\n${doc}`,
+      content: `这是需要接入的 API 对接文档，请按流程自主完成接入并最终调用 save_target：\n\n${safeDoc}`,
     },
   ];
   await runLoop(messages, null, 0, emit);
@@ -279,7 +285,7 @@ export async function resumeAgentConnect(
     {
       type: "tool_result",
       tool_use_id: state.askToolUseId,
-      content: `用户回复：${answer}`,
+      content: `用户回复：${redactSensitiveText(answer)}`,
     },
   ];
   const messages = [...state.messages, { role: "user" as const, content: toolResults }];
@@ -396,7 +402,7 @@ async function runLoop(
         toolResults.push({
           type: "tool_result",
           tool_use_id: toolUse.id,
-          content: truncate(result.output, 1500),
+          content: truncate(redactSensitiveText(result.output), 1500),
           is_error: !result.ok,
         });
         continue;

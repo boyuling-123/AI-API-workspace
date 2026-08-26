@@ -1,5 +1,6 @@
 import { execFile } from "node:child_process";
 import { execSync } from "node:child_process";
+import { redactSensitiveText } from "@/lib/redactSensitive";
 
 /**
  * pip 安装缺失包（v4.4 Agent 工具 install_package 的后端实现）。
@@ -47,13 +48,15 @@ export async function installPackages(
       args,
       { timeout: INSTALL_TIMEOUT_MS, windowsHide: isWindows },
       (error, stdout, stderr) => {
-        const output = `${stdout ?? ""}${stderr ?? ""}`.trim();
+        const output = redactSensitiveText(`${stdout ?? ""}${stderr ?? ""}`.trim());
         if (error) {
           resolve({
             ok: false,
             output:
               output ||
-              `pip 安装失败：${error.message}（请确认本机已安装 Python 与 pip 并加入 PATH）`,
+              redactSensitiveText(
+                `pip 安装失败：${error.message}（请确认本机已安装 Python 与 pip 并加入 PATH）`
+              ),
           });
           return;
         }

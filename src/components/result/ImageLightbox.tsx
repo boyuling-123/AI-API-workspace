@@ -30,6 +30,7 @@ export function ImageLightbox({ src, onClose }: ImageLightboxProps) {
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6"
       onClick={onClose}
     >
+      {/* eslint-disable-next-line @next/next/no-img-element -- Output may use a data URL or an arbitrary user endpoint. */}
       <img
         src={src}
         alt="放大查看"

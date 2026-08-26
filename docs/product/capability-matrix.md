@@ -96,9 +96,9 @@
 | CLI-007 | 记录 Agent 日志、文件变更和运行结果 | Demo | `agentConnectService.ts` 有接入 Agent SSE 日志，非 CLI 文件日志 | 无 | 会话日志、工具调用、Diff 和结果可统一回看 | CLI Agent | 待关联 |
 | CLI-008 | 明确终端权限、工作目录和文件范围 | 设计中 | 脚本执行器有局部边界，CLI 会话边界缺失 | 无 | 每次会话展示并强制执行权限与目录白名单 | CLI Agent | 待关联 |
 | SEC-001 | API Key 仅由服务端读取和注入 | 已实现 | `getApiKey.ts`；服务端 adapters | 待补：客户端包密钥引用扫描 | 浏览器网络与状态中不存在 Key 真值 | 安全审计 | 待关联 |
-| SEC-002 | Key 不进入前端、缓存、导出和日志 | 部分实现 | 前端只保存 apiKeyRef；原始脚本输出尚无统一脱敏 | 无安全测试 | 日志、IndexedDB、导出、Trace 和错误均通过泄漏测试 | 安全审计 | 待关联 |
-| SEC-003 | Skill、Prompt 和报告不保存真实 Key | 部分实现 | Schema 使用 keyRef；`scanSecrets.mjs` 与 `quality.yml` 扫描仓库产物 | `secretScan.test.ts` 覆盖安全样例、环境文件和 Token 脱敏失败日志；PR #10 CI 通过 | 所有生成物通过 Secret Scan，且有回归用例 | 安全审计 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
-| SEC-004 | 敏感参数脱敏展示 | 设计中 | 无统一 masker | 无 | UI、日志和导出按字段策略脱敏且可审计 | 安全审计 | 待关联 |
+| SEC-002 | Key 不进入前端、缓存、导出和日志 | 部分实现 | 前端只保存 apiKeyRef；`redactSensitive.ts` 与 `runScriptService.ts` 在服务边界脱敏脚本输出和错误 | `runScriptRedaction.test.ts` 真实执行成功、失败脚本并验证注入 Key 不返回；PR 02C 本地 quality 通过 | 日志、IndexedDB、导出、Trace 和错误均通过泄漏测试 | 安全审计 | PR 02C 待创建 |
+| SEC-003 | Skill、Prompt 和报告不保存真实 Key | 部分实现 | Schema 使用 keyRef；`scanSecrets.mjs` 扫描仓库产物；Agent Prompt、参数摘要和工具反馈统一脱敏 | `secretScan.test.ts` 与 `redactSensitive.test.ts` 覆盖仓库扫描、已知 Secret、字段赋值和常见 Token；PR #10 CI 与 PR 02C 本地 quality 通过 | 所有生成物通过 Secret Scan，且有回归用例 | 安全审计 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10)；PR 02C 待创建 |
+| SEC-004 | 敏感参数脱敏展示 | 部分实现 | `redactSensitive.ts` 提供统一 masker，已接入服务端日志与 Agent 展示边界 | `redactSensitive.test.ts` 覆盖已知 Secret、敏感字段、Bearer、常见 Token 与普通文本保真 | UI、日志和导出按字段策略脱敏且可审计 | 安全审计 | PR 02C 待创建 |
 | SEC-005 | 区分查看、运行、配置修改和发布权限 | 设计中 | 当前本地单用户无权限模型 | 无 | 四类权限可配置并由服务端强制校验 | 安全审计 | 待关联 |
 | SEC-006 | 记录配置、Prompt、Evaluator 和任务审计日志 | 设计中 | 无统一审计日志 | 无 | 关键操作含操作者、时间、前后值和关联对象 | 安全审计 | 待关联 |
 
@@ -106,6 +106,6 @@
 
 - TASK-001 已满足代码证据、真实源码测试、异常路径、压力测试、干净环境复验和 PR #10 CI Trace，状态为“已验证”。
 - DOC-006 已满足真实页面状态断言、Mock 防误调用、WCAG 扫描、干净环境复验和 PR #11 CI Trace，状态为“已验证”。
-- TASK-002 尚缺 QPS 调度，SEC-003 尚缺完整日志与外部生成物泄漏测试，继续保持“部分实现”。
+- TASK-002 尚缺 QPS 调度；SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。
 - 四个不存在的规划 API 必须持续显示为“设计中”或“Demo”，直至对应 route、契约测试和文档全部完成。

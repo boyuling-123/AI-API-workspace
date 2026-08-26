@@ -452,7 +452,7 @@ export function PetDog() {
       }
       draggingRef.current = { active: false, moved: false, offsetX: 0, offsetY: 0 };
     },
-    [prefs, persist, showBubble, fleeToNearestZone]
+    [showBubble, fleeToNearestZone]
   );
 
   const handleHide = useCallback(() => {
