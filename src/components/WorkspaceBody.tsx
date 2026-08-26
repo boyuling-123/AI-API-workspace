@@ -6,12 +6,11 @@ import type { EvaluationRecord } from "@/types";
 import { useInputDraft } from "@/hooks/useInputDraft";
 import { useTargetSelection } from "@/hooks/useTargetSelection";
 import { useTaskRunner } from "@/hooks/useTaskRunner";
-import type { RunCompletePayload } from "@/hooks/useTaskRunner";
+import type { ProjectUpdateOptions } from "@/hooks/useProject";
 import { useEvaluation } from "@/hooks/useEvaluation";
 import type { EvaluationCompletePayload } from "@/components/evaluation/EvaluationPanel";
 import { EvalHistoryPanel } from "@/components/evaluation/EvalHistoryPanel";
 import { computeInputImageState } from "@/lib/inputImageState";
-import { computeTaskStatus } from "@/lib/taskStatus";
 import { generateId } from "@/lib/id";
 import { formatDateTime } from "@/lib/datetime";
 import { InputArea } from "@/components/input/InputArea";
@@ -33,7 +32,10 @@ type WorkspaceTab = "run" | "access" | "result" | "evaluate" | "evalHistory";
 
 interface WorkspaceBodyProps {
   project: Project;
-  updateProject: (updater: (current: Project) => Project) => void;
+  updateProject: (
+    updater: (current: Project) => Project,
+    options?: ProjectUpdateOptions
+  ) => void;
 }
 
 export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
@@ -65,27 +67,19 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       }
     }
   }, [setContentMode, setRunMode]);
-  const handleRunComplete = useCallback(
-    (payload: RunCompletePayload) => {
-      const task: Task = {
-        id: generateId(),
-        createTime: Date.now(),
-        finishTime: Date.now(),
-        contentMode: draft.contentMode,
-        runMode: payload.mode === "trial" ? "single" : "batch",
-        inputs: payload.inputs,
-        targetIds: payload.targetIds,
-        concurrency: payload.concurrency,
-        paramSnapshot: [],
-        results: payload.results,
-        status: computeTaskStatus(payload.results, payload.wasCancelled),
-      };
-      updateProject((current) => ({
-        ...current,
-        tasks: [...current.tasks, task],
-      }));
+  const handleBatchSnapshot = useCallback(
+    (task: Task) => {
+      updateProject(
+        (current) => ({
+          ...current,
+          tasks: current.tasks.some((item) => item.id === task.id)
+            ? current.tasks.map((item) => (item.id === task.id ? task : item))
+            : [...current.tasks, task],
+        }),
+        { immediate: true }
+      );
     },
-    [draft.contentMode, updateProject]
+    [updateProject]
   );
 
   // 兜底：极端情况下（脏数据 / 迁移中途）targetConfigs 可能缺失，避免渲染崩溃。
@@ -132,9 +126,36 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   );
 
   const runner = useTaskRunner({
-    onRunComplete: handleRunComplete,
+    onBatchSnapshot: handleBatchSnapshot,
     targetConfigs: algoConfigs,
   });
+
+  const resumableTask = useMemo(
+    () =>
+      [...project.tasks]
+        .filter(
+          (task) => task.status === "paused" || task.status === "running"
+        )
+        .sort((a, b) => b.createTime - a.createTime)[0] ?? null,
+    [project.tasks]
+  );
+
+  const handleAbandonBatch = useCallback(
+    (task: Task) => {
+      updateProject(
+        (current) => ({
+          ...current,
+          tasks: current.tasks.map((item) =>
+            item.id === task.id
+              ? { ...item, status: "cancelled", finishTime: Date.now() }
+              : item
+          ),
+        }),
+        { immediate: true }
+      );
+    },
+    [updateProject]
+  );
 
   const evaluation = useEvaluation();
 
@@ -333,13 +354,19 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           {/* 顶部运行控制台：先给用户明确当前能不能跑、还缺什么。 */}
           <RunPanel
             inputs={currentInputs}
+            contentMode={draft.contentMode}
             targetIds={targetIds}
             selectedTargets={selectedAlgoConfigs}
             runStatus={runner.runStatus}
             lastRunMode={runner.lastRunMode}
             trialResults={runner.results}
+            progress={runner.progress}
+            resumableTask={resumableTask}
             onRunTrial={runner.runTrial}
             onRunBatch={runner.runBatch}
+            onResumeBatch={runner.resumeBatch}
+            onAbandonBatch={handleAbandonBatch}
+            onPause={runner.pause}
             onCancel={runner.cancel}
           />
 

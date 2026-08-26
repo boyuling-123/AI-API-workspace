@@ -1,14 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import type { ResultRow, TargetConfig, TaskInput } from "@/types";
+import type {
+  ContentMode,
+  ResultRow,
+  TargetConfig,
+  Task,
+  TaskInput,
+} from "@/types";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import type { RunMode, RunStatus } from "@/hooks/useTaskRunner";
+import type { RunProgress } from "@/lib/batchCheckpoint";
 import { CostConfirmDialog } from "./CostConfirmDialog";
 import { TrialResultModal } from "./TrialResultModal";
 
 interface RunPanelProps {
   inputs: TaskInput[];
+  contentMode: ContentMode;
   targetIds: string[];
   /** 所选目标的完整配置，用于判断是否含生图目标并估算费用。 */
   selectedTargets: TargetConfig[];
@@ -16,8 +24,18 @@ interface RunPanelProps {
   lastRunMode: RunMode;
   /** v4.3 增量1：试运行结果（在浮窗展示，不落历史）。 */
   trialResults: ResultRow[];
+  progress: RunProgress;
+  resumableTask: Task | null;
   onRunTrial: (inputs: TaskInput[], targetIds: string[], concurrency: number) => void;
-  onRunBatch: (inputs: TaskInput[], targetIds: string[], concurrency: number) => void;
+  onRunBatch: (
+    inputs: TaskInput[],
+    targetIds: string[],
+    concurrency: number,
+    contentMode: ContentMode
+  ) => void;
+  onResumeBatch: (task: Task) => void;
+  onAbandonBatch: (task: Task) => void;
+  onPause: () => void;
   onCancel: () => void;
 }
 
@@ -41,13 +59,19 @@ function inferImagesPerCall(targets: TargetConfig[]): number {
 
 export function RunPanel({
   inputs,
+  contentMode,
   targetIds,
   selectedTargets,
   runStatus,
   lastRunMode,
   trialResults,
+  progress,
+  resumableTask,
   onRunTrial,
   onRunBatch,
+  onResumeBatch,
+  onAbandonBatch,
+  onPause,
   onCancel,
 }: RunPanelProps) {
   const [concurrency, setConcurrency] = useState<number>(
@@ -66,11 +90,18 @@ export function RunPanel({
   const validInputs = inputs.filter(
     (input) => input.prompt.trim() || input.images.length > 0
   );
+  const isRunning = runStatus === "running";
+  const hasPendingRecovery = !isRunning && resumableTask !== null;
+  const displayedBatchTask =
+    resumableTask &&
+    (hasPendingRecovery || (isRunning && lastRunMode === "batch"))
+      ? resumableTask
+      : null;
   const canRun =
-    runStatus !== "running" &&
+    !isRunning &&
+    !hasPendingRecovery &&
     validInputs.length > 0 &&
     targetIds.length > 0;
-  const isRunning = runStatus === "running";
 
   const totalCalls = validInputs.length * targetIds.length;
 
@@ -96,7 +127,7 @@ export function RunPanel({
       setTrialModalOpen(true);
       onRunTrial(runInputs, targetIds, concurrency);
     } else {
-      onRunBatch(runInputs, targetIds, concurrency);
+      onRunBatch(runInputs, targetIds, concurrency, contentMode);
     }
   }
 
@@ -107,19 +138,59 @@ export function RunPanel({
     setPendingRun(null);
   }
 
-  const statusLabel = canRun
-    ? "准备就绪"
-    : isRunning
-      ? "运行中…"
-      : "等待配置";
-  const statusDetail = canRun
-    ? `${targetIds.length} 个目标 · ${validInputs.length > 1 ? "批量" : "单条"}输入 · 预计 ${totalCalls} 次调用`
-    : isRunning
-      ? `正在执行 ${lastRunMode === "trial" ? "试运行" : "批量运行"}…`
-      : "";
+  const statusLabel = isRunning
+    ? "运行中…"
+    : hasPendingRecovery
+      ? "等待处理已保存任务"
+      : canRun
+        ? "准备就绪"
+        : "等待配置";
+  const statusDetail = isRunning
+    ? `正在执行 ${lastRunMode === "trial" ? "试运行" : "批量运行"} · 已完成 ${progress.completedCalls} / ${progress.totalCalls}`
+    : hasPendingRecovery
+      ? "请先继续剩余任务，或放弃并结束后再创建新批次。"
+      : canRun
+        ? `${targetIds.length} 个目标 · ${validInputs.length > 1 ? "批量" : "单条"}输入 · 预计 ${totalCalls} 次调用`
+        : "";
+  const progressPercent =
+    progress.totalCalls > 0
+      ? Math.round((progress.completedCalls / progress.totalCalls) * 100)
+      : 0;
 
   return (
     <div className="flex flex-col gap-2">
+      {!isRunning && resumableTask && (
+        <div className="flex flex-wrap items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-950 shadow-sm dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+          <div className="min-w-[220px] flex-1">
+            <p className="text-sm font-semibold">发现可继续的批量任务</p>
+            <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">
+              已保存 {resumableTask.checkpoint?.completedCalls ?? 0} /{" "}
+              {resumableTask.checkpoint?.totalCalls ??
+                resumableTask.inputs.length * resumableTask.targetIds.length}
+              {resumableTask.status === "running"
+                ? "，上次运行可能因刷新或关闭页面中断。"
+                : "，继续后只执行剩余单元。"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onAbandonBatch(resumableTask)}
+              className="rounded-lg border border-amber-400 px-3 py-2 text-sm font-medium text-amber-900 transition hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-500/20"
+            >
+              放弃并结束
+            </button>
+            <button
+              type="button"
+              onClick={() => onResumeBatch(resumableTask)}
+              className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600"
+            >
+              继续剩余任务
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border border-brand-500/20 bg-brand-700 px-5 py-4 shadow-card dark:bg-brand-800">
         <div className="mb-3 flex flex-wrap items-start justify-between gap-2">
           <div>
@@ -131,9 +202,26 @@ export function RunPanel({
             </p>
           </div>
           <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white">
-            {validInputs.length} 条输入 · {targetIds.length} 个目标
+            {displayedBatchTask
+              ? `${displayedBatchTask.inputs.length} 条已保存输入 · ${displayedBatchTask.targetIds.length} 个目标`
+              : `${validInputs.length} 条输入 · ${targetIds.length} 个目标`}
           </span>
         </div>
+        {isRunning && lastRunMode === "batch" && progress.totalCalls > 0 && (
+          <div
+            className="mb-3 h-1.5 overflow-hidden rounded-full bg-white/15"
+            role="progressbar"
+            aria-label="批量任务进度"
+            aria-valuemin={0}
+            aria-valuemax={progress.totalCalls}
+            aria-valuenow={progress.completedCalls}
+          >
+            <div
+              className="h-full rounded-full bg-amber-400 transition-[width] duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3">
         {/* 左侧状态文案 */}
         <div className="min-w-[180px] flex-1">
@@ -198,25 +286,34 @@ export function RunPanel({
             : "运行"}
         </button>
 
-        {/* 取消 */}
+        {/* 暂停会保留检查点；终止则结束当前任务。 */}
+        {isRunning && lastRunMode === "batch" && (
+          <button
+            type="button"
+            onClick={onPause}
+            className="rounded-lg border border-amber-300 px-3 py-2 text-sm font-medium text-amber-100 transition-colors duration-150 hover:bg-amber-500/20"
+          >
+            暂停
+          </button>
+        )}
         {isRunning && (
           <button
             type="button"
             onClick={onCancel}
             className="rounded-lg border border-red-400 px-3 py-2 text-sm font-medium text-red-200 transition-colors duration-150 hover:bg-red-500/20"
           >
-            取消
+            终止
           </button>
         )}
         </div>
       </div>
 
-      {validInputs.length === 0 && (
+      {!isRunning && !hasPendingRecovery && validInputs.length === 0 && (
         <p className="text-xs text-amber-800 dark:text-amber-400">
           请先在输入区填写至少一条有效输入
         </p>
       )}
-      {targetIds.length === 0 && (
+      {!isRunning && !hasPendingRecovery && targetIds.length === 0 && (
         <p className="text-xs text-amber-800 dark:text-amber-400">
           请先在目标选择区勾选至少一个模型
         </p>

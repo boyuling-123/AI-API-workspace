@@ -38,6 +38,7 @@ export const TASK_STATUS_META: Record<
 > = {
   idle: { label: "未运行", className: "bg-gray-100 text-gray-500" },
   running: { label: "运行中", className: "bg-blue-100 text-blue-600" },
+  paused: { label: "已暂停", className: "bg-amber-100 text-amber-700" },
   done: { label: "完成", className: "bg-green-100 text-green-600" },
   partial: { label: "部分完成", className: "bg-amber-100 text-amber-600" },
   error: { label: "失败", className: "bg-red-100 text-red-600" },

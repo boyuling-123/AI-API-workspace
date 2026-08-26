@@ -57,8 +57,23 @@ export interface Task {
     paramDefs: ParamDef[];
   }[];
   results: ResultRow[];
+  /** 批量任务最近一次一致检查点；旧项目可缺省。 */
+  checkpoint?: TaskCheckpoint;
   evaluation?: Evaluation;
-  status: "idle" | "running" | "partial" | "done" | "error" | "cancelled";
+  status:
+    | "idle"
+    | "running"
+    | "paused"
+    | "partial"
+    | "done"
+    | "error"
+    | "cancelled";
+}
+
+export interface TaskCheckpoint {
+  completedCalls: number;
+  totalCalls: number;
+  updatedTime: number;
 }
 
 export interface TaskInput {

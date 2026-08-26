@@ -41,6 +41,7 @@ export function HistoryPanel({
           {sortedTasks.map((task) => {
             const meta = TASK_STATUS_META[task.status];
             const isViewing = task.id === viewingTaskId;
+            const isActive = task.status === "running" || task.status === "paused";
             return (
               <li
                 key={task.id}
@@ -57,6 +58,11 @@ export function HistoryPanel({
                 <span className="text-xs text-gray-500">
                   {task.inputs.length} 输入 · {task.targetIds.length} 目标
                 </span>
+                {task.checkpoint && (
+                  <span className="text-xs text-gray-500">
+                    {task.checkpoint.completedCalls} / {task.checkpoint.totalCalls} 调用
+                  </span>
+                )}
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs ${meta.className}`}
                 >
@@ -74,14 +80,18 @@ export function HistoryPanel({
                   <button
                     type="button"
                     onClick={() => onEvaluate(task)}
-                    className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 transition hover:bg-amber-100"
+                    disabled={isActive}
+                    title={isActive ? "任务完成后才能启动 AI 评价" : undefined}
+                    className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
                   >
                     去AI评测
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(task.id)}
-                    className="rounded-md border border-red-200 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50"
+                    disabled={task.status === "running"}
+                    title={task.status === "running" ? "请先暂停或终止任务" : undefined}
+                    className="rounded-md border border-red-200 px-2.5 py-1 text-xs text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:border-gray-200 disabled:text-gray-400"
                   >
                     删除
                   </button>

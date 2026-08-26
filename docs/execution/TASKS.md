@@ -47,7 +47,7 @@
 - [x] 核心质量与 Playwright 两道 GitHub CI 通过，DOC-006 升级为“已验证”。
 - [x] 非强推 fast-forward 合并 PR #11，GitHub 已确认 Merged。
 
-## 进行中：PR 02C 质量债务与日志脱敏
+## 已完成：PR 02C 质量债务与日志脱敏
 
 分支：`codex/chore-quality-debt`
 
@@ -60,7 +60,24 @@
 - [x] 独立干净工作树执行全新 `npm ci`、完整 quality 和 Playwright。
 - [x] 提交、推送并创建 [PR #12](https://github.com/boyuling-123/AI-API-workspace/pull/12)。
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
-- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #12。
+- [x] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #12。
+
+## 进行中：PR 03A 批量检查点与中断续跑
+
+分支：`codex/feat-batch-checkpoints`
+
+- [x] 为 Case × Target 建立稳定结果矩阵和检查点进度模型。
+- [x] 批量任务启动、每 10 个完成项、暂停和结束时更新同一 Task 并立即落库。
+- [x] 刷新或关闭页面后识别 `running` / `paused` 任务，并从未完成项继续。
+- [x] 已成功或明确失败的单元不会被自动重复调用；中断与待执行单元恢复为待运行。
+- [x] 区分暂停、继续、终止和放弃已保存任务，存在待续任务时阻止误开新批次。
+- [x] 历史任务展示检查点进度，运行中或暂停中的任务禁止启动 AI 评价。
+- [x] 新增真实源码单测和 Mock Playwright 暂停、刷新、续跑、终止路径。
+- [x] 本地 lint、typecheck、21 项单测、8 项 Playwright 和生产构建通过。
+- [x] 保存刷新后恢复界面截图，不读取真实 Key、不调用付费模型。
+- [ ] 完整 quality、独立干净工作树复验与敏感信息扫描。
+- [ ] 提交、推送并创建 PR 03A。
+- [ ] GitHub CI 通过后回写证据并非强推合并。
 
 ## 硬门禁
 

@@ -1,6 +1,11 @@
 import type { ContentKind, ResultItem, ResultRow, TargetConfig, TaskInput } from "@/types";
 import type { NormalizedLlmOutput } from "@/types";
 import { runWithPool } from "@/lib/taskRunner";
+import {
+  createCheckpointRows,
+  isCompletedResultItem,
+  replaceCheckpointItem,
+} from "@/lib/batchCheckpoint";
 
 interface CallUnit {
   inputId: string;
@@ -18,6 +23,8 @@ export interface RunParams {
   concurrency: number;
   /** 所有目标配置（含预置 + 用户接入）；按 targetId 匹配。 */
   targetConfigs?: TargetConfig[];
+  /** 已持久化的检查点；成功或失败项不会重复调用。 */
+  existingResults?: ResultRow[];
   signal?: AbortSignal;
   onItemUpdate?: (inputId: string, item: ResultItem) => void;
 }
@@ -30,20 +37,46 @@ export interface RunParams {
  * 上层不再按目标类型分两路 fetch，差异全收敛在服务端 runTarget。
  */
 export async function runTargets(params: RunParams): Promise<ResultRow[]> {
-  const { inputs, targetIds, concurrency, targetConfigs, signal, onItemUpdate } =
-    params;
+  const {
+    inputs,
+    targetIds,
+    concurrency,
+    targetConfigs,
+    existingResults,
+    signal,
+    onItemUpdate,
+  } = params;
 
   const targetById = new Map<string, TargetConfig>(
     (targetConfigs ?? []).map((config) => [config.id, config])
   );
 
+  for (const targetId of targetIds) {
+    if (!targetById.has(targetId)) {
+      throw new Error(`未知目标，未在已配置的目标中找到：${targetId}`);
+    }
+  }
+
+  let currentRows = createCheckpointRows(
+    inputs,
+    targetIds,
+    targetConfigs ?? [],
+    existingResults
+  );
+  const checkpointByInput = new Map(
+    currentRows.map((row) => [
+      row.inputId,
+      new Map(row.items.map((item) => [item.targetId, item])),
+    ])
+  );
+
   const units: CallUnit[] = [];
   for (const input of inputs) {
     for (const targetId of targetIds) {
-      const target = targetById.get(targetId);
-      if (!target) {
-        throw new Error(`未知目标，未在已配置的目标中找到：${targetId}`);
+      if (isCompletedResultItem(checkpointByInput.get(input.id)?.get(targetId))) {
+        continue;
       }
+      const target = targetById.get(targetId)!;
       units.push({
         inputId: input.id,
         targetId,
@@ -56,27 +89,19 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     }
   }
 
-  const resultByInput = new Map<string, ResultItem[]>();
-  for (const input of inputs) {
-    resultByInput.set(input.id, []);
-  }
-
   await runWithPool<CallUnit, ResultItem>({
     items: units,
     concurrency,
     signal,
     runOne: async (unit, runSignal) => {
       const item = await callTarget(unit, runSignal);
-      resultByInput.get(unit.inputId)?.push(item);
+      currentRows = replaceCheckpointItem(currentRows, unit.inputId, item);
       onItemUpdate?.(unit.inputId, item);
       return item;
     },
   });
 
-  return inputs.map((input) => ({
-    inputId: input.id,
-    items: resultByInput.get(input.id) ?? [],
-  }));
+  return currentRows;
 }
 
 /**

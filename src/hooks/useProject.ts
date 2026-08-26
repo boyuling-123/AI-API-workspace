@@ -14,12 +14,19 @@ const AUTO_SAVE_DEBOUNCE_MS = 600;
 
 export type SaveStatus = "idle" | "saving" | "saved" | "error";
 
+export interface ProjectUpdateOptions {
+  immediate?: boolean;
+}
+
 export interface UseProjectResult {
   project: Project | null;
   saveStatus: SaveStatus;
   saveError: string | null;
   isLoaded: boolean;
-  updateProject: (updater: (current: Project) => Project) => void;
+  updateProject: (
+    updater: (current: Project) => Project,
+    options?: ProjectUpdateOptions
+  ) => void;
   replaceProject: (next: Project) => void;
   createNew: (name?: string) => void;
 }
@@ -34,7 +41,10 @@ export function useProject(): UseProjectResult {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
 
+  const projectRef = useRef<Project | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveQueue = useRef<Promise<void>>(Promise.resolve());
+  const latestSaveId = useRef(0);
 
   const hasLoadedRef = useRef(false);
 
@@ -50,16 +60,20 @@ export function useProject(): UseProjectResult {
         // 仅加载与当前 schema 兼容的项目；不兼容的旧版记录已在此步被清理。
         const projects = await listCompatibleProjects();
         if (projects.length > 0) {
+          projectRef.current = projects[0];
           setProject(projects[0]);
         } else {
           const initial = createEmptyProject();
           await saveProject(initial);
+          projectRef.current = initial;
           setProject(initial);
         }
       } catch (error) {
         // IndexedDB 不可用（如隐私模式）时降级为内存项目，至少保证页面可用。
         console.error("加载本地项目失败，降级为内存项目：", error);
-        setProject(createEmptyProject());
+        const fallback = createEmptyProject();
+        projectRef.current = fallback;
+        setProject(fallback);
         setSaveError("本地存储不可用，数据将不会自动保存，请注意导出备份");
       } finally {
         setIsLoaded(true);
@@ -69,17 +83,21 @@ export function useProject(): UseProjectResult {
     loadInitial();
   }, []);
 
-  const scheduleSave = useCallback((next: Project) => {
-    if (debounceTimer.current) {
-      clearTimeout(debounceTimer.current);
-    }
+  const enqueueSave = useCallback((next: Project) => {
+    const saveId = latestSaveId.current + 1;
+    latestSaveId.current = saveId;
     setSaveStatus("saving");
-    debounceTimer.current = setTimeout(async () => {
+    saveQueue.current = saveQueue.current.then(async () => {
       try {
         await saveProject(next);
-        setSaveStatus("saved");
-        setSaveError(null);
+        if (saveId === latestSaveId.current) {
+          setSaveStatus("saved");
+          setSaveError(null);
+        }
       } catch (error) {
+        if (saveId !== latestSaveId.current) {
+          return;
+        }
         setSaveStatus("error");
         const message = isQuotaExceededError(error)
           ? "存储空间不足，建议改用 URL 图片或导出备份"
@@ -88,26 +106,49 @@ export function useProject(): UseProjectResult {
             : "保存失败：未知错误";
         setSaveError(message);
       }
-    }, AUTO_SAVE_DEBOUNCE_MS);
+    });
   }, []);
 
+  const scheduleSave = useCallback((next: Project) => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+    setSaveStatus("saving");
+    debounceTimer.current = setTimeout(() => {
+      debounceTimer.current = null;
+      enqueueSave(next);
+    }, AUTO_SAVE_DEBOUNCE_MS);
+  }, [enqueueSave]);
+
   const updateProject = useCallback(
-    (updater: (current: Project) => Project) => {
-      setProject((current) => {
-        if (!current) {
-          return current;
+    (
+      updater: (current: Project) => Project,
+      options: ProjectUpdateOptions = {}
+    ) => {
+      const current = projectRef.current;
+      if (!current) {
+        return;
+      }
+      const updated = { ...updater(current), updateTime: Date.now() };
+      projectRef.current = updated;
+      setProject(updated);
+      if (options.immediate) {
+        if (debounceTimer.current) {
+          clearTimeout(debounceTimer.current);
+          debounceTimer.current = null;
         }
-        const updated = { ...updater(current), updateTime: Date.now() };
+        enqueueSave(updated);
+      } else {
         scheduleSave(updated);
-        return updated;
-      });
+      }
     },
-    [scheduleSave]
+    [enqueueSave, scheduleSave]
   );
 
   const replaceProject = useCallback(
     (next: Project) => {
       const updated = { ...next, updateTime: Date.now() };
+      projectRef.current = updated;
       setProject(updated);
       scheduleSave(updated);
     },
@@ -117,6 +158,7 @@ export function useProject(): UseProjectResult {
   const createNew = useCallback(
     (name?: string) => {
       const fresh = createEmptyProject(name);
+      projectRef.current = fresh;
       setProject(fresh);
       scheduleSave(fresh);
     },

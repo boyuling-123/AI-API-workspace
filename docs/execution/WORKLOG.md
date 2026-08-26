@@ -98,3 +98,24 @@
 - SEC-002、SEC-003 和 SEC-004 已获得服务边界脱敏、真实子进程测试、干净环境与 CI Trace，但端到端覆盖仍不完整，因此保持“部分实现”。
 
 下一步：提交本次验收回写，等待最终 CI 通过后以非强推 fast-forward 合并 PR #12。
+
+## 2026-08-26：PR 02C 合并
+
+- PR #12 的最终文档提交再次通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 未发生冲突后，以非强推 fast-forward 方式合并；GitHub 已确认 PR 状态为 Merged。
+- 本地 `main` 同步到合并提交 `3521c4d`，随后创建短生命周期分支 `codex/feat-batch-checkpoints`。
+
+## 2026-08-26：PR 03A 启动
+
+- 本轮领取 TASK-003、TASK-004 和 TASK-008，范围只包含批量任务增量持久化、检查点恢复与暂停/继续/终止，不混入 QPS、失败项定向重跑或服务端队列。
+- 新增稳定的 Case × Target 结果矩阵。`success` 和 `error` 是已完成状态，`pending`、`running`、`interrupted` 在恢复时重新排队。
+- `useTaskRunner` 在开始、每 10 个完成项、暂停和最终结束时更新同一 Task；`useProject` 使用有序立即写队列，防止较旧检查点覆盖较新结果。
+- 页面刷新后会识别本地 IndexedDB 中的 `running` 或 `paused` Task，展示已保存调用数，并提供“继续剩余任务”或“放弃并结束”。待续任务处理前不能误开第二个批次。
+- 暂停只中止已发请求并保留任务；继续沿用原 Task ID 且跳过已完成单元；终止则写入 `cancelled`，不再显示恢复入口。
+- 历史列表展示检查点调用数，运行中与暂停中的批次禁止启动 AI 评价，避免对不完整结果产生付费 Judge 调用。
+- 新增 5 项检查点/续跑单元测试；当前全部单元测试为 6 个文件、21 项。新增 2 条 Mock Playwright 路径，验证暂停到第 3/12 条、自动保存、刷新恢复、前三条不重复调用，以及终止后不遗留恢复任务。
+- 本地 `npm run lint`、`npm run typecheck`、`npm run test:unit`、`npm run test:e2e` 和 `npm run build` 通过；Playwright 共 8 项，所有 API 调用均为本地 Mock，未读取 Key、未调用模型或启动 AI 评价。
+- 视觉验收截图：`docs/evidence/pr-03a/batch-resume-after-reload.png`。
+- 当前检查点保存在浏览器本地项目中；突然关闭页面时最多会从最近一次 10 项一致检查点重放未落库单元，服务端持久队列与跨设备恢复不属于本 PR。
+
+下一步：补齐完整 quality 与独立干净工作树复验，提交并推送 PR 03A 分支。
