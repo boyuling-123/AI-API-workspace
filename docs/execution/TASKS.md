@@ -57,7 +57,7 @@
 - [x] 增加统一服务端脱敏器并接入脚本输出、安装输出、Agent Prompt 与反馈边界。
 - [x] 增加脱敏单测和真实 Node 子进程成功、失败泄漏测试。
 - [x] 本地完整 quality 与 6 项 Playwright 回归通过。
-- [ ] 独立干净工作树执行全新 `npm ci`、完整 quality 和 Playwright。
+- [x] 独立干净工作树执行全新 `npm ci`、完整 quality 和 Playwright。
 - [ ] 提交、推送并创建 PR 02C。
 - [ ] GitHub CI 通过后更新证据并合并。
 

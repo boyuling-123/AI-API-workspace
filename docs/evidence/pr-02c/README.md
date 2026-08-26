@@ -42,7 +42,9 @@
 
 SEC-002、SEC-003 和 SEC-004 均保持“部分实现”。本 PR 覆盖服务端日志与 Agent 边界，但 IndexedDB、导出文件、浏览器 Trace 和所有 UI 展示尚未形成端到端泄漏测试，不能标记为“已验证”。
 
-独立干净工作树复验与 GitHub CI Trace 将在提交后继续回写本文件。
+提交 `3a19d9f` 后另建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包，再次执行完整 `npm run quality` 和 `npm run test:e2e`，上述门禁全部通过。结果不依赖原工作区的 `node_modules`、`.next` 或测试产物。
+
+GitHub CI Trace 将在 PR 创建后继续回写本文件。
 
 ## 回滚
 
