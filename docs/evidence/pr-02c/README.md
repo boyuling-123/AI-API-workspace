@@ -44,7 +44,14 @@ SEC-002、SEC-003 和 SEC-004 均保持“部分实现”。本 PR 覆盖服务�
 
 提交 `3a19d9f` 后另建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包，再次执行完整 `npm run quality` 和 `npm run test:e2e`，上述门禁全部通过。结果不依赖原工作区的 `node_modules`、`.next` 或测试产物。
 
-GitHub CI Trace 将在 PR 创建后继续回写本文件。
+## GitHub CI
+
+[PR #12](https://github.com/boyuling-123/AI-API-workspace/pull/12) 的 `Quality Gate` 工作流 run `32917205809` 已成功完成：
+
+- `Lint, test, build, and secret scan`：Secret Scan、lint、typecheck、真实源码单测、压力测试和生产构建全部通过。
+- `Playwright user paths and accessibility`：Chromium 用户路径与无障碍测试通过；失败 Trace 上传步骤因没有失败而按设计跳过。
+
+SEC-002、SEC-003 和 SEC-004 已具备本阶段代码、异常路径、干净环境和远端 CI 证据，但因端到端泄漏覆盖仍不完整，继续保持“部分实现”。
 
 ## 回滚
 

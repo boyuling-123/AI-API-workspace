@@ -58,8 +58,9 @@
 - [x] 增加脱敏单测和真实 Node 子进程成功、失败泄漏测试。
 - [x] 本地完整 quality 与 6 项 Playwright 回归通过。
 - [x] 独立干净工作树执行全新 `npm ci`、完整 quality 和 Playwright。
-- [ ] 提交、推送并创建 PR 02C。
-- [ ] GitHub CI 通过后更新证据并合并。
+- [x] 提交、推送并创建 [PR #12](https://github.com/boyuling-123/AI-API-workspace/pull/12)。
+- [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
+- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #12。
 
 ## 硬门禁
 

@@ -88,3 +88,13 @@
 - 提交 `3a19d9f` 后建立独立 `/tmp` 工作树，执行全新 `npm ci`、完整 `npm run quality` 和 `npm run test:e2e`，所有门禁再次通过；安装结果稳定为 434 个包、6 个已登记高危项。
 
 下一步：提交验收回写、推送分支并创建 PR 02C，等待 GitHub CI。
+
+## 2026-08-26：PR 02C 验收
+
+- 创建 [PR #12](https://github.com/boyuling-123/AI-API-workspace/pull/12)，目标为 `main`，来源为 `codex/chore-quality-debt`。
+- GitHub Actions `Quality Gate` 工作流 run `32917205809` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖 Secret Scan、lint、typecheck、真实源码单测、压力测试和生产构建。
+- `Playwright user paths and accessibility` Job 通过；失败 Trace 上传步骤因没有失败而按设计跳过。
+- SEC-002、SEC-003 和 SEC-004 已获得服务边界脱敏、真实子进程测试、干净环境与 CI Trace，但端到端覆盖仍不完整，因此保持“部分实现”。
+
+下一步：提交本次验收回写，等待最终 CI 通过后以非强推 fast-forward 合并 PR #12。
