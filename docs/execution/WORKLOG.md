@@ -117,5 +117,6 @@
 - 本地 `npm run lint`、`npm run typecheck`、`npm run test:unit`、`npm run test:e2e` 和 `npm run build` 通过；Playwright 共 8 项，所有 API 调用均为本地 Mock，未读取 Key、未调用模型或启动 AI 评价。
 - 视觉验收截图：`docs/evidence/pr-03a/batch-resume-after-reload.png`。
 - 当前检查点保存在浏览器本地项目中；突然关闭页面时最多会从最近一次 10 项一致检查点重放未落库单元，服务端持久队列与跨设备恢复不属于本 PR。
+- 提交 `a3ee987` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；191 文件 Secret Scan、零 lint、typecheck、21 项单测、2 项压力测试、19 路由构建和 8 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
-下一步：补齐完整 quality 与独立干净工作树复验，提交并推送 PR 03A 分支。
+下一步：提交干净环境证据，推送分支并创建 PR 03A，等待 GitHub CI。

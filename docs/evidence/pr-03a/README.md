@@ -27,6 +27,8 @@
 
 Playwright 的 `/api/run-custom` 响应全部为本地 Mock。测试不读取真实 Key、不调用模型、不自动启动 AI 评价。
 
+提交 `a3ee987` 后另建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包，再次执行完整 `npm run quality` 与 `npm run test:e2e`。191 文件 Secret Scan、21 项单测、2 项压力测试、生产构建和 8 项浏览器测试全部通过；复验完成后 `git status` 为空，结果不依赖原工作区缓存或构建产物。
+
 ## 视觉证据
 
 ![刷新后发现可继续的批量任务](./batch-resume-after-reload.png)
