@@ -76,8 +76,9 @@
 - [x] 本地 lint、typecheck、21 项单测、8 项 Playwright 和生产构建通过。
 - [x] 保存刷新后恢复界面截图，不读取真实 Key、不调用付费模型。
 - [x] 完整 quality、独立干净工作树复验与敏感信息扫描。
-- [ ] 提交、推送并创建 PR 03A。
-- [ ] GitHub CI 通过后回写证据并非强推合并。
+- [x] 提交、推送并创建 [PR #13](https://github.com/boyuling-123/AI-API-workspace/pull/13)。
+- [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
+- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #13。
 
 ## 硬门禁
 

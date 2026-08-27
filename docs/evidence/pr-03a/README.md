@@ -39,6 +39,15 @@ Playwright 的 `/api/run-custom` 响应全部为本地 Mock。测试不读取真
 
 当前采用客户端“最近一致检查点”语义，不承诺 exactly-once。突然关闭页面时，最近一次检查点之后尚未写入的最多 9 个完成调用可能重放；已落库终态不会重复。服务端持久队列、跨浏览器恢复与幂等请求键留给后续任务引擎 PR。
 
+## GitHub CI
+
+[PR #13](https://github.com/boyuling-123/AI-API-workspace/pull/13) 的 `Quality Gate` workflow run `33084615817` 已成功完成：
+
+- `Lint, test, build, and secret scan`：Secret Scan、lint、typecheck、21 项真实源码单测、2 项压力测试和生产构建全部通过。
+- `Playwright user paths and accessibility`：8 项 Chromium 用户路径与无障碍测试通过；失败 Trace 上传步骤因没有失败而跳过。
+
+TASK-003、TASK-004、TASK-008 已满足本阶段代码、异常路径、测试、截图、干净环境和远端 CI 验收条件，能力矩阵升级为“已验证”。
+
 ## 回滚
 
 `Task.checkpoint` 为可选字段，不需要数据库迁移。回滚本 PR 后旧 Task 仍可读取，只会失去增量保存和恢复入口；不涉及 Key、服务端数据或远端任务清理。

@@ -67,12 +67,12 @@
 | POOL-007 | 主榜、专项候选和别名分层管理 | 设计中 | 无 | 无 | 三层资源可配置、查询并用于报告 | 资源池 | 待关联 |
 | TASK-001 | Case × 模型拆成独立子任务且失败隔离 | 已验证 | `runService.ts`；`taskRunner.ts` | `tests/unit/taskRunner.test.ts`；`tests/stress/taskRunner.stress.test.ts` 直接导入真实源码；PR #10 CI 通过 | 单项失败不阻塞其他项且结果状态准确 | 任务引擎 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
 | TASK-002 | 配置并发数和 QPS | 部分实现 | `RunPanel.tsx` 支持并发，无 QPS；`taskRunner.ts` 规范化非法并发 | 真实源码单测与 2,000 任务压力测试通过；PR #10 CI 通过 | 并发和 QPS 均可配置并被调度器严格执行 | 任务控制 | [#10](https://github.com/boyuling-123/AI-API-workspace/pull/10) |
-| TASK-003 | 分批提交、执行并逐批落库 | 已实现 | `batchCheckpoint.ts`；`useTaskRunner.ts` 每 10 个完成项更新同一 Task；`useProject.ts` 有序立即写入 | `batchCheckpoint.test.ts`；`batch-resume.spec.ts` 验证中途落库和刷新可见 | 大任务按批持久化，刷新后可见已完成批次 | 任务引擎 | PR 03A（本分支） |
-| TASK-004 | 保存检查点并支持中断续跑 | 已实现 | `Task.checkpoint`；`runService.ts` 跳过终态单元；`RunPanel.tsx` 提供恢复入口 | `runService.test.ts` 直接覆盖真实服务；`batch-resume.spec.ts` 验证刷新后续跑且前三项不重复 | 刷新或进程中断后从最后一致检查点继续 | 任务引擎 | PR 03A（本分支） |
+| TASK-003 | 分批提交、执行并逐批落库 | 已验证 | `batchCheckpoint.ts`；`useTaskRunner.ts` 每 10 个完成项更新同一 Task；`useProject.ts` 有序立即写入 | `batchCheckpoint.test.ts`；`batch-resume.spec.ts` 验证中途落库和刷新可见；PR #13 两道 CI 通过 | 大任务按批持久化，刷新后可见已完成批次 | 任务引擎 | [#13](https://github.com/boyuling-123/AI-API-workspace/pull/13) |
+| TASK-004 | 保存检查点并支持中断续跑 | 已验证 | `Task.checkpoint`；`runService.ts` 跳过终态单元；`RunPanel.tsx` 提供恢复入口 | `runService.test.ts` 直接覆盖真实服务；`batch-resume.spec.ts` 验证刷新后续跑且前三项不重复；PR #13 两道 CI 通过 | 刷新或进程中断后从最后一致检查点继续 | 任务引擎 | [#13](https://github.com/boyuling-123/AI-API-workspace/pull/13) |
 | TASK-005 | 仅重跑失败项、指定 Case、新模型或新维度 | 部分实现 | 可复用结果新增维度评价，其他定向重跑缺失 | 无 | 四种重跑范围均可预览、确认和追溯 | 任务控制 | 待关联 |
 | TASK-006 | 单任务超时和有限自动重试 | 部分实现 | `runtime.ts` 有超时，脚本执行有超时，无统一重试 | 无 | 超时与重试策略按目标配置并有次数上限 | 任务控制 | 待关联 |
 | TASK-007 | 超限后记录明确失败类型且不无限重试 | 部分实现 | ResultItem 有 error/interrupted，缺统一错误分类 | 无 | 超时、限流、鉴权、解析等错误可筛选和重跑 | 任务控制 | 待关联 |
-| TASK-008 | 任务暂停、继续和人工终止 | 已实现 | `useTaskRunner.ts` 分离 pause/cancel/resume；`RunPanel.tsx` 提供暂停、继续、终止和放弃入口 | `batch-resume.spec.ts` Mock 验证暂停、刷新继续、终止不留恢复任务；21 项单测与 8 项 E2E 本地通过 | 暂停不启动新子任务，继续不重复已完成项 | 任务控制 | PR 03A（本分支） |
+| TASK-008 | 任务暂停、继续和人工终止 | 已验证 | `useTaskRunner.ts` 分离 pause/cancel/resume；`RunPanel.tsx` 提供暂停、继续、终止和放弃入口 | `batch-resume.spec.ts` Mock 验证暂停、刷新继续、终止不留恢复任务；21 项单测、8 项 E2E 与 PR #13 两道 CI 通过 | 暂停不启动新子任务，继续不重复已完成项 | 任务控制 | [#13](https://github.com/boyuling-123/AI-API-workspace/pull/13) |
 | TASK-009 | 预算预估、预算上限和超限暂停 | Demo | `CostConfirmDialog.tsx` 仅估算生图调用 | 无 | 所有计费目标可预估，达到上限自动暂停 | 任务控制 | 待关联 |
 | TASK-010 | 完成、失败率和预算异常通知 | 设计中 | 无 | 无 | 可配置通知规则、渠道且具备去重机制 | 任务控制 | 待关联 |
 | IMG-001 | 原始图片统一保存且不被 Judge 覆盖 | 已实现 | `imageCompress.ts` 返回副本；Task 保留原图 | 待补：图片不变性单测 | 评价前后原图哈希和展示地址不变 | 图片资产 | 待关联 |
@@ -106,7 +106,7 @@
 
 - TASK-001 已满足代码证据、真实源码测试、异常路径、压力测试、干净环境复验和 PR #10 CI Trace，状态为“已验证”。
 - DOC-006 已满足真实页面状态断言、Mock 防误调用、WCAG 扫描、干净环境复验和 PR #11 CI Trace，状态为“已验证”。
-- TASK-003、TASK-004 和 TASK-008 已完成本地实现、真实源码单测、Mock 浏览器恢复路径与视觉截图，等待 PR 03A GitHub CI 后再判断是否升级为“已验证”。
+- TASK-003、TASK-004 和 TASK-008 已具备代码、真实源码单测、Mock 浏览器恢复路径、视觉截图、干净环境与 PR #13 GitHub CI Trace，状态为“已验证”。
 - TASK-002 尚缺 QPS 调度；SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。
 - 四个不存在的规划 API 必须持续显示为“设计中”或“Demo”，直至对应 route、契约测试和文档全部完成。

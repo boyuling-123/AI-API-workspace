@@ -120,3 +120,13 @@
 - 提交 `a3ee987` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；191 文件 Secret Scan、零 lint、typecheck、21 项单测、2 项压力测试、19 路由构建和 8 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
 下一步：提交干净环境证据，推送分支并创建 PR 03A，等待 GitHub CI。
+
+## 2026-08-27：PR 03A 验收
+
+- 创建 [PR #13](https://github.com/boyuling-123/AI-API-workspace/pull/13)，目标为 `main`，来源为 `codex/feat-batch-checkpoints`。
+- GitHub Actions `Quality Gate` workflow run `33084615817` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部通过：Secret Scan、lint、typecheck、21 项真实源码单测、2 项压力测试和 19 路由生产构建均成功。
+- `Playwright user paths and accessibility` Job 通过 8 项浏览器路径；失败 Trace 上传步骤因没有失败而按设计跳过。
+- TASK-003、TASK-004、TASK-008 同时具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉截图、干净环境和 GitHub CI Trace，升级为“已验证”。
+
+下一步：提交本次验收回写，等待最终 CI 通过后以非强推 fast-forward 合并 PR #13。
