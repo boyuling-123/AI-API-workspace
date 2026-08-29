@@ -127,7 +127,8 @@
 - [x] Mock Playwright 验证确认前零请求、确认后只调用 Qwen 两次、复用四条旧结果且不启动 AI 评价。
 - [x] 保存完整视觉证据，本地全量 quality 与 13 项 Playwright 通过。
 - [x] 提交 `d1c9231` 后在独立干净工作树完成全新安装、quality 与 Playwright 复验，结束时零改动。
-- [ ] 提交、推送、创建 PR，等待两道 GitHub CI 通过后安全合并。
+- [x] 提交、推送并创建 [PR #16](https://github.com/boyuling-123/AI-API-workspace/pull/16)。
+- [ ] 等待最新提交对应的两道 GitHub CI 通过后安全合并。
 
 ## 硬门禁
 

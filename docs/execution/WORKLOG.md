@@ -214,3 +214,11 @@
 - 提交 `d1c9231` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；quality 与 13 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
 下一步：提交干净环境证据，推送分支并创建 PR 03D，等待 GitHub 两道 CI。
+
+## 2026-08-29：PR 03D 创建
+
+- 创建 [PR #16](https://github.com/boyuling-123/AI-API-workspace/pull/16)，目标为 `main`，来源为 `codex/feat-new-target-reruns`；GitHub 确认可自动合并。
+- PR 描述记录范围、异常路径、真实源码测试、Mock 边界、干净环境、视觉证据和普通 revert 回滚方案。
+- TASK-005 已补齐失败项、指定 Case 和新增目标三类模型跑批重跑；新增评价维度尚未完成独立验收，因此继续保持“部分实现”。
+
+下一步：等待最新提交对应的核心质量与 Playwright 两道 GitHub CI；全部通过后以非强推 fast-forward 安全合并。
