@@ -92,7 +92,7 @@
 - [x] 历史结果展示并筛选失败类型、尝试次数和 HTTP 状态，Excel 导出同步增加这些列。
 - [x] 38 项单测、2 项压力测试、10 项 Playwright 与生产构建在本地通过。
 - [x] 保存首页策略区与历史错误分类两张视觉证据；未读取真实 Key、未调用付费模型或 AI 评价。
-- [ ] 独立干净工作树完成全新 `npm ci`、quality 和 Playwright 复验。
+- [x] 独立干净工作树完成全新 `npm ci`、quality 和 Playwright 复验，结束后零改动。
 - [ ] 提交、推送并创建 PR 03B。
 - [ ] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
 - [ ] 最终 CI 通过后，以非强推 fast-forward 合并 PR 03B。

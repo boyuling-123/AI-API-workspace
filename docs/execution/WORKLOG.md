@@ -149,5 +149,6 @@
 - 新增 2 条 Mock Playwright 路径后总计 10 项，验证 429 后成功、401 配置重试 3 次仍只调用一次、策略持久化与错误筛选；全量 E2E 和可访问性回归通过。
 - `npm run quality` 完整通过：199 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试和 19 路由生产构建。
 - 视觉证据：`docs/evidence/pr-03b/run-policy-controls.png` 与 `error-classification-history.png`。视觉失败样例由本地缺失环境变量直接返回 401，服务日志确认没有上游调用。
+- 提交 `3c6c1ec` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；202 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试、19 路由构建和 10 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
 下一步：独立干净工作树复验、提交、推送并创建 PR 03B，等待 GitHub CI。

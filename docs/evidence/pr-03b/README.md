@@ -23,6 +23,7 @@
 - `tests/e2e/run-controls.spec.ts`：Mock 验证策略持久化、429 只重试一次、401 配置 3 次仍只调用一次，以及错误筛选。
 - 本地 `npm run quality` 通过：199 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试和生产构建。
 - 本地 `npm run test:e2e` 通过：10 项 Playwright 用户路径与可访问性测试。
+- 提交 `3c6c1ec` 的独立 `/tmp` 工作树完成全新 `npm ci`，随后 `quality` 与 10 项 Playwright 再次全部通过，复验后工作树零改动。
 
 ## 视觉证据
 
