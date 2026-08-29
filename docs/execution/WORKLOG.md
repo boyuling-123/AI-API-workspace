@@ -411,3 +411,14 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，该风险留给专门依赖治理 PR。
 
 下一步：提交干净环境证据，推送分支并创建 PR 04D，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-29：PR 04D 创建与首轮验收
+
+- 创建 [PR #21](https://github.com/boyuling-123/AI-API-workspace/pull/21)，目标为 `main`，来源为 `codex/feat-structured-simple-rubrics`；GitHub 确认可自动合并。
+- PR 描述明确完整 Rubric Schema、Simple/人工反馈模式边界、旧历史兼容、零模型调用阻断、Mock 测试、干净环境、视觉证据、不包含能力和普通 revert 回滚方案。
+- GitHub Actions `Quality Gate` workflow run `33243678962` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖密钥扫描、lint、typecheck、84 项真实源码单测、2 项压力测试和 19 路由生产构建。
+- `Playwright user paths and accessibility` Job 通过 18 项浏览器路径；失败 Trace 上传因没有失败而按设计跳过。
+- DIM-005 与 DIM-008 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。DIM-006、权重/一票否决和 Evaluator 版本化状态保持不变。
+
+下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #21。
