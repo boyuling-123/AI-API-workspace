@@ -12,6 +12,7 @@ import { runEvaluation } from "@/services/evaluateClient";
 import { generateEvalPromptClient } from "@/services/evalPromptClient";
 import { generateDimensionsClient } from "@/services/genDimensionsClient";
 import { emitPetStatus } from "@/lib/petBus";
+import type { DimensionGenerationRequest } from "@/lib/dimensionGeneration";
 
 export type EvalStatus =
   | "idle"
@@ -26,7 +27,7 @@ export interface UseEvaluationResult {
   status: EvalStatus;
   error: string | null;
   genDimensions: (
-    userRequirement: string,
+    request: DimensionGenerationRequest,
     modelId: string
   ) => Promise<EvalDimension[]>;
   generatePrompt: (
@@ -61,12 +62,12 @@ export function useEvaluation(): UseEvaluationResult {
   const abortRef = useRef<AbortController | null>(null);
 
   const genDimensions = useCallback<UseEvaluationResult["genDimensions"]>(
-    async (userRequirement, modelId) => {
+    async (request, modelId) => {
       setStatus("gen-dim");
       setError(null);
       try {
         const dimensions = await generateDimensionsClient(
-          userRequirement,
+          request,
           modelId
         );
         setStatus("idle");

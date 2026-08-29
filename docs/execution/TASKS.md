@@ -131,7 +131,7 @@
 - [x] PR #16 workflow run `33231921078` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33232064639` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #16 为 Merged。
 
-## 进行中：PR 03E 新增评价维度
+## 已完成：PR 03E 新增评价维度
 
 分支：`codex/feat-new-dimension-evaluation`
 
@@ -146,7 +146,23 @@
 - [x] 提交 `18bc0df` 在独立干净工作树全新安装 434 个包，quality 与 14 项 Playwright 复验通过，结束时零改动。
 - [x] 提交、推送并创建 [PR #17](https://github.com/boyuling-123/AI-API-workspace/pull/17)。
 - [x] PR #17 workflow run `33236290462` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 推送 CI 验收回写，等待最终文档提交自身门禁通过后安全合并。
+- [x] 最终文档提交对应 workflow run `33236428567` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #17 为 Merged。
+
+## 进行中：PR 04A 结构化维度生成上下文
+
+分支：`codex/feat-dimension-generation-context`
+
+- [x] 维度生成显式收集评测目标、业务场景和任务类型，并在前端与服务端执行长度、枚举和必填校验。
+- [x] 从当前跑批结果按覆盖首中尾、失败优先或标准答案优先三种策略确定性抽样，数量可配置且最多 8 条。
+- [x] 调用前预览发送样本并允许排除；仅传截断文字、标准答案、状态、图片数量和错误类型，不传原图、base64 或完整错误。
+- [x] 页面明确 OpenJudge 尚未接入；只有用户点击“AI 生成评价维度”才请求通用模型，不自动启动 AI 评价。
+- [x] API 只接受结构化契约，拒绝畸形对象、过长字段、无输出、重复或超量样本。
+- [x] 真实源码单测覆盖确定性抽样、契约校验、Prompt 与数据最小化；Mock Playwright 覆盖完整用户路径和精确请求。
+- [x] 修复 AI 评价页四处低对比度文字，完整页面通过 WCAG 严重与致命问题扫描。
+- [x] 保存视觉证据；本地 quality 与 15 项 Playwright 全量回归通过。
+- [ ] 提交实现并在独立干净工作树全新安装、复验全部门禁。
+- [ ] 推送分支、创建 PR 04A 并记录 GitHub 两道 CI Trace。
+- [ ] 最终 CI 通过后，以非强推 fast-forward 安全合并并回写能力状态。
 
 ## 硬门禁
 

@@ -592,7 +592,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
               <button
                 type="button"
                 onClick={() => handleTabChange("result")}
-                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
                 ← 返回跑批历史
               </button>

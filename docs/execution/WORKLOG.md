@@ -270,3 +270,25 @@
 - TASK-005 的失败项、指定 Case、新目标和新评价维度四种范围均具备预览、确认、来源追溯、真实源码测试、Mock 精确请求、视觉证据、干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交本次 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #17。
+
+## 2026-08-29：PR 03E 合并
+
+- PR #17 的最终文档提交对应 workflow run `33236428567` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 仍为预期祖先后，以非强推 fast-forward 方式合并；GitHub 已确认 PR #17 状态为 Merged，合并提交为 `8c70139`。
+- 本地 `main` 同步到 `8c70139`，随后从最新 `main` 创建短生命周期分支 `codex/feat-dimension-generation-context`。
+
+## 2026-08-29：PR 04A 启动与本地验收
+
+- 本轮只领取 DIM-002 与 DIM-003：结构化维度生成上下文和代表性样本抽取；OpenJudge、Simple/Iterative Rubrics、硬规则、Bad Case 与人工标注继续保持后续独立范围。
+- AI 评价页新增评测目标、业务场景和任务类型。`/api/gen-dimensions` 只接受结构化对象，并在模型调用前校验必填、长度、枚举、样本上限、重复 ID 与输出结构。
+- 从当前 Task 的输入和跑批结果确定性选择最多 8 条代表性样本，支持覆盖首中尾、失败优先和标准答案优先三种策略；用户可预览并排除样本。
+- 请求只包含截断后的 prompt、标准答案、成功输出文字、输入/输出图片数量、失败状态和错误类型；原图、base64、完整错误文本与额外未声明字段都不会进入模型请求。
+- Prompt 同时使用目标、场景、任务类型、内部预设和代表性样本，并明确样本文字是待分析数据而不是可执行指令。页面明确标注 OpenJudge 尚未接入。
+- 只有用户显式点击“AI 生成评价维度”才调用接口；候选维度仍需用户勾选，生成过程不会调用 `/api/evaluate` 或自动启动付费评价。
+- `dimensionGeneration.test.ts` 与 `genDimensionsRoute.test.ts` 直接覆盖真实源码；新增 9 项聚焦断言后，全量单测增至 64 项。
+- `dimension-generation.spec.ts` 使用 5 条 Mock Case 验证确定性抽样、失败优先、点击前零调用、点击后恰好一次维度请求、零评价请求和敏感图片/错误不出现在请求中。
+- 新 E2E 首次发现 AI 评价页四处低对比度文字，修复后完整页面无严重或致命 WCAG 问题；视觉证据 `docs/evidence/pr-04a/dimension-sample-preview.png` 已人工检查，无截断。
+- 本地 `npm run quality` 通过：221 文件 Secret Scan、零 lint、typecheck、64 项单测、2 项压力测试和 19 路由生产构建；全量 15 项 Playwright 通过。
+- DIM-002 与 DIM-003 已具备代码、异常路径、真实源码测试、Mock 浏览器路径和视觉证据；在独立干净环境与 GitHub CI 通过前严格保持“已实现”。
+
+下一步：提交实现，在独立干净工作树全新安装并复验全部门禁，再推送创建 PR 04A。

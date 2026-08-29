@@ -96,7 +96,7 @@ async function prepareSourceEvaluation(page: Page): Promise<{
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");
-  await page.getByLabel("测评需求").fill("评价客服回复质量");
+  await page.getByLabel("评测目标").fill("评价客服回复质量");
   await page.getByRole("button", { name: "+ 手动添加维度" }).click();
   await page.getByLabel("维度 1 名称").fill("准确性");
   await page.getByLabel("维度 1 说明").fill("回答是否准确");

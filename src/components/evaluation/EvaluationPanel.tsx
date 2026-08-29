@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   EvalDimension,
   EvaluationMode,
@@ -21,6 +21,18 @@ import {
   buildNewDimensionPreview,
   normalizeEvaluationDimensionName,
 } from "@/lib/newDimensionEvaluation";
+import {
+  buildDimensionGenerationSamples,
+  DIMENSION_SAMPLE_STRATEGY_LABELS,
+  DIMENSION_TASK_TYPE_LABELS,
+  listDimensionSampleCandidates,
+  MAX_DIMENSION_OBJECTIVE_LENGTH,
+  MAX_DIMENSION_SAMPLES,
+  MAX_DIMENSION_SCENARIO_LENGTH,
+  selectRepresentativeSampleIds,
+  type DimensionSampleStrategy,
+  type DimensionTaskType,
+} from "@/lib/dimensionGeneration";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -145,6 +157,9 @@ export function EvaluationPanel({
   const [scenario, setScenario] = useState(
     newDimensionContext?.userRequirement ?? ""
   );
+  const [businessScenario, setBusinessScenario] = useState("");
+  const [dimensionTaskType, setDimensionTaskType] =
+    useState<DimensionTaskType>("text_generation");
   const [evalPrompt, setEvalPrompt] = useState(
     newDimensionContext?.evalPrompt ?? ""
   );
@@ -167,6 +182,10 @@ export function EvaluationPanel({
   // 候选维度列表（待办勾选式）：AI 生成或手动添加，selected 决定是否纳入本次评价。
   const [candidates, setCandidates] = useState<CandidateDimension[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [sampleStrategy, setSampleStrategy] =
+    useState<DimensionSampleStrategy>("coverage");
+  const [sampleCount, setSampleCount] = useState(3);
+  const [selectedSampleIds, setSelectedSampleIds] = useState<string[]>([]);
 
   const { evalResults, status, error, genDimensions, generatePrompt, evaluate, cancel } =
     evaluation;
@@ -218,6 +237,37 @@ export function EvaluationPanel({
     [inputs]
   );
 
+  const sampleCandidates = useMemo(
+    () => listDimensionSampleCandidates(inputs, results, expectedAnswerKey),
+    [expectedAnswerKey, inputs, results]
+  );
+
+  useEffect(() => {
+    setSelectedSampleIds(
+      selectRepresentativeSampleIds(
+        sampleCandidates,
+        sampleStrategy,
+        sampleCount
+      )
+    );
+  }, [sampleCandidates, sampleCount, sampleStrategy]);
+
+  const selectedGenerationSamples = useMemo(
+    () =>
+      buildDimensionGenerationSamples({
+        inputs,
+        results,
+        selectedInputIds: selectedSampleIds,
+        expectedAnswerKey,
+      }),
+    [expectedAnswerKey, inputs, results, selectedSampleIds]
+  );
+
+  const sampleCandidateById = useMemo(
+    () => new Map(sampleCandidates.map((candidate) => [candidate.inputId, candidate])),
+    [sampleCandidates]
+  );
+
   const expectedCoverage = useMemo(() => {
     const scopedInputs = inputs.filter((input) =>
       effectiveScopeIds.includes(input.id)
@@ -250,10 +300,25 @@ export function EvaluationPanel({
   // AI 按测评需求生成候选维度 → 追加到待办列表（默认不勾选，由用户自行挑选）。
   // 再次点击为「追加一批」：不覆盖已有维度（尤其已勾选的），按维度名去重，总数封顶 15 条。
   const handleGenDimensions = async () => {
-    if (!scenario.trim() || !judgeModelId) return;
+    if (
+      !scenario.trim() ||
+      !businessScenario.trim() ||
+      !judgeModelId ||
+      selectedGenerationSamples.length === 0
+    ) {
+      return;
+    }
     if (candidates.length >= MAX_DIMENSIONS) return;
     try {
-      const generated = await genDimensions(scenario.trim(), judgeModelId);
+      const generated = await genDimensions(
+        {
+          objective: scenario.trim(),
+          businessScenario: businessScenario.trim(),
+          taskType: dimensionTaskType,
+          samples: selectedGenerationSamples,
+        },
+        judgeModelId
+      );
       setCandidates((prev) => {
         const existingNames = new Set(
           [...(newDimensionContext?.existingDimensions ?? []), ...prev]
@@ -385,6 +450,16 @@ export function EvaluationPanel({
     );
   };
 
+  const toggleSelectedSample = (inputId: string) => {
+    setSelectedSampleIds((current) =>
+      current.includes(inputId)
+        ? current.filter((id) => id !== inputId)
+        : current.length >= MAX_DIMENSION_SAMPLES
+          ? current
+          : [...current, inputId]
+    );
+  };
+
   const selectedDimensions = candidates
     .filter((dim) => dim.selected)
     .map((dim) => ({
@@ -404,7 +479,9 @@ export function EvaluationPanel({
     enabled &&
     judgeReady &&
     !!scenario.trim() &&
+    !!businessScenario.trim() &&
     !!judgeModelId &&
+    selectedGenerationSamples.length > 0 &&
     !isGeneratingDim &&
     !reachedDimensionLimit;
   const canGenerate =
@@ -497,17 +574,54 @@ export function EvaluationPanel({
 
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-gray-700">
-              测评需求（描述你的评价场景）
+              评测目标（你想判断什么）
             </label>
             <textarea
-              aria-label="测评需求"
+              aria-label="评测目标"
               value={scenario}
               onChange={(event) => setScenario(event.target.value)}
               disabled={judgeDisabled}
+              maxLength={MAX_DIMENSION_OBJECTIVE_LENGTH}
               rows={2}
-              placeholder="例如：评价各模型对商品文案的吸引力、信息完整度与合规性，重点关注卖点突出程度。"
+              placeholder="例如：判断客服回复是否准确解决问题，并且信息完整、表达自然。"
               className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-100"
             />
+          </div>
+
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr),220px]">
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+              业务场景
+              <textarea
+                aria-label="业务场景"
+                value={businessScenario}
+                onChange={(event) => setBusinessScenario(event.target.value)}
+                disabled={judgeDisabled}
+                maxLength={MAX_DIMENSION_SCENARIO_LENGTH}
+                rows={2}
+                placeholder="例如：电商售后客服，回复将直接发送给消费者。"
+                className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 text-sm font-normal disabled:bg-gray-100"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-sm font-medium text-gray-700">
+              任务类型
+              <select
+                aria-label="任务类型"
+                value={dimensionTaskType}
+                onChange={(event) =>
+                  setDimensionTaskType(event.target.value as DimensionTaskType)
+                }
+                disabled={judgeDisabled}
+                className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-normal disabled:bg-gray-100"
+              >
+                {Object.entries(DIMENSION_TASK_TYPE_LABELS).map(
+                  ([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  )
+                )}
+              </select>
+            </label>
           </div>
 
           <div className="flex flex-col gap-2 rounded-md border border-slate-200 bg-slate-50/70 p-3">
@@ -581,12 +695,115 @@ export function EvaluationPanel({
             )}
           </div>
 
+          <div className="flex flex-col gap-3 rounded-md border border-cyan-200 bg-cyan-50/50 p-3">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  代表性输入输出样本
+                </p>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  当前由通用模型结合内部预设与下列样本生成维度，OpenJudge 尚未接入。
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-2 py-1 text-xs text-cyan-700">
+                已选 {selectedGenerationSamples.length}/{sampleCandidates.length} 条
+              </span>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr),140px]">
+              <label className="flex flex-col gap-1 text-xs text-slate-600">
+                抽样策略
+                <select
+                  aria-label="代表性样本策略"
+                  value={sampleStrategy}
+                  onChange={(event) =>
+                    setSampleStrategy(
+                      event.target.value as DimensionSampleStrategy
+                    )
+                  }
+                  className="rounded-md border border-cyan-200 bg-white px-2 py-1.5 text-sm text-slate-700"
+                >
+                  {Object.entries(DIMENSION_SAMPLE_STRATEGY_LABELS).map(
+                    ([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    )
+                  )}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-slate-600">
+                样本数量（最多 {MAX_DIMENSION_SAMPLES}）
+                <input
+                  aria-label="代表性样本数量"
+                  type="number"
+                  min={1}
+                  max={MAX_DIMENSION_SAMPLES}
+                  value={sampleCount}
+                  onChange={(event) =>
+                    setSampleCount(
+                      Math.min(
+                        MAX_DIMENSION_SAMPLES,
+                        Math.max(
+                          1,
+                          Math.floor(Number(event.target.value) || 1)
+                        )
+                      )
+                    )
+                  }
+                  className="rounded-md border border-cyan-200 bg-white px-2 py-1.5 text-sm text-slate-700"
+                />
+              </label>
+            </div>
+
+            {selectedSampleIds.length === 0 ? (
+              <p className="rounded-md border border-dashed border-cyan-200 bg-white px-3 py-3 text-center text-xs text-slate-400">
+                当前没有可发送的输入输出样本，不能生成评价维度。
+              </p>
+            ) : (
+              <ul className="grid gap-2 md:grid-cols-2">
+                {selectedSampleIds.map((inputId) => {
+                  const candidate = sampleCandidateById.get(inputId);
+                  if (!candidate) return null;
+                  return (
+                    <li key={inputId}>
+                      <label className="flex cursor-pointer gap-2 rounded-md border border-cyan-100 bg-white p-2 text-xs">
+                        <input
+                          type="checkbox"
+                          aria-label={`发送代表性样本 Case ${candidate.index + 1}`}
+                          checked
+                          onChange={() => toggleSelectedSample(inputId)}
+                          className="mt-0.5"
+                        />
+                        <span className="min-w-0">
+                          <span className="block truncate font-medium text-slate-700">
+                            Case {candidate.index + 1}：
+                            {candidate.prompt || "（空 prompt）"}
+                          </span>
+                          <span className="mt-1 block text-slate-500">
+                            成功 {candidate.successCount} · 失败 {candidate.errorCount} ·
+                            {candidate.hasExpectedAnswer
+                              ? " 有标准答案"
+                              : " 无标准答案"}
+                          </span>
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            <p className="text-xs text-slate-500">
+              仅发送截断后的文字、输出状态与图片数量，不发送原始图片、base64 或完整错误文本。取消勾选可排除样本；调整策略或数量会重新确定性抽样。
+            </p>
+          </div>
+
           <div className="flex flex-col gap-2.5 rounded-md border border-indigo-100 bg-indigo-50/40 p-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
                 评价维度（勾选要考察的维度，各维度独立打分、不算总分）
               </label>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 已勾选 {validDimensions.length} 个
               </span>
             </div>
@@ -622,9 +839,11 @@ export function EvaluationPanel({
                     ? "AI 生成评价维度"
                     : "再来一批新维度"}
               </button>
-              {!scenario.trim() && (
-                <span className="text-xs text-gray-400">
-                  先填写上方测评需求，按钮即可点亮
+              {(!scenario.trim() ||
+                !businessScenario.trim() ||
+                selectedGenerationSamples.length === 0) && (
+                <span className="text-xs text-gray-500">
+                  先填写评测目标和业务场景，并保留至少 1 条样本
                 </span>
               )}
               {reachedDimensionLimit && (
@@ -635,7 +854,7 @@ export function EvaluationPanel({
             </div>
 
             {candidates.length === 0 ? (
-              <p className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-3 text-center text-xs text-gray-400">
+              <p className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-3 text-center text-xs text-gray-500">
                 点击「AI 生成评价维度」让模型按你的需求生成候选维度，
                 <span className="font-medium text-gray-500">勾选你想考察的</span>
                 ；觉得不够可点「再来一批新维度」继续追加，也可手动添加。
@@ -705,7 +924,7 @@ export function EvaluationPanel({
               >
                 + 手动添加维度
               </button>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-500">
                 共 {candidates.length}/{MAX_DIMENSIONS} 条
               </span>
             </div>
