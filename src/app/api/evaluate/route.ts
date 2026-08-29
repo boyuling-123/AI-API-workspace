@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { evaluateOneInput } from "@/services/evaluateService";
 import type { EvaluateInputItem } from "@/services/evaluateService";
 import type { EvalDimension, EvaluationMode } from "@/types";
+import {
+  EvaluationRubricValidationError,
+  parseEvaluationRubrics,
+} from "@/lib/evaluationRubric";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -39,8 +43,15 @@ export async function POST(request: Request) {
   if (!body.modelId) {
     return NextResponse.json({ error: "缺少裁判模型 modelId" }, { status: 400 });
   }
-  if (!Array.isArray(body.dimensions) || body.dimensions.length === 0) {
-    return NextResponse.json({ error: "缺少评价维度 dimensions" }, { status: 400 });
+  let dimensions: EvalDimension[];
+  try {
+    dimensions = parseEvaluationRubrics(body.dimensions);
+  } catch (error) {
+    const message =
+      error instanceof EvaluationRubricValidationError
+        ? error.message
+        : "评价维度校验失败";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 
   try {
@@ -48,7 +59,7 @@ export async function POST(request: Request) {
       body.item,
       body.evalPrompt,
       body.modelId,
-      body.dimensions,
+      dimensions,
       body.evaluationMode ?? "comparison"
     );
     return NextResponse.json(result);

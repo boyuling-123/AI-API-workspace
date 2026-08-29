@@ -6,6 +6,10 @@ import type {
   TaskInput,
 } from "@/types";
 import { resolveExpectedAnswer } from "@/services/expectedAnswer";
+import {
+  analyzeEvaluationRubric,
+  normalizeEvaluationRubricName,
+} from "@/lib/evaluationRubric";
 
 export interface NewDimensionAnalysis {
   dimensions: EvalDimension[];
@@ -20,7 +24,7 @@ export interface NewDimensionPreview {
 }
 
 export function normalizeEvaluationDimensionName(name: string): string {
-  return name.trim().replace(/\s+/g, " ").toLocaleLowerCase();
+  return normalizeEvaluationRubricName(name);
 }
 
 /** Keeps only unique dimensions and reports names already present in the lineage. */
@@ -46,10 +50,13 @@ export function analyzeNewEvaluationDimensions(
       continue;
     }
     seen.add(normalized);
-    dimensions.push({
-      name,
-      desc: dimension.desc?.trim() || undefined,
-    });
+    const structured = analyzeEvaluationRubric({ ...dimension, name }).dimension;
+    dimensions.push(
+      structured ?? {
+        name,
+        desc: dimension.desc?.trim() || undefined,
+      }
+    );
   }
 
   return { dimensions, duplicateNames };

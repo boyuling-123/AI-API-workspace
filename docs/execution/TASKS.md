@@ -177,7 +177,7 @@
 - [x] 推送分支并创建 [PR #19](https://github.com/boyuling-123/AI-API-workspace/pull/19)；workflow run `33239133343` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33239314190` 的两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #19 为 Merged，合并 SHA 为 `fb140fb`。
 
-## 进行中：PR 04C 人工评分与偏好排序上下文
+## 已完成：PR 04C 人工评分与偏好排序上下文
 
 分支：`codex/feat-dimension-human-feedback`
 
@@ -190,7 +190,22 @@
 - [x] 视觉证据已人工检查；本地 quality 通过 72 项单测、2 项压力测试与 19 路由构建，全量 17 项 Playwright 通过。
 - [x] 功能提交 `c5266d6` 在独立干净工作树全新安装 434 个包，quality 与 17 项 Playwright 复验通过，结束时零改动。
 - [x] 推送分支并创建 [PR #20](https://github.com/boyuling-123/AI-API-workspace/pull/20)；workflow run `33240897489` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 安全合并并回写状态。
+- [x] 最终文档提交对应 workflow run `33241134290` 的两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #20 为 Merged，合并 SHA 为 `2077b3b`。
+
+## 进行中：PR 04D 结构化 Simple Rubrics 与发布前校验
+
+分支：`codex/feat-structured-simple-rubrics`
+
+- [x] 扩展 `EvalDimension`，新评价支持定义、固定 `0/5/10` 评分锚点、证据要求和可执行判断规则；字段保持可选以兼容旧历史记录。
+- [x] 无人工评分或排序时明确使用 Simple Rubrics 一次生成模式；有人工反馈时仍明确为一次上下文生成，不冒充 Iterative Rubrics Generator。
+- [x] AI 维度输出必须完整包含结构化 Rubric；拒绝旧式 `name/desc` 输出，不在服务端暗自编造缺失标准。
+- [x] 页面支持逐项检查和编辑 Rubric，并提供可审阅的按定义补齐模板；缺任一字段、重复名称或非法锚点时，Prompt 与 Judge 调用均被阻断。
+- [x] `/api/gen-eval-prompt` 与 `/api/evaluate` 在模型调用前执行同一严格 Schema 校验，Judge Prompt 原样携带定义、锚点、证据和判断规则。
+- [x] 旧评价记录仍可展示和参与维度血缘去重；新结构化记录保留全部 Rubric 字段。
+- [x] 真实源码单测覆盖规范化、长度、重复、脱敏、畸形模型输出、路由零调用阻断、Prompt 与旧记录兼容；Mock Playwright 覆盖 Simple 模式、缺失锚点、恢复提交、零自动评价和 WCAG。
+- [x] 保存并人工检查视觉证据；本地 quality 通过 238 文件密钥扫描、84 项单测、2 项压力测试和 19 路由构建，全量 18 项 Playwright 通过。
+- [ ] 功能提交在独立干净工作树完成全新安装、全门禁复验和零改动检查。
+- [ ] 推送分支、创建 PR、等待两道 GitHub CI，通过后回写矩阵并安全合并。
 
 ## 硬门禁
 

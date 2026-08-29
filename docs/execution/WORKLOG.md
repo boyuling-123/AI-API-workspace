@@ -371,3 +371,32 @@
 - DOC-003 与 DIM-004 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。DIM-006 仍保持“设计中”。
 
 下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #20。
+
+## 2026-08-29：PR 04C 合并与 PR 04D 启动
+
+- PR #20 的最终文档提交对应 workflow run `33241134290` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 仍为预期祖先后，以普通 `git push origin HEAD:main` 完成非强推 fast-forward 合并；GitHub 已确认 PR #20 状态为 Merged，合并 SHA 为 `2077b3b`。
+- 本地 `main` 同步到 `2077b3b`，随后从最新 `main` 创建短生命周期分支 `codex/feat-structured-simple-rubrics`。
+- PR 04D 只领取 DIM-005 与 DIM-008：无人工反馈的 Simple Rubrics 和完整 Rubric 发布前校验。OpenJudge、Iterative、权重/一票否决和 Evaluator 版本化继续保留给后续 PR。
+
+## 2026-08-29：PR 04D 本地实现
+
+- `EvalDimension` 增加可选的 `scoreLevels`、`evidenceRequirements` 与 `judgeInstruction`，新 Schema 固定要求 `0/5/10` 三个锚点并限制名称、定义、标准、证据和判断规则长度。
+- `genDimensionsService.ts` 在无人工反馈时标记 Simple Rubrics 模式，要求模型一次返回 4–8 条完整结构；旧式 `name/desc`、重复名称、错误锚点和畸形 JSON 均失败，诊断片段先脱敏。
+- 页面展示“Rubric 完整/待补”，支持展开编辑每个字段和显式生成通用模板；不完整或重名候选无法调用 `/api/gen-eval-prompt` 或 `/api/evaluate`。
+- Prompt 生成与正式 Judge 服务都重新解析完整 Schema，并把定义、锚点、证据和可执行规则写入模型上下文；路由边界在模型调用前返回 400。
+- 旧历史 `name/desc` 记录保持可读，结构化记录在评价血缘中保留全部字段；新增维度重复名提示与严格完整性校验并行工作。
+- 新增真实源码单测与 `structured-rubrics.spec.ts` Mock 用户路径；专项测试验证缺失 5 分锚点时 Prompt 和 Judge 均为零调用，恢复后只生成 Prompt，不自动启动评价。
+
+下一步：生成视觉证据，重复全量本地门禁，再提交功能并进入独立干净工作树验收。
+
+## 2026-08-29：PR 04D 本地验收
+
+- `evaluationRubric.test.ts`、`genDimensionsService.test.ts`、`rubricRouteBoundary.test.ts`、`rubricPromptServices.test.ts` 和既有回归直接覆盖真实源码；全量单测增至 84 项，压力测试保持 2 项。
+- `structured-rubrics.spec.ts` 精确验证 Simple 模式、完整 Rubric 请求、缺失 5 分锚点时 Prompt/Judge 零调用、恢复后只生成 Prompt，以及 WCAG 严重与致命问题为零。
+- `new-dimension-evaluation.spec.ts` 同步为完整 Rubric 请求，并验证不完整候选仍即时报告历史维度重名；旧评价记录可读性另有单测锁定。
+- 视觉证据 `docs/evidence/pr-04d/structured-simple-rubric.png` 已在页面回顶后重拍并人工检查，模式、完整计数、定义、三个锚点、证据、判断规则和操作按钮均可见，无粘滞页头遮挡。
+- 本地 `npm run quality` 通过 238 文件 Secret Scan、零 lint、typecheck、84 项单测、2 项压力测试和 19 路由生产构建；全量 18 项 Playwright 通过。
+- DIM-005 与 DIM-008 已达到本地“已实现”；独立干净工作树、GitHub 两道 CI 和最终 Trace 完成前不标记“已验证”。
+
+下一步：提交当前功能与本地证据，在独立 `/tmp` 工作树全新安装依赖并重复执行全部门禁。

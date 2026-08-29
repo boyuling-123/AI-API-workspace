@@ -43,6 +43,18 @@ import {
   type DimensionHumanFeedbackDraft,
   type DimensionHumanFeedbackMode,
 } from "@/lib/dimensionHumanFeedback";
+import {
+  analyzeEvaluationRubric,
+  createDefinitionBasedRubric,
+  createEmptyEvaluationRubric,
+  MAX_RUBRIC_CRITERIA_LENGTH,
+  MAX_RUBRIC_DEFINITION_LENGTH,
+  MAX_RUBRIC_EVIDENCE_ITEMS,
+  MAX_RUBRIC_EVIDENCE_LENGTH,
+  MAX_RUBRIC_JUDGE_INSTRUCTION_LENGTH,
+  MAX_RUBRIC_NAME_LENGTH,
+  REQUIRED_RUBRIC_SCORES,
+} from "@/lib/evaluationRubric";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -64,22 +76,22 @@ const REFERENCE_DEFAULT_PROMPT = `你正在评测微调模型输出。请严格�
 - 只根据本条输入、标准答案和模型输出判分，不要因为其他目标表现较差而相对给高分。`;
 
 const REFERENCE_DEFAULT_DIMENSIONS: EvalDimension[] = [
-  {
-    name: "答案正确性",
-    desc: "模型输出是否与标准答案在语义、工具选择、类别判断或核心结论上匹配。",
-  },
-  {
-    name: "格式合规性",
-    desc: "输出格式是否满足要求，尤其是 JSON 可解析性、字段名、字段类型和白名单约束。",
-  },
-  {
-    name: "关键字段完整性",
-    desc: "是否包含标准答案要求的关键字段、参数、追问字段或必要理由。",
-  },
-  {
-    name: "可上线程度",
-    desc: "综合判断该输出是否可以直接进入业务链路，或仅需轻微人工修正。",
-  },
+  createDefinitionBasedRubric(
+    "答案正确性",
+    "模型输出是否与标准答案在语义、工具选择、类别判断或核心结论上匹配。"
+  ),
+  createDefinitionBasedRubric(
+    "格式合规性",
+    "输出格式是否满足要求，尤其是 JSON 可解析性、字段名、字段类型和白名单约束。"
+  ),
+  createDefinitionBasedRubric(
+    "关键字段完整性",
+    "是否包含标准答案要求的关键字段、参数、追问字段或必要理由。"
+  ),
+  createDefinitionBasedRubric(
+    "可上线程度",
+    "综合判断该输出是否可以直接进入业务链路，或仅需轻微人工修正。"
+  ),
 ];
 
 interface JudgeModel {
@@ -480,6 +492,52 @@ export function EvaluationPanel({
     );
   };
 
+  const updateCandidateScoreLevel = (
+    index: number,
+    score: (typeof REQUIRED_RUBRIC_SCORES)[number],
+    criteria: string
+  ) => {
+    setCandidates((prev) =>
+      prev.map((dimension, candidateIndex) => {
+        if (candidateIndex !== index) return dimension;
+        const existing = new Map(
+          (dimension.scoreLevels ?? []).map((level) => [level.score, level])
+        );
+        return {
+          ...dimension,
+          scoreLevels: REQUIRED_RUBRIC_SCORES.map((requiredScore) => ({
+            score: requiredScore,
+            criteria:
+              requiredScore === score
+                ? criteria
+                : existing.get(requiredScore)?.criteria ?? "",
+          })),
+        };
+      })
+    );
+  };
+
+  const updateCandidateEvidence = (index: number, value: string) => {
+    updateCandidate(index, {
+      evidenceRequirements: value ? value.split(/\r?\n/) : [],
+    });
+  };
+
+  const fillCandidateRubricTemplate = (index: number) => {
+    setCandidates((prev) =>
+      prev.map((dimension, candidateIndex) => {
+        if (candidateIndex !== index) return dimension;
+        const name = dimension.name.trim();
+        const definition = dimension.desc?.trim() ?? "";
+        if (!name || !definition) return dimension;
+        return {
+          ...createDefinitionBasedRubric(name, definition),
+          selected: dimension.selected,
+        };
+      })
+    );
+  };
+
   const removeCandidate = (index: number) => {
     setCandidates((prev) => prev.filter((_, idx) => idx !== index));
   };
@@ -489,7 +547,7 @@ export function EvaluationPanel({
     setCandidates((prev) =>
       prev.length >= MAX_DIMENSIONS
         ? prev
-        : [...prev, { name: "", desc: "", selected: true }]
+        : [...prev, { ...createEmptyEvaluationRubric(), selected: true }]
     );
   };
 
@@ -642,19 +700,38 @@ export function EvaluationPanel({
     });
   };
 
-  const selectedDimensions = candidates
-    .filter((dim) => dim.selected)
-    .map((dim) => ({
-      name: dim.name,
-      desc: dim.desc,
-    }))
-    .filter((dim) => dim.name.length > 0);
+  const selectedCandidateCount = candidates.filter(
+    (candidate) => candidate.selected
+  ).length;
+  const rubricAnalysisByCandidateIndex = new Map<
+    number,
+    ReturnType<typeof analyzeEvaluationRubric>
+  >();
+  const selectedDimensions: EvalDimension[] = [];
+  candidates.forEach((candidate, index) => {
+    if (!candidate.selected) return;
+    const analysis = analyzeEvaluationRubric(candidate);
+    rubricAnalysisByCandidateIndex.set(index, analysis);
+    if (analysis.dimension) selectedDimensions.push(analysis.dimension);
+  });
+  const hasRubricErrors = Array.from(
+    rubricAnalysisByCandidateIndex.values()
+  ).some((analysis) => analysis.issues.length > 0);
   const dimensionAnalysis = analyzeNewEvaluationDimensions(
     selectedDimensions,
     newDimensionContext?.existingDimensions ?? []
   );
   const validDimensions = dimensionAnalysis.dimensions;
-  const duplicateDimensionNames = dimensionAnalysis.duplicateNames;
+  // Name conflicts must surface before the remaining Rubric fields are complete.
+  const duplicateDimensionNames = analyzeNewEvaluationDimensions(
+    candidates
+      .filter((candidate) => candidate.selected && candidate.name.trim())
+      .map((candidate) => ({ name: candidate.name, desc: candidate.desc })),
+    newDimensionContext?.existingDimensions ?? []
+  ).duplicateNames;
+  const usesHumanFeedback = selectedGenerationSamples.some(
+    (sample) => sample.humanFeedback
+  );
 
   const reachedDimensionLimit = candidates.length >= MAX_DIMENSIONS;
   const canGenDimensions =
@@ -675,6 +752,8 @@ export function EvaluationPanel({
     !!scenario.trim() &&
     !!judgeModelId &&
     validDimensions.length > 0 &&
+    !hasRubricErrors &&
+    duplicateDimensionNames.length === 0 &&
     !isGenerating;
   const canEvaluate =
     enabled &&
@@ -682,6 +761,7 @@ export function EvaluationPanel({
     !!evalPrompt.trim() &&
     !!judgeModelId &&
     validDimensions.length > 0 &&
+    !hasRubricErrors &&
     duplicateDimensionNames.length === 0 &&
     (evaluationMode === "comparison" || expectedCoverage.matched > 0) &&
     effectiveScopeIds.length > 0 &&
@@ -922,7 +1002,16 @@ export function EvaluationPanel({
                   代表性输入输出样本
                 </p>
                 <p className="mt-0.5 text-xs text-slate-500">
-                  当前由通用模型结合内部预设与下列样本生成维度，OpenJudge 尚未接入。
+                  当前由通用模型结合内部预设与下列样本生成结构化 Rubrics，OpenJudge 尚未接入。
+                </p>
+                <p
+                  aria-label="维度生成模式"
+                  className="mt-1 text-xs font-medium text-cyan-800"
+                >
+                  当前模式：
+                  {usesHumanFeedback
+                    ? "人工反馈上下文（一次生成，非 Iterative）"
+                    : "Simple Rubrics（无人工评分或排序）"}
                 </p>
               </div>
               <span className="rounded-full bg-white px-2 py-1 text-xs text-cyan-700">
@@ -1195,7 +1284,7 @@ export function EvaluationPanel({
                 评价维度（勾选要考察的维度，各维度独立打分、不算总分）
               </label>
               <span className="text-xs text-gray-500">
-                已勾选 {validDimensions.length} 个
+                已勾选 {selectedCandidateCount} 个 · 完整 {validDimensions.length} 个
               </span>
             </div>
 
@@ -1249,63 +1338,187 @@ export function EvaluationPanel({
 
             {candidates.length === 0 ? (
               <p className="rounded-md border border-dashed border-gray-200 bg-white px-3 py-3 text-center text-xs text-gray-500">
-                点击「AI 生成评价维度」让模型按你的需求生成候选维度，
+                点击「AI 生成评价维度」让模型按你的需求生成结构化候选 Rubrics，
                 <span className="font-medium text-gray-500">勾选你想考察的</span>
                 ；觉得不够可点「再来一批新维度」继续追加，也可手动添加。
               </p>
             ) : (
               <ul className="flex flex-col gap-1.5">
-                {candidates.map((candidate, index) => (
-                  <li
-                    key={index}
-                    className={`flex items-start gap-2 rounded-md border p-2 transition ${
-                      candidate.selected
-                        ? "border-indigo-200 bg-white"
-                        : "border-gray-200 bg-gray-50 opacity-70"
-                    }`}
-                  >
-                    <input
-                      aria-label={`选择维度 ${candidate.name || index + 1}`}
-                      type="checkbox"
-                      checked={candidate.selected}
-                      onChange={() => toggleCandidate(index)}
-                      disabled={judgeDisabled}
-                      className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-indigo-600"
-                    />
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <input
-                        aria-label={`维度 ${index + 1} 名称`}
-                        type="text"
-                        value={candidate.name}
-                        onChange={(event) =>
-                          updateCandidate(index, { name: event.target.value })
-                        }
-                        disabled={judgeDisabled}
-                        placeholder="维度名（如 准确性）"
-                        className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm font-medium disabled:bg-gray-100"
-                      />
-                      <input
-                        aria-label={`维度 ${index + 1} 说明`}
-                        type="text"
-                        value={candidate.desc ?? ""}
-                        onChange={(event) =>
-                          updateCandidate(index, { desc: event.target.value })
-                        }
-                        disabled={judgeDisabled}
-                        placeholder="维度说明（这条具体考察什么）"
-                        className="w-full rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600 disabled:bg-gray-100"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeCandidate(index)}
-                      disabled={judgeDisabled}
-                      className="mt-0.5 shrink-0 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-40"
+                {candidates.map((candidate, index) => {
+                  const displayAnalysis =
+                    rubricAnalysisByCandidateIndex.get(index) ??
+                    analyzeEvaluationRubric(candidate);
+                  const rubricMessages = candidate.selected
+                    ? Array.from(
+                        new Set(
+                          displayAnalysis.issues.map((issue) => issue.message)
+                        )
+                      )
+                    : [];
+                  const canFillTemplate = Boolean(
+                    candidate.name.trim() && candidate.desc?.trim()
+                  );
+                  return (
+                    <li
+                      key={index}
+                      className={`rounded-md border p-2 transition ${
+                        candidate.selected
+                          ? "border-indigo-200 bg-white"
+                          : "border-gray-200 bg-gray-50 opacity-70"
+                      }`}
                     >
-                      删除
-                    </button>
-                  </li>
-                ))}
+                      <div className="flex items-start gap-2">
+                        <input
+                          aria-label={`选择维度 ${candidate.name || index + 1}`}
+                          type="checkbox"
+                          checked={candidate.selected}
+                          onChange={() => toggleCandidate(index)}
+                          disabled={judgeDisabled}
+                          className="mt-1 h-4 w-4 shrink-0 cursor-pointer accent-indigo-600"
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                          <input
+                            aria-label={`维度 ${index + 1} 名称`}
+                            type="text"
+                            maxLength={MAX_RUBRIC_NAME_LENGTH}
+                            value={candidate.name}
+                            onChange={(event) =>
+                              updateCandidate(index, { name: event.target.value })
+                            }
+                            disabled={judgeDisabled}
+                            placeholder="维度名（如 准确性）"
+                            className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm font-medium disabled:bg-gray-100"
+                          />
+                          <textarea
+                            aria-label={`维度 ${index + 1} 说明`}
+                            maxLength={MAX_RUBRIC_DEFINITION_LENGTH}
+                            value={candidate.desc ?? ""}
+                            onChange={(event) =>
+                              updateCandidate(index, { desc: event.target.value })
+                            }
+                            disabled={judgeDisabled}
+                            rows={2}
+                            placeholder="清晰定义：说明该维度具体考察什么"
+                            className="w-full resize-y rounded-md border border-gray-200 px-2 py-1 text-xs text-gray-600 disabled:bg-gray-100"
+                          />
+                          <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                            <span
+                              className={`rounded-full px-2 py-0.5 font-medium ${
+                                displayAnalysis.dimension
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : "bg-amber-50 text-amber-700"
+                              }`}
+                            >
+                              {displayAnalysis.dimension
+                                ? "Rubric 完整"
+                                : "Rubric 待补"}
+                            </span>
+                            {!displayAnalysis.dimension && canFillTemplate && (
+                              <button
+                                type="button"
+                                aria-label={`按定义补齐维度 ${index + 1} Rubric`}
+                                onClick={() => fillCandidateRubricTemplate(index)}
+                                disabled={judgeDisabled}
+                                className="rounded-md border border-indigo-200 px-2 py-0.5 font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-40"
+                              >
+                                按定义补齐模板
+                              </button>
+                            )}
+                          </div>
+                          <details className="rounded-md border border-slate-200 bg-slate-50/70 px-2 py-1.5">
+                            <summary className="cursor-pointer text-xs font-medium text-slate-700">
+                              评分锚点、证据要求与判断规则
+                            </summary>
+                            <div className="mt-2 flex flex-col gap-2">
+                              <div className="grid gap-2 sm:grid-cols-3">
+                                {REQUIRED_RUBRIC_SCORES.map((score) => (
+                                  <label
+                                    key={score}
+                                    className="flex flex-col gap-1 text-[11px] text-slate-600"
+                                  >
+                                    {score} 分标准
+                                    <textarea
+                                      aria-label={`维度 ${index + 1} ${score} 分标准`}
+                                      value={
+                                        candidate.scoreLevels?.find(
+                                          (level) => level.score === score
+                                        )?.criteria ?? ""
+                                      }
+                                      onChange={(event) =>
+                                        updateCandidateScoreLevel(
+                                          index,
+                                          score,
+                                          event.target.value
+                                        )
+                                      }
+                                      disabled={judgeDisabled}
+                                      maxLength={MAX_RUBRIC_CRITERIA_LENGTH}
+                                      rows={3}
+                                      className="resize-y rounded-md border border-slate-200 bg-white px-2 py-1"
+                                    />
+                                  </label>
+                                ))}
+                              </div>
+                              <label className="flex flex-col gap-1 text-[11px] text-slate-600">
+                                证据要求（每行一条，最多 {MAX_RUBRIC_EVIDENCE_ITEMS} 条）
+                                <textarea
+                                  aria-label={`维度 ${index + 1} 证据要求`}
+                                  value={(candidate.evidenceRequirements ?? []).join(
+                                    "\n"
+                                  )}
+                                  onChange={(event) =>
+                                    updateCandidateEvidence(index, event.target.value)
+                                  }
+                                  disabled={judgeDisabled}
+                                  maxLength={
+                                    (MAX_RUBRIC_EVIDENCE_LENGTH + 1) *
+                                    MAX_RUBRIC_EVIDENCE_ITEMS
+                                  }
+                                  rows={2}
+                                  placeholder="例如：引用与标准答案不一致的具体字段"
+                                  className="resize-y rounded-md border border-slate-200 bg-white px-2 py-1"
+                                />
+                              </label>
+                              <label className="flex flex-col gap-1 text-[11px] text-slate-600">
+                                可执行判断规则
+                                <textarea
+                                  aria-label={`维度 ${index + 1} 判断规则`}
+                                  value={candidate.judgeInstruction ?? ""}
+                                  onChange={(event) =>
+                                    updateCandidate(index, {
+                                      judgeInstruction: event.target.value,
+                                    })
+                                  }
+                                  disabled={judgeDisabled}
+                                  maxLength={MAX_RUBRIC_JUDGE_INSTRUCTION_LENGTH}
+                                  rows={2}
+                                  placeholder="说明先看什么证据、如何匹配评分锚点"
+                                  className="resize-y rounded-md border border-slate-200 bg-white px-2 py-1"
+                                />
+                              </label>
+                            </div>
+                          </details>
+                          {rubricMessages.length > 0 && (
+                            <div
+                              role="alert"
+                              className="rounded-md bg-red-50 px-2 py-1.5 text-[11px] text-red-700"
+                            >
+                              Rubric 尚未完成：{rubricMessages.join("；")}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeCandidate(index)}
+                          disabled={judgeDisabled}
+                          className="mt-0.5 shrink-0 rounded-md border border-red-200 px-2 py-1 text-xs text-red-600 transition hover:bg-red-50 disabled:opacity-40"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
               </ul>
             )}
 
@@ -1326,6 +1539,11 @@ export function EvaluationPanel({
               <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
                 以下维度与来源评价或本次其他维度重复，请修改后再继续：
                 {duplicateDimensionNames.join("、")}
+              </p>
+            )}
+            {hasRubricErrors && (
+              <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                所有已勾选维度都必须补齐定义、0/5/10 评分锚点、证据要求和判断规则，完成前不会生成 Judge Prompt 或启动评价。
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { structuredRubric } from "./fixtures/structuredRubric";
 
 interface DimensionHumanFeedbackCall {
   modelId: string;
@@ -53,10 +54,10 @@ test("requires complete human scores and preference rankings", async ({
       await route.fulfill({
         body: JSON.stringify({
           dimensions: [
-            {
-              name: "人工偏好贴合度",
-              desc: "输出是否符合人工评分和偏好排序反映的质量标准",
-            },
+            structuredRubric(
+              "人工偏好贴合度",
+              "输出是否符合人工评分和偏好排序反映的质量标准"
+            ),
           ],
         }),
         contentType: "application/json",

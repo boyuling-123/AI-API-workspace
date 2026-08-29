@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { generateEvalPrompt } from "@/services/evalPromptService";
 import type { EvalDimension } from "@/types";
+import {
+  EvaluationRubricValidationError,
+  parseEvaluationRubrics,
+} from "@/lib/evaluationRubric";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -36,11 +40,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "缺少生成模型 modelId" }, { status: 400 });
   }
 
+  let dimensions: EvalDimension[];
+  try {
+    dimensions = parseEvaluationRubrics(body.dimensions);
+  } catch (error) {
+    const message =
+      error instanceof EvaluationRubricValidationError
+        ? error.message
+        : "评价维度校验失败";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+
   try {
     const evalPrompt = await generateEvalPrompt(
       body.scenario,
       body.modelId,
-      body.dimensions ?? [],
+      dimensions,
       body.targetNames ?? []
     );
     return NextResponse.json({ evalPrompt });

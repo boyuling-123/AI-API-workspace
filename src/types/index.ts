@@ -297,8 +297,19 @@ export interface Evaluation {
 export interface EvalDimension {
   /** 维度名（如「准确性」），作为表格列头与评分键。 */
   name: string;
-  /** 维度说明（这条维度具体考察什么），供用户理解与裁判参考。 */
+  /** 维度定义（这条维度具体考察什么），供用户理解与裁判参考。 */
   desc?: string;
+  /** 结构化评分锚点；新建评价固定要求 0/5/10 三档，旧记录可缺省。 */
+  scoreLevels?: EvalDimensionScoreLevel[];
+  /** 裁判必须引用或检查的证据要求；旧记录可缺省。 */
+  evidenceRequirements?: string[];
+  /** 可直接执行的判定步骤或边界；旧记录可缺省。 */
+  judgeInstruction?: string;
+}
+
+export interface EvalDimensionScoreLevel {
+  score: number;
+  criteria: string;
 }
 
 /**

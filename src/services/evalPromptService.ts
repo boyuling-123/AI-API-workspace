@@ -1,5 +1,9 @@
 import type { EvalDimension } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
+import {
+  formatEvaluationRubricForPrompt,
+  parseEvaluationRubrics,
+} from "@/lib/evaluationRubric";
 
 /**
  * AI 自动生成评价 Prompt（服务端，M9 需求6；v4.5 改为按维度）：
@@ -9,15 +13,11 @@ import { chatWithModel } from "@/services/llmClient";
  */
 
 function buildDimensionsBlock(dimensions: EvalDimension[]): string {
-  if (dimensions.length === 0) {
-    return "（未指定具体维度，请结合场景自行拆解若干维度）";
-  }
   return dimensions
-    .map(
-      (dimension, index) =>
-        `${index + 1}. ${dimension.name}${dimension.desc ? `：${dimension.desc}` : ""}`
+    .map((dimension, index) =>
+      formatEvaluationRubricForPrompt(dimension, index)
     )
-    .join("\n");
+    .join("\n\n");
 }
 
 function buildGuide(
@@ -37,6 +37,7 @@ ${buildDimensionsBlock(dimensions)}
 要求：
 - 直接输出这段评价 Prompt 本身，不要任何额外解释、不要 markdown 代码块标记。
 - Prompt 中应明确：裁判须对每个目标、在上述每一个维度上单独打分（0-10 分，可含一位小数），并为每个维度给出一句简短理由。
+- Prompt 必须原样保留每个 Rubric 的定义、0/5/10 评分锚点、证据要求和判断规则，并要求先引用证据再评分。
 - 明确要求：不要计算总分、不要加权汇总，各维度独立评分即可。
 - 还应要求裁判给出总体结论与推荐项（纯文字，非分数）。
 - 语言简洁、可操作，便于裁判模型稳定执行。`;
@@ -48,7 +49,8 @@ export async function generateEvalPrompt(
   dimensions: EvalDimension[] = [],
   targetNames: string[] = []
 ): Promise<string> {
-  const guide = buildGuide(dimensions, targetNames);
+  const parsedDimensions = parseEvaluationRubrics(dimensions);
+  const guide = buildGuide(parsedDimensions, targetNames);
   const prompt = `${guide}\n\n=== 用户测评场景/要求 ===\n${scenario}\n=== 结束 ===`;
   const output = await chatWithModel({ modelId, prompt });
   return output.outputText.trim();

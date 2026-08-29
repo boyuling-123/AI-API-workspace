@@ -11,6 +11,7 @@ import {
   collectEvaluationLineageDimensions,
   getEvaluationRootId,
 } from "../../src/lib/newDimensionEvaluation";
+import { createDefinitionBasedRubric } from "../../src/lib/evaluationRubric";
 
 describe("new dimension evaluation", () => {
   it("rejects normalized duplicates from the source lineage and current selection", () => {
@@ -47,6 +48,24 @@ describe("new dimension evaluation", () => {
         (dimension) => dimension.name
       )
     ).toEqual(["准确性", "风格自然度", "格式合规"]);
+  });
+
+  it("keeps legacy records readable and preserves structured Rubrics", () => {
+    const structured = createDefinitionBasedRubric("事实准确性", "事实必须正确");
+    const dimensions = collectEvaluationLineageDimensions(
+      [
+        evaluationRecord("legacy", undefined, [
+          { name: "旧维度", desc: "历史记录只有名称和说明" },
+        ]),
+        evaluationRecord("structured", "legacy", [structured]),
+      ],
+      evaluationRecord("structured", "legacy", [structured])
+    );
+
+    expect(dimensions).toEqual([
+      { name: "旧维度", desc: "历史记录只有名称和说明" },
+      structured,
+    ]);
   });
 
   it("previews only source inputs with reusable outputs and required answers", () => {

@@ -286,6 +286,18 @@ describe("dimension generation context", () => {
     expect(prompt).toContain("人工评分（0-10，越高越好）");
     expect(prompt).toContain("Target A：8.5/10");
     expect(prompt).toContain("人工反馈备注：重点关注是否先核验订单");
+    expect(prompt).toContain(
+      "生成模式：人工反馈上下文（一次生成；不是 Iterative Rubrics Generator）"
+    );
+    expect(prompt).toContain('"scoreLevels"');
+    expect(prompt).toContain('"evidenceRequirements"');
+    expect(prompt).toContain('"judgeInstruction"');
+
+    const noFeedbackRequest = validRequest();
+    delete noFeedbackRequest.samples[0].humanFeedback;
+    expect(buildDimensionGenerationPrompt(noFeedbackRequest)).toContain(
+      "生成模式：Simple Rubrics（无人工评分或排序，一次生成结构化候选）"
+    );
 
     const rankingPrompt = buildDimensionGenerationPrompt({
       ...validRequest(),

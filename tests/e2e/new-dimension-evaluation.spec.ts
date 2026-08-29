@@ -7,7 +7,13 @@ interface EvaluateCall {
     inputId: string;
     targets: { targetId: string; targetName: string }[];
   };
-  dimensions: { name: string; desc?: string }[];
+  dimensions: {
+    name: string;
+    desc?: string;
+    scoreLevels?: { score: number; criteria: string }[];
+    evidenceRequirements?: string[];
+    judgeInstruction?: string;
+  }[];
 }
 
 async function prepareSourceEvaluation(page: Page): Promise<{
@@ -100,6 +106,9 @@ async function prepareSourceEvaluation(page: Page): Promise<{
   await page.getByRole("button", { name: "+ 手动添加维度" }).click();
   await page.getByLabel("维度 1 名称").fill("准确性");
   await page.getByLabel("维度 1 说明").fill("回答是否准确");
+  await page
+    .getByRole("button", { name: "按定义补齐维度 1 Rubric" })
+    .click();
   await page.getByLabel("评价 Prompt").fill("请按所选维度严格评价。");
   await page.getByRole("button", { name: "开始 AI 评价" }).click();
   await expect.poll(() => evaluateCalls.length).toBe(1);
@@ -134,6 +143,9 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
 
   await page.getByLabel("维度 1 名称").fill("风格自然度");
   await page.getByLabel("维度 1 说明").fill("表达是否自然、符合语境");
+  await page
+    .getByRole("button", { name: "按定义补齐维度 1 Rubric" })
+    .click();
   await page
     .getByRole("button", { name: "预览并确认新增维度评价" })
     .click();
@@ -171,7 +183,31 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
   await dialog.getByRole("button", { name: "确认并开始评价" }).click();
   await expect.poll(() => evaluateCalls.length).toBe(2);
   expect(evaluateCalls[1].dimensions).toEqual([
-    { name: "风格自然度", desc: "表达是否自然、符合语境" },
+    {
+      name: "风格自然度",
+      desc: "表达是否自然、符合语境",
+      scoreLevels: [
+        {
+          score: 0,
+          criteria:
+            "完全不满足“风格自然度”：存在关键错误、明显违规或结果不可用。",
+        },
+        {
+          score: 5,
+          criteria: "部分满足“风格自然度”，但仍有影响使用的明显缺陷。",
+        },
+        {
+          score: 10,
+          criteria:
+            "完全满足“风格自然度”：表达是否自然、符合语境，且没有可见缺陷。",
+        },
+      ],
+      evidenceRequirements: [
+        "指出输出中直接支持或违反“风格自然度”定义的具体内容；若关键内容缺失，明确说明缺失项。",
+      ],
+      judgeInstruction:
+        "先定位可核验的输出证据，再与 0/5/10 评分锚点比较；介于锚点时按缺陷严重度给出 0–10 分，最多 1 位小数。",
+    },
   ]);
   expect(runCalls).toHaveLength(1);
 

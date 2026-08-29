@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { structuredRubric } from "./fixtures/structuredRubric";
 
 interface DimensionRulesCall {
   modelId: string;
@@ -55,10 +56,10 @@ test("requires explicit Bad Case reasons and sends bounded hard rules", async ({
       await route.fulfill({
         body: JSON.stringify({
           dimensions: [
-            {
-              name: "规则遵循度",
-              desc: "回答是否满足明确硬规则并规避 Bad Case 风险",
-            },
+            structuredRubric(
+              "规则遵循度",
+              "回答是否满足明确硬规则并规避 Bad Case 风险"
+            ),
           ],
         }),
         contentType: "application/json",

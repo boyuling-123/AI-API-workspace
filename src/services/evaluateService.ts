@@ -5,6 +5,10 @@ import type {
   TargetDimensionScores,
 } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
+import {
+  formatEvaluationRubricForPrompt,
+  parseEvaluationRubrics,
+} from "@/lib/evaluationRubric";
 
 /**
  * 逐条评价（服务端，M9；v4.5 改为多维度）：一次处理一条输入，把该条各目标的输出交给裁判模型横向对比，
@@ -37,11 +41,10 @@ export interface EvaluateResultPerInput {
 
 function buildDimensionsBlock(dimensions: EvalDimension[]): string {
   return dimensions
-    .map(
-      (dimension, index) =>
-        `${index + 1}. ${dimension.name}${dimension.desc ? `：${dimension.desc}` : ""}`
+    .map((dimension, index) =>
+      formatEvaluationRubricForPrompt(dimension, index)
     )
-    .join("\n");
+    .join("\n\n");
 }
 
 function buildEvalGuide(
@@ -198,7 +201,8 @@ export async function evaluateOneInput(
   evaluationMode: EvaluationMode = "comparison",
   signal?: AbortSignal
 ): Promise<EvaluateResultPerInput> {
-  const prompt = `${buildEvalGuide(evalPrompt, dimensions, evaluationMode)}\n\n=== 输入 prompt ===\n${item.prompt}${buildExpectedBlock(item)}\n\n=== 各目标输出 ===\n${buildTargetsBlock(item)}`;
+  const parsedDimensions = parseEvaluationRubrics(dimensions);
+  const prompt = `${buildEvalGuide(evalPrompt, parsedDimensions, evaluationMode)}\n\n=== 输入 prompt ===\n${item.prompt}${buildExpectedBlock(item)}\n\n=== 各目标输出 ===\n${buildTargetsBlock(item)}`;
 
   const output = await chatWithModel(
     { modelId, prompt, images: item.images },
@@ -216,5 +220,5 @@ export async function evaluateOneInput(
     );
   }
 
-  return normalizeResult(parsed, item, dimensions);
+  return normalizeResult(parsed, item, parsedDimensions);
 }

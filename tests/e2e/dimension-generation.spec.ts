@@ -1,5 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { structuredRubric } from "./fixtures/structuredRubric";
 
 interface DimensionGenerationCall {
   modelId: string;
@@ -66,10 +67,10 @@ test("previews deterministic samples and generates dimensions only after a click
       await route.fulfill({
         body: JSON.stringify({
           dimensions: [
-            {
-              name: "上下文贴合度",
-              desc: "回答是否贴合业务目标与代表性样本",
-            },
+            structuredRubric(
+              "上下文贴合度",
+              "回答是否贴合业务目标与代表性样本"
+            ),
           ],
         }),
         contentType: "application/json",
