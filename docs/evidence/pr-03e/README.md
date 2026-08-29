@@ -21,7 +21,8 @@
 - 确认弹窗通过 WCAG 2A/2AA/2.1A/2.1AA 严重与致命问题扫描。
 - 本地 `npm run quality` 通过：213 文件 Secret Scan、零 lint、typecheck、55 项单测、2 项压力测试和 19 路由生产构建。
 - 本地 `npm run test:e2e` 通过：14 项 Playwright 用户路径与可访问性测试。
-- 独立干净工作树与 GitHub CI 证据将在提交后回写。
+- 提交 `18bc0df` 的独立 `/tmp` 工作树执行全新 `npm ci`（434 个包），随后 quality 与 14 项 Playwright 再次全部通过，复验结束时零改动。
+- GitHub CI 证据将在 PR 创建后回写。
 
 ## 视觉证据
 

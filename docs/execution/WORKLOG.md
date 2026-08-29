@@ -249,6 +249,7 @@
 - `new-dimension-evaluation.spec.ts` 通过 Mock 验证普通评价到增量评价的完整路径、确认边界、精确请求、独立留档与来源追溯；弹窗无严重或致命 WCAG 问题。
 - 视觉证据 `docs/evidence/pr-03e/new-dimension-confirmation.png` 已人工检查，完整显示 1 次 Judge、0 次被测模型、1 条历史复用和 1 个新维度，无遮挡或截断。
 - 本地 `npm run quality` 通过：213 文件 Secret Scan、零 lint、typecheck、55 项单测、2 项压力测试和 19 路由生产构建；全量 14 项 Playwright 通过。
+- 提交 `18bc0df` 在独立 `/tmp` 工作树通过全新 `npm ci`（434 个包）、quality 和 14 项 Playwright；全部测试使用 Mock，复验结束后工作树零改动。
 - TASK-005 四种范围均已完成代码与本地验收；在 PR 03E GitHub CI 通过前严格保持“已实现”，不提前标记“已验证”。
 
 下一步：提交实现，在独立干净工作树全新安装复验，再推送并创建 PR 03E。
