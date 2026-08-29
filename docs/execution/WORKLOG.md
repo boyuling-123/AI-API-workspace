@@ -180,5 +180,6 @@
 - 新增计划解析、稀疏检查点、精确执行、恢复和非法计划单测；两条 Mock Playwright 路径证明失败项只补发一次、指定 `2-3` 只发四次、非法序号零请求。
 - 弹窗已通过 WCAG 严重与致命问题扫描；视觉证据保存在 `docs/evidence/pr-03c/selective-rerun-preview.png`。
 - 本地 `npm run quality` 通过：208 文件 Secret Scan、零 lint、typecheck、47 项单测、2 项压力测试和 19 路由生产构建；全量 12 项 Playwright 通过。
+- 提交 `3ef828f` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；quality 与 12 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
-下一步：提交实现后建立独立干净工作树，执行全新 `npm ci`、quality 和 Playwright 复验，通过后推送并创建 PR 03C。
+下一步：提交干净环境证据，推送分支并创建 PR 03C，等待 GitHub CI。

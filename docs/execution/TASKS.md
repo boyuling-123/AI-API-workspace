@@ -110,7 +110,7 @@
 - [x] 新增真实源码单测、Mock Playwright 精确请求断言和弹窗 WCAG 门禁。
 - [x] 保存指定 Case 重跑预览视觉证据。
 - [x] 本地完整 quality 和 12 项 Playwright 全量回归通过。
-- [ ] 独立干净工作树执行全新安装、quality 和 Playwright 复验。
+- [x] 提交 `3ef828f` 的独立干净工作树完成全新安装、quality 和 Playwright 复验，结束后零改动。
 - [ ] 提交、推送、创建 PR 并等待 GitHub CI。
 - [ ] 最终 CI 通过后，以非强推 fast-forward 合并。
 
