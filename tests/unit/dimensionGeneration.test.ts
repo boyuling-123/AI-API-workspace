@@ -283,6 +283,38 @@ describe("dimension generation context", () => {
     expect(prompt).toContain("人工标记：Bad Case");
     expect(prompt).toContain("Bad Case 原因：错误承诺立即退款");
     expect(prompt).toContain("Target A [success]：请提供订单号");
+    expect(prompt).toContain("人工评分（0-10，越高越好）");
+    expect(prompt).toContain("Target A：8.5/10");
+    expect(prompt).toContain("人工反馈备注：重点关注是否先核验订单");
+
+    const rankingPrompt = buildDimensionGenerationPrompt({
+      ...validRequest(),
+      samples: [
+        {
+          ...validRequest().samples[0],
+          outputs: [
+            ...validRequest().samples[0].outputs,
+            {
+              targetId: "target-b",
+              targetName: "Target B",
+              status: "success",
+              outputText: "已经为你退款",
+              outputImageCount: 0,
+            },
+          ],
+          humanFeedback: {
+            mode: "ranking",
+            judgments: [
+              { targetId: "target-a", rank: 1 },
+              { targetId: "target-b", rank: 2 },
+            ],
+          },
+        },
+      ],
+    });
+    expect(rankingPrompt).toContain("人工偏好排序（1 为最佳）");
+    expect(rankingPrompt).toContain("第 1 名：Target A");
+    expect(rankingPrompt).toContain("第 2 名：Target B");
   });
 });
 
@@ -300,6 +332,11 @@ function validRequest(): DimensionGenerationRequest {
         expectedAnswer: "先核验订单状态",
         expectedAnswerKey: "expected_output",
         badCaseReason: "错误承诺立即退款",
+        humanFeedback: {
+          mode: "scores",
+          judgments: [{ targetId: "target-a", score: 8.5 }],
+          note: "重点关注是否先核验订单",
+        },
         outputs: [
           {
             targetId: "target-a",

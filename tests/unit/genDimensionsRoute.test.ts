@@ -79,6 +79,24 @@ describe("POST /api/gen-dimensions", () => {
       },
       error: "业务场景不能为空",
     },
+    {
+      body: {
+        modelId: "judge",
+        request: {
+          ...validRequest,
+          samples: [
+            {
+              ...validRequest.samples[0],
+              humanFeedback: {
+                mode: "ranking",
+                judgments: [{ targetId: "target-a", rank: 1 }],
+              },
+            },
+          ],
+        },
+      },
+      error: "第 1 条样本：偏好排序至少需要 2 个目标输出",
+    },
   ])("rejects invalid input without a model call", async ({ body, error }) => {
     const response = await POST(createRequest(body));
 

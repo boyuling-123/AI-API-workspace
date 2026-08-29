@@ -130,7 +130,10 @@ test("previews deterministic samples and generates dimensions only after a click
   await page.getByLabel("任务类型").selectOption("text_generation");
 
   await expect(
-    page.getByText("已选 3/5 条 · Bad Case 0 条", { exact: true })
+    page.getByText(
+      "已选 3/5 条 · Bad Case 0 条 · 人工反馈 0 条",
+      { exact: true }
+    )
   ).toBeVisible();
   await expect(page.getByText(/Case 1：Case 1/)).toBeVisible();
   await expect(page.getByText(/Case 3：Case 3/)).toBeVisible();

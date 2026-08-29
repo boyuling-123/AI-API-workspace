@@ -36,6 +36,13 @@ import {
   type DimensionSampleStrategy,
   type DimensionTaskType,
 } from "@/lib/dimensionGeneration";
+import {
+  analyzeDimensionHumanFeedbackDraft,
+  DIMENSION_HUMAN_FEEDBACK_MODE_LABELS,
+  MAX_DIMENSION_HUMAN_FEEDBACK_NOTE_LENGTH,
+  type DimensionHumanFeedbackDraft,
+  type DimensionHumanFeedbackMode,
+} from "@/lib/dimensionHumanFeedback";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -193,6 +200,9 @@ export function EvaluationPanel({
   const [badCaseOverrides, setBadCaseOverrides] = useState<
     Record<string, string | null>
   >({});
+  const [humanFeedbackDrafts, setHumanFeedbackDrafts] = useState<
+    Record<string, DimensionHumanFeedbackDraft>
+  >({});
 
   const { evalResults, status, error, genDimensions, generatePrompt, evaluate, cancel } =
     evaluation;
@@ -296,7 +306,7 @@ export function EvaluationPanel({
     [effectiveBadCaseReasons, selectedSampleIds]
   );
 
-  const selectedGenerationSamples = useMemo(
+  const baseGenerationSamples = useMemo(
     () =>
       buildDimensionGenerationSamples({
         inputs,
@@ -313,6 +323,57 @@ export function EvaluationPanel({
       selectedSampleIds,
     ]
   );
+
+  const generationSampleById = useMemo(
+    () =>
+      new Map(
+        baseGenerationSamples.map((sample) => [sample.inputId, sample])
+      ),
+    [baseGenerationSamples]
+  );
+
+  const humanFeedbackAnalysisByInputId = useMemo(() => {
+    const analyses = new Map<
+      string,
+      ReturnType<typeof analyzeDimensionHumanFeedbackDraft>
+    >();
+    for (const sample of baseGenerationSamples) {
+      analyses.set(
+        sample.inputId,
+        analyzeDimensionHumanFeedbackDraft(
+          humanFeedbackDrafts[sample.inputId],
+          sample.outputs
+        )
+      );
+    }
+    return analyses;
+  }, [baseGenerationSamples, humanFeedbackDrafts]);
+
+  const humanFeedbackErrorIds = useMemo(
+    () =>
+      baseGenerationSamples
+        .filter(
+          (sample) =>
+            humanFeedbackAnalysisByInputId.get(sample.inputId)?.error
+        )
+        .map((sample) => sample.inputId),
+    [baseGenerationSamples, humanFeedbackAnalysisByInputId]
+  );
+
+  const selectedGenerationSamples = useMemo(
+    () =>
+      baseGenerationSamples.map((sample) => {
+        const feedback = humanFeedbackAnalysisByInputId.get(
+          sample.inputId
+        )?.feedback;
+        return feedback ? { ...sample, humanFeedback: feedback } : sample;
+      }),
+    [baseGenerationSamples, humanFeedbackAnalysisByInputId]
+  );
+
+  const selectedHumanFeedbackCount = selectedSampleIds.filter(
+    (inputId) => humanFeedbackDrafts[inputId]
+  ).length;
 
   const expectedCoverage = useMemo(() => {
     const scopedInputs = inputs.filter((input) =>
@@ -352,7 +413,8 @@ export function EvaluationPanel({
       !judgeModelId ||
       selectedGenerationSamples.length === 0 ||
       hardRulesAnalysis.error ||
-      missingBadCaseReasonIds.length > 0
+      missingBadCaseReasonIds.length > 0 ||
+      humanFeedbackErrorIds.length > 0
     ) {
       return;
     }
@@ -526,6 +588,60 @@ export function EvaluationPanel({
     setBadCaseOverrides((current) => ({ ...current, [inputId]: value }));
   };
 
+  const toggleHumanFeedback = (inputId: string) => {
+    setHumanFeedbackDrafts((current) => {
+      if (current[inputId]) {
+        const next = { ...current };
+        delete next[inputId];
+        return next;
+      }
+      return {
+        ...current,
+        [inputId]: { mode: "scores", values: {}, note: "" },
+      };
+    });
+  };
+
+  const updateHumanFeedbackMode = (
+    inputId: string,
+    mode: DimensionHumanFeedbackMode
+  ) => {
+    setHumanFeedbackDrafts((current) => ({
+      ...current,
+      [inputId]: {
+        mode,
+        values: {},
+        note: current[inputId]?.note ?? "",
+      },
+    }));
+  };
+
+  const updateHumanFeedbackValue = (
+    inputId: string,
+    targetId: string,
+    value: string
+  ) => {
+    setHumanFeedbackDrafts((current) => {
+      const draft = current[inputId];
+      if (!draft) return current;
+      return {
+        ...current,
+        [inputId]: {
+          ...draft,
+          values: { ...draft.values, [targetId]: value },
+        },
+      };
+    });
+  };
+
+  const updateHumanFeedbackNote = (inputId: string, note: string) => {
+    setHumanFeedbackDrafts((current) => {
+      const draft = current[inputId];
+      if (!draft) return current;
+      return { ...current, [inputId]: { ...draft, note } };
+    });
+  };
+
   const selectedDimensions = candidates
     .filter((dim) => dim.selected)
     .map((dim) => ({
@@ -550,6 +666,7 @@ export function EvaluationPanel({
     selectedGenerationSamples.length > 0 &&
     !hardRulesAnalysis.error &&
     missingBadCaseReasonIds.length === 0 &&
+    humanFeedbackErrorIds.length === 0 &&
     !isGeneratingDim &&
     !reachedDimensionLimit;
   const canGenerate =
@@ -809,7 +926,7 @@ export function EvaluationPanel({
                 </p>
               </div>
               <span className="rounded-full bg-white px-2 py-1 text-xs text-cyan-700">
-                已选 {selectedGenerationSamples.length}/{sampleCandidates.length} 条 · Bad Case {Object.keys(effectiveBadCaseReasons).length} 条
+                已选 {selectedGenerationSamples.length}/{sampleCandidates.length} 条 · Bad Case {Object.keys(effectiveBadCaseReasons).length} 条 · 人工反馈 {selectedHumanFeedbackCount} 条
               </span>
             </div>
 
@@ -875,6 +992,10 @@ export function EvaluationPanel({
                   const importedBadCaseActive =
                     candidate.importedBadCase &&
                     badCaseOverrides[inputId] === undefined;
+                  const generationSample = generationSampleById.get(inputId);
+                  const humanFeedbackDraft = humanFeedbackDrafts[inputId];
+                  const humanFeedbackError =
+                    humanFeedbackAnalysisByInputId.get(inputId)?.error;
                   return (
                     <li
                       key={inputId}
@@ -907,19 +1028,34 @@ export function EvaluationPanel({
                             </span>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          aria-pressed={isBadCase}
-                          aria-label={`${isBadCase ? "取消" : "标记"} Case ${candidate.index + 1} Bad Case`}
-                          onClick={() => toggleBadCase(inputId)}
-                          className={`shrink-0 rounded-md border px-2 py-1 font-medium transition ${
-                            isBadCase
-                              ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
-                              : "border-slate-200 text-slate-600 hover:bg-slate-50"
-                          }`}
-                        >
-                          {isBadCase ? "取消 Bad Case" : "标记 Bad Case"}
-                        </button>
+                        <div className="flex shrink-0 flex-col gap-1">
+                          <button
+                            type="button"
+                            aria-pressed={isBadCase}
+                            aria-label={`${isBadCase ? "取消" : "标记"} Case ${candidate.index + 1} Bad Case`}
+                            onClick={() => toggleBadCase(inputId)}
+                            className={`rounded-md border px-2 py-1 font-medium transition ${
+                              isBadCase
+                                ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {isBadCase ? "取消 Bad Case" : "标记 Bad Case"}
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={Boolean(humanFeedbackDraft)}
+                            aria-label={`${humanFeedbackDraft ? "移除" : "添加"} Case ${candidate.index + 1} 人工反馈`}
+                            onClick={() => toggleHumanFeedback(inputId)}
+                            className={`rounded-md border px-2 py-1 font-medium transition ${
+                              humanFeedbackDraft
+                                ? "border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100"
+                                : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            {humanFeedbackDraft ? "移除人工反馈" : "添加人工反馈"}
+                          </button>
+                        </div>
                       </div>
                       {isBadCase && (
                         <label className="mt-2 flex flex-col gap-1 border-t border-rose-100 pt-2 text-rose-800">
@@ -940,6 +1076,104 @@ export function EvaluationPanel({
                           />
                         </label>
                       )}
+                      {humanFeedbackDraft && generationSample && (
+                        <div className="mt-2 flex flex-col gap-2 border-t border-sky-100 pt-2 text-sky-900">
+                          <div className="flex flex-wrap items-end justify-between gap-2">
+                            <label className="flex min-w-[160px] flex-col gap-1">
+                              人工反馈模式
+                              <select
+                                aria-label={`Case ${candidate.index + 1} 人工反馈模式`}
+                                value={humanFeedbackDraft.mode}
+                                onChange={(event) =>
+                                  updateHumanFeedbackMode(
+                                    inputId,
+                                    event.target.value as DimensionHumanFeedbackMode
+                                  )
+                                }
+                                className="rounded-md border border-sky-200 bg-white px-2 py-1.5 text-slate-700"
+                              >
+                                {Object.entries(
+                                  DIMENSION_HUMAN_FEEDBACK_MODE_LABELS
+                                ).map(([value, label]) => (
+                                  <option
+                                    key={value}
+                                    value={value}
+                                    disabled={
+                                      value === "ranking" &&
+                                      generationSample.outputs.length < 2
+                                    }
+                                  >
+                                    {label}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <span className="text-[11px] text-sky-700">
+                              {humanFeedbackDraft.mode === "scores"
+                                ? "0–10 分，最多 1 位小数"
+                                : "1 为最佳，名次不得重复"}
+                            </span>
+                          </div>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {generationSample.outputs.map((output) => (
+                              <label
+                                key={output.targetId}
+                                className="flex flex-col gap-1 text-slate-700"
+                              >
+                                {output.targetName} · {output.status === "success" ? "成功" : "失败"}
+                                <input
+                                  aria-label={`Case ${candidate.index + 1} ${output.targetName} ${humanFeedbackDraft.mode === "scores" ? "人工评分" : "偏好名次"}`}
+                                  type="number"
+                                  min={humanFeedbackDraft.mode === "scores" ? 0 : 1}
+                                  max={
+                                    humanFeedbackDraft.mode === "scores"
+                                      ? 10
+                                      : generationSample.outputs.length
+                                  }
+                                  step={
+                                    humanFeedbackDraft.mode === "scores" ? 0.1 : 1
+                                  }
+                                  value={
+                                    humanFeedbackDraft.values[output.targetId] ?? ""
+                                  }
+                                  onChange={(event) =>
+                                    updateHumanFeedbackValue(
+                                      inputId,
+                                      output.targetId,
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder={
+                                    humanFeedbackDraft.mode === "scores"
+                                      ? "例如 8.5"
+                                      : `1–${generationSample.outputs.length}`
+                                  }
+                                  className="rounded-md border border-sky-200 bg-white px-2 py-1.5"
+                                />
+                              </label>
+                            ))}
+                          </div>
+                          <label className="flex flex-col gap-1 text-slate-700">
+                            人工反馈备注（可选）
+                            <textarea
+                              aria-label={`Case ${candidate.index + 1} 人工反馈备注`}
+                              value={humanFeedbackDraft.note}
+                              onChange={(event) =>
+                                updateHumanFeedbackNote(inputId, event.target.value)
+                              }
+                              maxLength={MAX_DIMENSION_HUMAN_FEEDBACK_NOTE_LENGTH}
+                              rows={2}
+                              placeholder="说明评分或排序依据，不要粘贴密钥或完整日志。"
+                              className="resize-y rounded-md border border-sky-200 bg-white px-2 py-1.5"
+                            />
+                          </label>
+                          {humanFeedbackError && (
+                            <p role="alert" className="font-medium text-red-700">
+                              {humanFeedbackError}
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </li>
                   );
                 })}
@@ -951,7 +1185,7 @@ export function EvaluationPanel({
               </p>
             )}
             <p className="text-xs text-slate-500">
-              仅发送截断后的文字、规则、Bad Case 原因、输出状态与图片数量，不发送原始图片、base64 或完整错误文本。可识别 is_bad_case、bad_case_reason 等严格列名，不会猜测未知字段。
+              仅发送截断后的文字、规则、Bad Case 原因、人工评分或排序、输出状态与图片数量，不发送原始图片、base64 或完整错误文本。OpenJudge 与 Iterative Rubrics Generator 尚未接入，当前人工反馈只作为受控维度生成上下文。
             </p>
           </div>
 
@@ -1000,9 +1234,10 @@ export function EvaluationPanel({
                 !businessScenario.trim() ||
                 selectedGenerationSamples.length === 0 ||
                 hardRulesAnalysis.error ||
-                missingBadCaseReasonIds.length > 0) && (
+                missingBadCaseReasonIds.length > 0 ||
+                humanFeedbackErrorIds.length > 0) && (
                 <span className="text-xs text-gray-500">
-                  请先补齐评测上下文，并修正规则或 Bad Case 提示
+                  请先补齐评测上下文，并修正规则、Bad Case 或人工反馈提示
                 </span>
               )}
               {reachedDimensionLimit && (

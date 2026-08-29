@@ -164,7 +164,7 @@
 - [x] 推送分支并创建 [PR #18](https://github.com/boyuling-123/AI-API-workspace/pull/18)；workflow run `33237473012` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33237610485` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #18 为 Merged。
 
-## 进行中：PR 04B 硬规则与 Bad Case 上下文
+## 已完成：PR 04B 硬规则与 Bad Case 上下文
 
 分支：`codex/feat-dimension-rules-bad-cases`
 
@@ -175,7 +175,21 @@
 - [x] 新增真实源码测试、Mock Playwright、WCAG 门禁和视觉证据。
 - [x] 功能提交 `a054594` 在独立干净工作树全新安装 434 个包，quality 与 16 项 Playwright 复验通过，结束时零改动。
 - [x] 推送分支并创建 [PR #19](https://github.com/boyuling-123/AI-API-workspace/pull/19)；workflow run `33239133343` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 安全合并并回写状态。
+- [x] 最终文档提交对应 workflow run `33239314190` 的两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #19 为 Merged，合并 SHA 为 `fb140fb`。
+
+## 进行中：PR 04C 人工评分与偏好排序上下文
+
+分支：`codex/feat-dimension-human-feedback`
+
+- [x] 在每条代表性 Case 内提供显式、可移除的人工反馈入口，评分与排序两种模式互斥。
+- [x] 人工评分严格限制为 `0–10` 且最多 1 位小数；偏好排序要求至少 2 个目标，并完整、唯一覆盖 `1..N`。
+- [x] 人工反馈必须精确覆盖当前样本全部目标输出；缺失、重复、未知目标或非法数值在模型调用前阻断。
+- [x] 可选备注最多 1000 字，客户端组包与服务端解析统一脱敏；切换模式会清空旧数值，避免语义混用。
+- [x] 当前通用维度模型仅将人工信号作为受控上下文；页面明确 OpenJudge 与 Iterative Rubrics Generator 均未接入。
+- [x] 真实源码单测覆盖 Schema、规范化、Prompt 和服务端零调用阻断；Mock Playwright 覆盖完整评分、非法排序修正、精确请求、零自动评价与 WCAG。
+- [x] 视觉证据已人工检查；本地 quality 通过 72 项单测、2 项压力测试与 19 路由构建，全量 17 项 Playwright 通过。
+- [ ] 提交功能后在独立干净工作树执行全新安装、quality 与 Playwright 复验。
+- [ ] 推送分支、创建 PR、等待两道 GitHub CI，并在最终文档提交通过后安全合并。
 
 ## 硬门禁
 

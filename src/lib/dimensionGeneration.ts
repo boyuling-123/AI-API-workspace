@@ -4,6 +4,10 @@ import {
   resolveExpectedAnswer,
 } from "@/services/expectedAnswer";
 import { redactSensitiveText } from "@/lib/redactSensitive";
+import {
+  parseDimensionHumanFeedback,
+  type DimensionHumanFeedback,
+} from "@/lib/dimensionHumanFeedback";
 
 export const DIMENSION_TASK_TYPES = [
   "text_generation",
@@ -63,6 +67,7 @@ export interface DimensionGenerationSample {
   expectedAnswer?: string;
   expectedAnswerKey?: string;
   badCaseReason?: string;
+  humanFeedback?: DimensionHumanFeedback;
   outputs: DimensionGenerationSampleOutput[];
 }
 
@@ -427,6 +432,16 @@ function parseSample(value: unknown, index: number): DimensionGenerationSample {
     );
   }
 
+  const humanFeedbackAnalysis = parseDimensionHumanFeedback(
+    raw.humanFeedback,
+    outputs
+  );
+  if (humanFeedbackAnalysis.error) {
+    throw new DimensionGenerationValidationError(
+      `第 ${index + 1} 条样本：${humanFeedbackAnalysis.error}`
+    );
+  }
+
   return {
     inputId,
     prompt,
@@ -440,6 +455,7 @@ function parseSample(value: unknown, index: number): DimensionGenerationSample {
         ? clip(raw.expectedAnswerKey, 200) || undefined
         : undefined,
     badCaseReason,
+    humanFeedback: humanFeedbackAnalysis.feedback,
     outputs,
   };
 }

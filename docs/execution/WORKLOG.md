@@ -337,3 +337,25 @@
 - DIM-004 的标准答案、硬规则和 Bad Case 已具备代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、干净环境与 GitHub CI Trace；因人工评分/排序未实现，继续保持“部分实现”。
 
 下一步：提交本次 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #19。
+
+## 2026-08-29：PR 04B 合并与 PR 04C 启动
+
+- PR #19 的最终文档提交对应 workflow run `33239314190` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 仍为预期祖先后，以普通 `git push origin HEAD:main` 完成非强推 fast-forward 合并；GitHub 已确认 PR #19 状态为 Merged，合并 SHA 为 `fb140fb`。
+- 本地 `main` 同步到 `fb140fb`，随后从最新 `main` 创建短生命周期分支 `codex/feat-dimension-human-feedback`。
+- PR 04C 只补 DIM-004 尚缺的人工评分与偏好排序输入；OpenJudge 和真正的 Iterative Rubrics Generator 继续保持“设计中”，不在本轮借用通用模型冒充。
+
+## 2026-08-29：PR 04C 本地验收
+
+- 每条已选代表性 Case 可独立添加或移除人工反馈。人工评分与偏好排序模式互斥，切换模式会清空旧数值，备注保留以便用户继续编辑。
+- 评分必须精确覆盖当前全部目标，范围为 `0–10` 且最多 1 位小数；排序至少需要 2 个目标，名次必须是完整且不重复的 `1..N`。
+- 公共 `/api/gen-dimensions` 使用同一 Schema 再校验反馈对象、目标 ID、数值、覆盖关系和备注长度；非法反馈返回 400，维度模型调用严格为零。
+- 合法反馈按当前输出顺序规范化后写入结构化请求。Prompt 只把分数、名次和最多 1000 字的脱敏备注作为解释人工质量差异的上下文，不把分数或名次本身生成成评价维度。
+- 页面明确显示 OpenJudge 与 Iterative Rubrics Generator 尚未接入；维度生成仍需用户显式点击，生成后仍需人工勾选，且不会调用 `/api/evaluate`。
+- `dimensionHumanFeedback.test.ts`、`dimensionGeneration.test.ts` 与 `genDimensionsRoute.test.ts` 直接覆盖真实源码；全量单测增至 72 项，压力测试保持 2 项。
+- `dimension-human-feedback.spec.ts` 以 2 Case × 2 Target 的 Mock 路径验证缺失评分和重复名次阻断、修正后恰好一次请求、两个反馈对象精确绑定、零自动评价和 WCAG 门禁。
+- 视觉证据 `docs/evidence/pr-04c/human-score-ranking.png` 已人工检查，评分、排序、备注、模式提示与未接入能力说明均完整可见，无截断或重叠。
+- 本地 `npm run quality` 通过密钥扫描、零 lint、typecheck、72 项单测、2 项压力测试和 19 路由生产构建；全量 17 项 Playwright 通过。
+- DIM-004 已在本地补齐标准答案、硬规则、Bad Case、人工评分和偏好排序，状态升级为“已实现”；GitHub CI 与最终 Trace 完成前不标记“已验证”。DIM-006 仍为“设计中”。
+
+下一步：提交功能与本地证据，在独立干净工作树全新安装依赖并复验完整门禁。
