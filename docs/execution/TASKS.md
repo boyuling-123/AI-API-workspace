@@ -80,7 +80,7 @@
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
 - [x] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #13，GitHub 已确认 Merged。
 
-## 进行中：PR 03B 跑批限速、超时与错误分类
+## 已完成：PR 03B 跑批限速、超时与错误分类
 
 分支：`codex/feat-run-controls`
 
@@ -95,7 +95,24 @@
 - [x] 独立干净工作树完成全新 `npm ci`、quality 和 Playwright 复验，结束后零改动。
 - [x] 提交、推送并创建 [PR #14](https://github.com/boyuling-123/AI-API-workspace/pull/14)。
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
-- [ ] 最终 CI 通过后，以非强推 fast-forward 合并 PR 03B。
+- [x] 最终 CI 通过后，以非强推 fast-forward 合并 PR #14，GitHub 已确认 Merged。
+
+## 进行中：PR 03C 失败项与指定 Case 定向重跑
+
+分支：`codex/feat-selective-reruns`
+
+- [x] 为定向重跑建立可持久化的稀疏 Case × Target 调用计划。
+- [x] 失败项模式只收集原任务中状态为 `error` 且目标当前可用的精确组合。
+- [x] 指定 Case 模式支持 `1,3,8-12` 表达式，非法、倒序和越界输入禁止确认。
+- [x] 调用前预览 Case、目标、调用次数和不可用目标，明确提示费用且不自动启动 AI 评价。
+- [x] 每次重跑创建新 Task，保存来源任务、范围和组合；原任务与原结果不覆盖。
+- [x] 稀疏任务暂停后沿用相同计划，只恢复未完成组合。
+- [x] 新增真实源码单测、Mock Playwright 精确请求断言和弹窗 WCAG 门禁。
+- [x] 保存指定 Case 重跑预览视觉证据。
+- [x] 本地完整 quality 和 12 项 Playwright 全量回归通过。
+- [ ] 独立干净工作树执行全新安装、quality 和 Playwright 复验。
+- [ ] 提交、推送、创建 PR 并等待 GitHub CI。
+- [ ] 最终 CI 通过后，以非强推 fast-forward 合并。
 
 ## 硬门禁
 

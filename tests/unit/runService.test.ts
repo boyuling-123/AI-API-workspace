@@ -113,6 +113,103 @@ describe("runTargets checkpoint resume", () => {
     expect(results[0].items[1].error).toBe("kept error");
     expect(results[1].items.every((item) => item.status === "success")).toBe(true);
   });
+
+  it("calls only the exact pairs in a sparse rerun plan", async () => {
+    const inputs: TaskInput[] = [
+      { id: "input-a", prompt: "A", images: [] },
+      { id: "input-b", prompt: "B", images: [] },
+    ];
+    const targets: TargetConfig[] = [
+      target,
+      { ...target, id: "target-b", name: "Target B" },
+    ];
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as {
+          prompt: string;
+          target: { id: string };
+        };
+        calls.push(`${body.prompt}:${body.target.id}`);
+        return new Response(JSON.stringify({ outputText: "ok" }), {
+          status: 200,
+        });
+      })
+    );
+
+    const results = await runTargets({
+      inputs,
+      targetIds: ["target-a", "target-b"],
+      targetConfigs: targets,
+      concurrency: 2,
+      runPolicy: { qps: 0, timeoutMs: 1_000, retryLimit: 0 },
+      runPairs: [
+        { inputId: "input-a", targetId: "target-b" },
+        { inputId: "input-b", targetId: "target-a" },
+      ],
+    });
+
+    expect(calls).toEqual(["A:target-b", "B:target-a"]);
+    expect(results).toHaveLength(2);
+    expect(results.flatMap((row) => row.items)).toHaveLength(2);
+  });
+
+  it("resumes only an unfinished pair from a sparse rerun checkpoint", async () => {
+    const inputs: TaskInput[] = [
+      { id: "input-a", prompt: "A", images: [] },
+      { id: "input-b", prompt: "B", images: [] },
+    ];
+    const targets: TargetConfig[] = [
+      target,
+      { ...target, id: "target-b", name: "Target B" },
+    ];
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ outputText: "resumed" }), { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const results = await runTargets({
+      inputs,
+      targetIds: ["target-a", "target-b"],
+      targetConfigs: targets,
+      concurrency: 2,
+      runPolicy: { qps: 0, timeoutMs: 1_000, retryLimit: 0 },
+      runPairs: [
+        { inputId: "input-a", targetId: "target-b" },
+        { inputId: "input-b", targetId: "target-a" },
+      ],
+      existingResults: [
+        {
+          inputId: "input-a",
+          items: [
+            {
+              targetId: "target-b",
+              targetName: "Target B",
+              status: "success",
+              outputText: "checkpoint",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(results[0].items[0].outputText).toBe("checkpoint");
+    expect(results[1].items[0].outputText).toBe("resumed");
+  });
+
+  it("rejects a sparse plan that references an unknown Case", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      runSingle({
+        runPairs: [{ inputId: "unknown", targetId: "target-a" }],
+      })
+    ).rejects.toThrow("定向重跑计划包含不属于当前任务的 Case 或目标");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
 
 describe("runTargets policy and failure classification", () => {

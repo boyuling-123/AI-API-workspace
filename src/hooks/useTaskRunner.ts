@@ -9,6 +9,7 @@ import type {
   TargetConfig,
   Task,
   TaskInput,
+  TaskRerun,
 } from "@/types";
 import { runTargets } from "@/services/runService";
 import { emitPetStatus } from "@/lib/petBus";
@@ -30,6 +31,7 @@ const CHECKPOINT_ITEM_INTERVAL = 10;
 interface BatchContext {
   contentMode: ContentMode;
   task?: Task;
+  rerun?: TaskRerun;
 }
 
 type StopReason = "paused" | "cancelled" | null;
@@ -60,6 +62,7 @@ export interface UseTaskRunnerResult {
     runPolicy: RunPolicy
   ) => void;
   resumeBatch: (task: Task) => void;
+  runRerun: (sourceTask: Task, rerun: TaskRerun) => void;
   pause: () => void;
   cancel: () => void;
   clear: () => void;
@@ -102,6 +105,7 @@ export function useTaskRunner(
 
       const targetConfigs = targetConfigsRef.current ?? [];
       const previousTask = batchContext?.task;
+      const rerun = previousTask?.rerun ?? batchContext?.rerun;
       const normalizedPolicy = normalizeRunPolicy(
         previousTask?.runPolicy ?? runPolicy
       );
@@ -109,7 +113,8 @@ export function useTaskRunner(
         inputs,
         targetIds,
         targetConfigs,
-        previousTask?.results
+        previousTask?.results,
+        rerun?.pairs
       );
       const taskBase: Task | null =
         mode === "batch" && batchContext
@@ -132,6 +137,7 @@ export function useTaskRunner(
                     paramDefs: target.inputParams,
                   })),
               results: initialRows,
+              ...(rerun ? { rerun } : {}),
               status: "running",
             }
           : null;
@@ -190,6 +196,7 @@ export function useTaskRunner(
           runPolicy: normalizedPolicy,
           targetConfigs,
           existingResults: initialRows,
+          runPairs: rerun?.pairs,
           signal: controller.signal,
           onItemUpdate: applyItem,
         });
@@ -303,6 +310,32 @@ export function useTaskRunner(
     [execute]
   );
 
+  const runRerun = useCallback(
+    (sourceTask: Task, rerun: TaskRerun) => {
+      if (rerun.sourceTaskId !== sourceTask.id || rerun.pairs.length === 0) {
+        return;
+      }
+      const inputIds = new Set(rerun.pairs.map((pair) => pair.inputId));
+      const pairTargetIds = new Set(rerun.pairs.map((pair) => pair.targetId));
+      const inputs = sourceTask.inputs.filter((input) => inputIds.has(input.id));
+      const targetIds = sourceTask.targetIds.filter((targetId) =>
+        pairTargetIds.has(targetId)
+      );
+      void execute(
+        inputs,
+        targetIds,
+        sourceTask.concurrency,
+        normalizeRunPolicy(sourceTask.runPolicy),
+        "batch",
+        {
+          contentMode: sourceTask.contentMode,
+          rerun,
+        }
+      );
+    },
+    [execute]
+  );
+
   const pause = useCallback(() => {
     if (!abortRef.current) return;
     stopReasonRef.current = "paused";
@@ -332,6 +365,7 @@ export function useTaskRunner(
     runTrial,
     runBatch,
     resumeBatch,
+    runRerun,
     pause,
     cancel,
     clear,

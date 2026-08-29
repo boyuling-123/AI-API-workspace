@@ -6,6 +6,7 @@ import type {
   RunPolicy,
   TargetConfig,
   TaskInput,
+  TaskRunPair,
 } from "@/types";
 import { runWithPool } from "@/lib/taskRunner";
 import {
@@ -42,6 +43,8 @@ export interface RunParams {
   targetConfigs?: TargetConfig[];
   /** 已持久化的检查点；成功或失败项不会重复调用。 */
   existingResults?: ResultRow[];
+  /** 定向重跑的精确 Case x target 组合；缺省时运行完整矩阵。 */
+  runPairs?: TaskRunPair[];
   signal?: AbortSignal;
   onItemUpdate?: (inputId: string, item: ResultItem) => void;
   /** 仅供确定性测试覆盖退避等待；产品运行使用 runtime 默认值。 */
@@ -62,6 +65,7 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     concurrency,
     targetConfigs,
     existingResults,
+    runPairs,
     signal,
     onItemUpdate,
     retryBaseDelayMs = RUNTIME_CONFIG.retryBaseDelayMs,
@@ -79,25 +83,25 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     }
   }
 
+  validateRunPairs(runPairs, inputs, targetIds);
+
   let currentRows = createCheckpointRows(
     inputs,
     targetIds,
     targetConfigs ?? [],
-    existingResults
+    existingResults,
+    runPairs
   );
-  const checkpointByInput = new Map(
-    currentRows.map((row) => [
-      row.inputId,
-      new Map(row.items.map((item) => [item.targetId, item])),
-    ])
-  );
+  const inputById = new Map(inputs.map((input) => [input.id, input]));
 
   const units: CallUnit[] = [];
-  for (const input of inputs) {
-    for (const targetId of targetIds) {
-      if (isCompletedResultItem(checkpointByInput.get(input.id)?.get(targetId))) {
+  for (const row of currentRows) {
+    const input = inputById.get(row.inputId)!;
+    for (const checkpointItem of row.items) {
+      if (isCompletedResultItem(checkpointItem)) {
         continue;
       }
+      const targetId = checkpointItem.targetId;
       const target = targetById.get(targetId)!;
       units.push({
         inputId: input.id,
@@ -130,6 +134,21 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
   });
 
   return currentRows;
+}
+
+function validateRunPairs(
+  runPairs: TaskRunPair[] | undefined,
+  inputs: TaskInput[],
+  targetIds: string[]
+): void {
+  if (!runPairs) return;
+  const inputIdSet = new Set(inputs.map((input) => input.id));
+  const targetIdSet = new Set(targetIds);
+  for (const pair of runPairs) {
+    if (!inputIdSet.has(pair.inputId) || !targetIdSet.has(pair.targetId)) {
+      throw new Error("定向重跑计划包含不属于当前任务的 Case 或目标");
+    }
+  }
 }
 
 /**

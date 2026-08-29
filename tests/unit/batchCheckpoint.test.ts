@@ -45,6 +45,72 @@ describe("batch checkpoint model", () => {
       .toBe(true);
   });
 
+  it("creates only the requested sparse Case x target pairs", () => {
+    const rows = createCheckpointRows(
+      inputs,
+      ["target-a", "target-b"],
+      targets,
+      [],
+      [
+        { inputId: "input-a", targetId: "target-b" },
+        { inputId: "input-b", targetId: "target-a" },
+      ]
+    );
+
+    expect(rows).toEqual([
+      {
+        inputId: "input-a",
+        items: [expect.objectContaining({ targetId: "target-b", status: "pending" })],
+      },
+      {
+        inputId: "input-b",
+        items: [expect.objectContaining({ targetId: "target-a", status: "pending" })],
+      },
+    ]);
+    expect(getRunProgress(rows).totalCalls).toBe(2);
+  });
+
+  it("preserves a terminal sparse pair while leaving its unfinished pair pending", () => {
+    const existing: ResultRow[] = [
+      {
+        inputId: "input-a",
+        items: [
+          {
+            targetId: "target-b",
+            targetName: "Target B",
+            status: "success",
+            outputText: "saved",
+          },
+        ],
+      },
+    ];
+    const rows = createCheckpointRows(
+      inputs,
+      ["target-a", "target-b"],
+      targets,
+      existing,
+      [
+        { inputId: "input-a", targetId: "target-b" },
+        { inputId: "input-b", targetId: "target-a" },
+      ]
+    );
+
+    expect(rows[0].items[0]).toMatchObject({
+      targetId: "target-b",
+      status: "success",
+      outputText: "saved",
+    });
+    expect(rows[1].items[0]).toMatchObject({
+      targetId: "target-a",
+      status: "pending",
+    });
+    expect(getRunProgress(rows)).toMatchObject({
+      completedCalls: 1,
+      totalCalls: 2,
+      remainingCalls: 1,
+    });
+  });
+
   it("preserves terminal results and resets interrupted work to pending", () => {
     const existing: ResultRow[] = [
       {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Project, Task, TargetConfig } from "@/types";
+import type { Project, Task, TargetConfig, TaskRerun } from "@/types";
 import type { EvaluationRecord } from "@/types";
 import { useInputDraft } from "@/hooks/useInputDraft";
 import { useTargetSelection } from "@/hooks/useTargetSelection";
@@ -129,6 +129,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     onBatchSnapshot: handleBatchSnapshot,
     targetConfigs: algoConfigs,
   });
+  const runRerun = runner.runRerun;
 
   const resumableTask = useMemo(
     () =>
@@ -139,6 +140,24 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
         .sort((a, b) => b.createTime - a.createTime)[0] ?? null,
     [project.tasks]
   );
+
+  const availableRerunTargetIds = useMemo(
+    () =>
+      algoConfigs
+        .filter((config) => config.preset || config.status === "tested_ok")
+        .map((config) => config.id),
+    [algoConfigs]
+  );
+
+  const rerunBlockedReason = useMemo(() => {
+    if (runner.runStatus === "running") {
+      return "当前有任务正在运行，请等待完成或先暂停";
+    }
+    if (resumableTask) {
+      return "当前有待继续的任务，请先继续或放弃该任务";
+    }
+    return undefined;
+  }, [resumableTask, runner.runStatus]);
 
   const handleAbandonBatch = useCallback(
     (task: Task) => {
@@ -218,6 +237,16 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     setEvaluatingTask(task);
     setActiveTab("evaluate");
   }, []);
+
+  const handleRerunTask = useCallback(
+    (sourceTask: Task, rerun: TaskRerun) => {
+      setViewingTask(null);
+      setEvaluatingTask(null);
+      setActiveTab("run");
+      runRerun(sourceTask, rerun);
+    },
+    [runRerun]
+  );
 
   // v4.3 增量2：一次评价跑完 → 生成 EvaluationRecord 存入 Project.evaluations（唯一权威来源，⑤只读这里）。
   const handleEvaluationComplete = useCallback(
@@ -477,6 +506,9 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             onView={handleViewTask}
             onDelete={handleDeleteTask}
             onEvaluate={handleEvaluateTask}
+            availableTargetIds={availableRerunTargetIds}
+            rerunBlockedReason={rerunBlockedReason}
+            onRerun={handleRerunTask}
           />
 
           {/* 需求三·下方：默认空，点击上方某条历史批次后展开该批次结果对比 */}

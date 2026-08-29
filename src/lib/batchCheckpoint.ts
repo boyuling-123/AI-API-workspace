@@ -1,4 +1,10 @@
-import type { ResultItem, ResultRow, TargetConfig, TaskInput } from "@/types";
+import type {
+  ResultItem,
+  ResultRow,
+  TargetConfig,
+  TaskInput,
+  TaskRunPair,
+} from "@/types";
 
 export interface RunProgress {
   completedCalls: number;
@@ -16,7 +22,8 @@ export function createCheckpointRows(
   inputs: TaskInput[],
   targetIds: string[],
   targetConfigs: TargetConfig[],
-  existingResults: ResultRow[] = []
+  existingResults: ResultRow[] = [],
+  runPairs?: TaskRunPair[]
 ): ResultRow[] {
   const targetById = new Map(targetConfigs.map((target) => [target.id, target]));
   const existingByInput = new Map(
@@ -26,22 +33,42 @@ export function createCheckpointRows(
     ])
   );
 
-  return inputs.map((input) => ({
-    inputId: input.id,
-    items: targetIds.map((targetId) => {
-      const existing = existingByInput.get(input.id)?.get(targetId);
-      if (isCompletedResultItem(existing)) {
-        return existing!;
-      }
-      const target = targetById.get(targetId);
-      return {
-        targetId,
-        targetName: target?.name ?? targetId,
-        contentKind: target?.contentKind,
-        status: "pending" as const,
-      };
-    }),
-  }));
+  const requestedTargetsByInput = runPairs
+    ? runPairs.reduce<Map<string, Set<string>>>((result, pair) => {
+        const targets = result.get(pair.inputId) ?? new Set<string>();
+        targets.add(pair.targetId);
+        result.set(pair.inputId, targets);
+        return result;
+      }, new Map())
+    : null;
+
+  return inputs.flatMap((input) => {
+    const requestedTargetIds = requestedTargetsByInput
+      ? targetIds.filter((targetId) =>
+          requestedTargetsByInput.get(input.id)?.has(targetId)
+        )
+      : targetIds;
+    if (requestedTargetIds.length === 0) return [];
+
+    return [
+      {
+        inputId: input.id,
+        items: requestedTargetIds.map((targetId) => {
+          const existing = existingByInput.get(input.id)?.get(targetId);
+          if (isCompletedResultItem(existing)) {
+            return existing!;
+          }
+          const target = targetById.get(targetId);
+          return {
+            targetId,
+            targetName: target?.name ?? targetId,
+            contentKind: target?.contentKind,
+            status: "pending" as const,
+          };
+        }),
+      },
+    ];
+  });
 }
 
 export function replaceCheckpointItem(

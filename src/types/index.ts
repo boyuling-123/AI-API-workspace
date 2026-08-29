@@ -19,6 +19,22 @@ export interface RunPolicy {
   retryLimit: number;
 }
 
+/** 定向重跑的最小执行单元，避免重新展开完整 Case x target 矩阵。 */
+export interface TaskRunPair {
+  inputId: string;
+  targetId: string;
+}
+
+export type TaskRerunScope = "failed" | "selected_cases";
+
+/** 新重跑任务保存的来源与稀疏调用计划，用于暂停续跑和历史追溯。 */
+export interface TaskRerun {
+  sourceTaskId: string;
+  scope: TaskRerunScope;
+  pairs: TaskRunPair[];
+  selectedInputIds: string[];
+}
+
 /** 统一失败分类，供重试决策、结果展示和历史筛选复用。 */
 export type RunErrorType =
   | "timeout"
@@ -82,6 +98,8 @@ export interface Task {
   results: ResultRow[];
   /** 批量任务最近一次一致检查点；旧项目可缺省。 */
   checkpoint?: TaskCheckpoint;
+  /** 定向重跑任务的来源与精确调用范围；普通任务和旧项目可缺省。 */
+  rerun?: TaskRerun;
   evaluation?: Evaluation;
   status:
     | "idle"
