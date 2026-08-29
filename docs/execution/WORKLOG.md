@@ -453,3 +453,13 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 下一步：提交干净环境证据，推送分支并创建 PR 05A，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-29：PR 05A 创建与首轮 GitHub CI
+
+- 干净环境证据提交为 `7eac1c0`，分支 `codex/feat-evaluator-policy` 已推送并创建 [PR #22](https://github.com/boyuling-123/AI-API-workspace/pull/22)。
+- 创建 PR 前后均确认远端 `main` 保持在 `6da447b`，PR 含 2 个提交、28 个文件，GitHub 判定可自动合并。
+- workflow run `33246361526` 的 `Lint, test, build, and secret scan` Job 全部通过，覆盖 243 文件密钥扫描、lint、typecheck、89 项真实源码单测、2 项压力测试与 19 路由生产构建。
+- 同一 run 的 `Playwright user paths and accessibility` Job 通过全部 19 项浏览器与 WCAG 路径；失败 Trace 上传因没有失败而按设计跳过。
+- DIM-009 与 PROMPT-001 已具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
+
+下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #22。

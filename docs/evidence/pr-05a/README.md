@@ -10,6 +10,7 @@
 - `tests/unit/evaluatorPolicy.test.ts` 直接覆盖真实策略模块的精确分配、字段边界、策略指纹、加权计算和否决原因。
 - `tests/unit/rubricRouteBoundary.test.ts` 验证非法权重或阈值在 Prompt/Judge 模型调用前返回 400，模型调用次数为零。
 - 功能提交 `270ae10` 已在独立干净工作树完成全新安装、完整 `quality` 和 19 项 Playwright，结束时 Git 零改动。
+- [PR #22](https://github.com/boyuling-123/AI-API-workspace/pull/22) workflow run `33246361526` 的核心质量与 Playwright/可访问性两个 Job 全部通过。
 
 ## 安全边界
 
