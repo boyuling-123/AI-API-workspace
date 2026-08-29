@@ -9,6 +9,7 @@
 - `tests/e2e/evaluator-policy.spec.ts` 覆盖权重合计不为 100% 时阻断、平均分配、否决阈值、确认后修改自动失效、Prompt 与 Judge 精确请求、结果展示、自动保存稳定态和 WCAG 门禁。
 - `tests/unit/evaluatorPolicy.test.ts` 直接覆盖真实策略模块的精确分配、字段边界、策略指纹、加权计算和否决原因。
 - `tests/unit/rubricRouteBoundary.test.ts` 验证非法权重或阈值在 Prompt/Judge 模型调用前返回 400，模型调用次数为零。
+- 功能提交 `270ae10` 已在独立干净工作树完成全新安装、完整 `quality` 和 19 项 Playwright，结束时 Git 零改动。
 
 ## 安全边界
 

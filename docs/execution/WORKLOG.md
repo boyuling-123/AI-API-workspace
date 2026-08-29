@@ -442,3 +442,14 @@
 - 本地 `npm run quality` 通过 243 文件 Secret Scan、零 lint、typecheck、89 项单测、2 项压力测试和 19 路由生产构建；全量 19 项 Playwright 通过。
 
 下一步：提交功能快照，并在独立干净工作树全新安装依赖后重复执行全部门禁。
+
+## 2026-08-29：PR 05A 独立干净环境复验
+
+- 功能与本地证据提交为 `270ae10`，父提交为已合并的 `6da447b`；提交前远端 `main` 未发生漂移。
+- 在 `/tmp/eval-platform-pr05a-YGuqxj` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 再次通过 243 文件 Secret Scan、零 lint、typecheck、89 项单测、2 项压力测试和 19 路由生产构建。
+- 干净环境 `npm run test:e2e` 再次通过全部 19 项 Playwright；所有模型相关 API 均使用 Mock，未读取真实密钥、未调用真实或付费模型。
+- 全部门禁结束后 `git status --short` 无输出，证明构建与测试没有污染提交工作树。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交干净环境证据，推送分支并创建 PR 05A，等待 GitHub 核心质量与 Playwright 两道 CI。
