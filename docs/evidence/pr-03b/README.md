@@ -21,9 +21,10 @@
 - `tests/unit/runService.test.ts`：验证全局 QPS、429 后成功、401/解析错误不重试、503 有限重试和真实 Abort 超时。
 - `tests/unit/runCustomRoute.test.ts` 与 `customAdapterErrors.test.ts`：验证服务端错误契约和 adapter 分类。
 - `tests/e2e/run-controls.spec.ts`：Mock 验证策略持久化、429 只重试一次、401 配置 3 次仍只调用一次，以及错误筛选。
-- 本地 `npm run quality` 通过：199 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试和生产构建。
+- 本地 `npm run quality` 通过：202 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试和生产构建。
 - 本地 `npm run test:e2e` 通过：10 项 Playwright 用户路径与可访问性测试。
 - 提交 `3c6c1ec` 的独立 `/tmp` 工作树完成全新 `npm ci`，随后 `quality` 与 10 项 Playwright 再次全部通过，复验后工作树零改动。
+- PR #14 GitHub Actions run `33228823145` 通过；核心质量与 Playwright/可访问性两个 Job 均为 success。
 
 ## 视觉证据
 

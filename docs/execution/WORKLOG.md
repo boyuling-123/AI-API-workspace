@@ -152,3 +152,13 @@
 - 提交 `3c6c1ec` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；202 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试、19 路由构建和 10 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
 下一步：独立干净工作树复验、提交、推送并创建 PR 03B，等待 GitHub CI。
+
+## 2026-08-29：PR 03B 验收
+
+- 创建 [PR #14](https://github.com/boyuling-123/AI-API-workspace/pull/14)，目标为 `main`，来源为 `codex/feat-run-controls`；GitHub 确认可自动合并。
+- GitHub Actions `Quality Gate` workflow run `33228823145` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖 202 文件 Secret Scan、lint、typecheck、38 项真实源码单测、2 项压力测试和生产构建。
+- `Playwright user paths and accessibility` Job 通过 10 项浏览器路径；失败 Trace 上传步骤因没有失败而按设计跳过。
+- TASK-002、TASK-006、TASK-007 同时具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉截图、干净环境和 GitHub CI Trace，升级为“已验证”。TASK-005 的定向重跑仍保持独立范围。
+
+下一步：提交本次验收回写，等待最终 CI 通过后以非强推 fast-forward 合并 PR #14。
