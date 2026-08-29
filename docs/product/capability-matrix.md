@@ -28,14 +28,14 @@
 |---|---|---|---|---|---|---|---|
 | DOC-001 | 文档统一使用六种能力状态 | 已实现 | 本矩阵“状态定义” | 待补：文档状态枚举检查 | 所有当前 PRD 只使用六种状态且无自由文本状态 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-002 | OpenJudge 维度生成不得标为已实现 | 已实现 | `src/services/genDimensionsService.ts`；本矩阵 DIM-001 | 待补：文档口径检查 | 页面和当前 PRD 均明确 OpenJudge 尚未接入 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
-| DOC-003 | 准确说明维度生成上下文与 OpenJudge 状态 | 已验证 | `EvaluationPanel.tsx` 明示 OpenJudge 未接入；`dimensionGeneration.ts` 与 `genDimensionsService.ts` 使用目标、场景、任务类型、内部预设和有界样本 | `dimensionGeneration.test.ts` 覆盖真实请求与 Prompt；`dimension-generation.spec.ts` 覆盖页面口径；独立干净环境与 PR #18 两道 CI 通过 | 文档、页面、Schema 与真实模型输入一致，不声称使用未接入的 OpenJudge、硬规则或人工标注 | PR 01 / 04A | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#18](https://github.com/boyuling-123/AI-API-workspace/pull/18) |
+| DOC-003 | 准确说明维度生成上下文与 OpenJudge 状态 | 已验证 | `EvaluationPanel.tsx` 明示 OpenJudge 未接入；`dimensionGeneration.ts` 与 `genDimensionsService.ts` 使用目标、场景、任务类型、内部预设、有界样本、硬规则和显式 Bad Case | `dimensionGeneration.test.ts` 覆盖真实请求、Prompt、边界与脱敏；`dimension-generation.spec.ts` 和 `dimension-rules.spec.ts` 覆盖页面口径与 Mock 请求；PR #18 两道 CI 已通过，PR 04B 本地全门禁通过 | 文档、页面、Schema 与真实模型输入一致；不得声称使用未接入的 OpenJudge、人工评分/排序或完整 Rubrics Generator | PR 01 / 04A / 04B | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#18](https://github.com/boyuling-123/AI-API-workspace/pull/18)；PR 04B 待关联 |
 | DOC-004 | 七个 Skill、MCP、Judge 校准和排行榜使用真实状态 | 已实现 | 本矩阵相关条目 | 待补：文档口径检查 | 所有未落地能力均为设计中、Demo 或部分实现 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-005 | 统一多人标注一致性口径 | 设计中 | 无 | 无 | 明确是否支持多人标注，并提供一致性指标与测试 | Judge 校准 | 待关联 |
 | DOC-006 | 区分产品方案、Demo 与当前代码 | 已验证 | 本矩阵；`ExternalApiCapabilities.tsx` | `tests/e2e/workspace.spec.ts` 覆盖四个规划路由状态、无 API 调用与 WCAG；PR #11 两道 CI 通过 | 页面和当前 PRD 不再把规划路由显示为可调用接口 | PR 01 / 02B | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#11](https://github.com/boyuling-123/AI-API-workspace/pull/11) |
 | DIM-001 | 建立 evaluation-dimension-generator Skill 并接入 OpenJudge | 设计中 | 无 | 无 | Skill 可独立运行并通过 OpenJudge 产出结构化候选维度 | 维度 Skill | 待关联 |
 | DIM-002 | 输入评测目标、业务场景和任务类型 | 已验证 | `EvaluationPanel.tsx` 三类引导字段；`dimensionGeneration.ts` 结构化 Schema；`genDimensionsService.ts` 构造完整 Prompt | `dimensionGeneration.test.ts` 验证 Schema、边界与 Prompt；`genDimensionsRoute.test.ts` 验证调用前拒绝非法请求；`dimension-generation.spec.ts` 验证真实用户输入；独立干净环境与 PR #18 两道 CI 通过 | 三类字段均有 UI 引导、前后端校验、真实源码测试、Mock 用户路径、视觉证据与 CI | 维度 Skill | [#18](https://github.com/boyuling-123/AI-API-workspace/pull/18) |
 | DIM-003 | 从测试集或跑批结果抽取代表性样本 | 已验证 | `dimensionGeneration.ts` 提供三种确定性策略、有界样本构造和数据最小化；`EvaluationPanel.tsx` 提供数量、策略与发送预览 | `dimensionGeneration.test.ts` 验证首中尾顺序、失败/答案优先、截断与脱敏；`dimension-generation.spec.ts` 验证 5 Case 预览、精确请求、零自动评价与 WCAG；独立干净环境与 PR #18 两道 CI 通过 | 抽样策略可配置、结果可复现、用户发送前可见，敏感原始内容不进入请求，并通过干净环境与 CI | 维度 Skill | [#18](https://github.com/boyuling-123/AI-API-workspace/pull/18) |
-| DIM-004 | 维度生成支持标准答案、硬规则、Bad Case 和人工结果 | 部分实现 | `dimensionGeneration.ts` 与 `genDimensionsService.ts` 已把可用标准答案传入生成；硬规则、Bad Case 和人工评分/排序尚无 Schema | `dimensionGeneration.test.ts` 覆盖标准答案进入样本和 Prompt；其余输入类型无测试 | 所有输入类型进入生成 Schema，并影响生成结果 | 维度 Skill | 待关联 |
+| DIM-004 | 维度生成支持标准答案、硬规则、Bad Case 和人工结果 | 部分实现 | `dimensionGeneration.ts`、`EvaluationPanel.tsx` 与 `genDimensionsService.ts` 已接入标准答案、最多 20 条有界硬规则和显式 Bad Case 原因，并在客户端和服务端双层脱敏；人工评分/排序尚无 Schema | `dimensionGeneration.test.ts` 覆盖严格列名、规则边界、Bad Case 必填、Prompt 与脱敏；`dimension-rules.spec.ts` 以 Mock 覆盖阻断、精确请求、零自动评价与 WCAG；本地 quality 和 16 项 Playwright 通过 | 标准答案、硬规则、Bad Case、人工评分和排序全部进入生成 Schema，并能证明影响生成结果 | 维度 Skill | PR 04B 待关联 |
 | DIM-005 | 无人工标注时使用 Simple Rubrics Generator | 设计中 | 无 | 无 | 无标注数据集可生成符合 Schema 的候选 Rubrics | 维度 Skill | 待关联 |
 | DIM-006 | 有人工评分或排序时使用 Iterative Rubrics Generator | 设计中 | 无 | 无 | 人工信号可驱动迭代并展示前后差异 | 维度 Skill | 待关联 |
 | DIM-007 | 维度字段标准化、同义合并、重复与冲突检测 | 部分实现 | `newDimensionEvaluation.ts` 按大小写与连续空白归一化并覆盖评价血缘去重；尚无同义和反向冲突检测 | `newDimensionEvaluation.test.ts` 覆盖归一化重复与血缘汇总；PR #17 CI 通过 | 同义、重复、反向冲突均能检测并给出处理建议 | 维度 Skill | [#17](https://github.com/boyuling-123/AI-API-workspace/pull/17) |
@@ -109,8 +109,8 @@
 - TASK-003、TASK-004 和 TASK-008 已具备代码、真实源码单测、Mock 浏览器恢复路径、视觉截图、干净环境与 PR #13 GitHub CI Trace，状态为“已验证”。
 - TASK-002、TASK-006 和 TASK-007 已具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉截图、干净环境和 PR #14 GitHub CI Trace，状态为“已验证”。
 - TASK-005 已通过 PR #15 完成失败项和指定 Case，PR #16 完成新增模型或算法，PR #17 完成新增评价维度；四类路径均具备代码、真实源码测试、Mock 精确请求、视觉证据、干净环境和 GitHub CI Trace，状态为“已验证”。
-- DOC-003、DIM-002 与 DIM-003 已具备准确产品口径、结构化代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境和 PR #18 GitHub CI Trace，状态为“已验证”。
-- DIM-004 当前仅有标准答案进入维度生成，硬规则、Bad Case 和人工结果仍缺失，继续保持“部分实现”。
+- DOC-003、DIM-002 与 DIM-003 已具备准确产品口径、结构化代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境和 PR #18 GitHub CI Trace，状态为“已验证”。PR 04B 又把页面口径校准到新增的硬规则与 Bad Case，但不冒充 OpenJudge 或人工反馈学习。
+- DIM-004 已在本地补齐标准答案、硬规则和 Bad Case 三类输入，并通过双层脱敏、异常阻断、Mock 精确请求和视觉验收；人工评分/排序及 Iterative Rubrics Generator 尚未实现，因此继续保持“部分实现”，待 PR 04B CI 和后续 PR 04C。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。
 - 四个不存在的规划 API 必须持续显示为“设计中”或“Demo”，直至对应 route、契约测试和文档全部完成。

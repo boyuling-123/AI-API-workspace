@@ -304,3 +304,24 @@
 - DOC-003、DIM-002 与 DIM-003 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境和 GitHub CI Trace，升级为“已验证”。DIM-004 因仍缺硬规则、Bad Case 与人工结果输入，保持“部分实现”。
 
 下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #18。
+
+## 2026-08-29：PR 04A 合并与 PR 04B 启动
+
+- PR #18 的最终文档提交对应 workflow run `33237610485` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 未变化且仍为当前 head 祖先后，以非强推 fast-forward 方式合并；GitHub 已确认 PR #18 状态为 Merged，合并 SHA 为 `ef643b2`。
+- 本地 `main` 同步到 `ef643b2`，随后创建短生命周期分支 `codex/feat-dimension-rules-bad-cases`。
+- PR 04B 只补 DIM-004 的硬规则与 Bad Case 两类受控输入；人工评分/排序及 Iterative Rubrics Generator 保留给连续小 PR，避免一个分支混合多套反馈数据流。
+
+下一步：定义硬规则和 Bad Case 的有界 Schema、受控 UI、Prompt 语义与异常路径。
+
+## 2026-08-29：PR 04B 本地验收
+
+- AI 评价页新增任务级硬规则输入，每行一条，按大小写和连续空白去重，最多 20 条且单条最多 500 字；超限时页面阻断，外部 API 仍会执行同一份服务端校验。
+- 代表性样本支持显式标记或取消 Bad Case，原因必填且最多 1000 字。导入数据只识别有限白名单列名及明确真值，不从普通 prompt 或任意备注猜测。
+- 规则和 Bad Case 原因进入结构化请求与维度 Prompt；客户端组包与服务端解析均调用统一脱敏函数，原图、base64、完整失败文本和敏感值不会进入模型上下文。
+- Mock E2E 验证原因为空时维度请求为零，补齐后恰好一次 `/api/gen-dimensions`，`/api/evaluate` 始终为零；页面通过 WCAG 严重与致命问题扫描。
+- 视觉证据 `docs/evidence/pr-04b/hard-rules-bad-case.png` 已人工检查，完整展示规则计数、两条样本、一条 Bad Case 及必填原因，无粘滞页头重叠或内容截断。
+- 本地 `npm run quality` 通过：224 文件 Secret Scan、零 lint、typecheck、67 项真实源码单测、2 项压力测试和 19 路由生产构建；全量 16 项 Playwright 通过。
+- DIM-004 的标准答案、硬规则和 Bad Case 已有本地完整证据；人工评分/排序及 Iterative Rubrics Generator 尚未实现，继续保持“部分实现”。
+
+下一步：提交实现并在独立干净工作树全新安装复验，随后推送并创建 PR 04B。

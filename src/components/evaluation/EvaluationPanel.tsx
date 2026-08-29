@@ -22,10 +22,13 @@ import {
   normalizeEvaluationDimensionName,
 } from "@/lib/newDimensionEvaluation";
 import {
+  analyzeDimensionHardRules,
   buildDimensionGenerationSamples,
   DIMENSION_SAMPLE_STRATEGY_LABELS,
   DIMENSION_TASK_TYPE_LABELS,
   listDimensionSampleCandidates,
+  MAX_DIMENSION_BAD_CASE_REASON_LENGTH,
+  MAX_DIMENSION_HARD_RULES,
   MAX_DIMENSION_OBJECTIVE_LENGTH,
   MAX_DIMENSION_SAMPLES,
   MAX_DIMENSION_SCENARIO_LENGTH,
@@ -158,6 +161,7 @@ export function EvaluationPanel({
     newDimensionContext?.userRequirement ?? ""
   );
   const [businessScenario, setBusinessScenario] = useState("");
+  const [hardRulesText, setHardRulesText] = useState("");
   const [dimensionTaskType, setDimensionTaskType] =
     useState<DimensionTaskType>("text_generation");
   const [evalPrompt, setEvalPrompt] = useState(
@@ -186,6 +190,9 @@ export function EvaluationPanel({
     useState<DimensionSampleStrategy>("coverage");
   const [sampleCount, setSampleCount] = useState(3);
   const [selectedSampleIds, setSelectedSampleIds] = useState<string[]>([]);
+  const [badCaseOverrides, setBadCaseOverrides] = useState<
+    Record<string, string | null>
+  >({});
 
   const { evalResults, status, error, genDimensions, generatePrompt, evaluate, cancel } =
     evaluation;
@@ -242,6 +249,11 @@ export function EvaluationPanel({
     [expectedAnswerKey, inputs, results]
   );
 
+  const hardRulesAnalysis = useMemo(
+    () => analyzeDimensionHardRules(hardRulesText),
+    [hardRulesText]
+  );
+
   useEffect(() => {
     setSelectedSampleIds(
       selectRepresentativeSampleIds(
@@ -252,6 +264,38 @@ export function EvaluationPanel({
     );
   }, [sampleCandidates, sampleCount, sampleStrategy]);
 
+  const sampleCandidateById = useMemo(
+    () => new Map(sampleCandidates.map((candidate) => [candidate.inputId, candidate])),
+    [sampleCandidates]
+  );
+
+  const effectiveBadCaseReasons = useMemo(() => {
+    const reasons: Record<string, string> = {};
+    for (const inputId of selectedSampleIds) {
+      const override = badCaseOverrides[inputId];
+      if (override === null) continue;
+      if (typeof override === "string") {
+        reasons[inputId] = override;
+        continue;
+      }
+      const candidate = sampleCandidateById.get(inputId);
+      if (candidate?.importedBadCase) {
+        reasons[inputId] = candidate.importedBadCaseReason;
+      }
+    }
+    return reasons;
+  }, [badCaseOverrides, sampleCandidateById, selectedSampleIds]);
+
+  const missingBadCaseReasonIds = useMemo(
+    () =>
+      selectedSampleIds.filter(
+        (inputId) =>
+          Object.prototype.hasOwnProperty.call(effectiveBadCaseReasons, inputId) &&
+          !effectiveBadCaseReasons[inputId].trim()
+      ),
+    [effectiveBadCaseReasons, selectedSampleIds]
+  );
+
   const selectedGenerationSamples = useMemo(
     () =>
       buildDimensionGenerationSamples({
@@ -259,13 +303,15 @@ export function EvaluationPanel({
         results,
         selectedInputIds: selectedSampleIds,
         expectedAnswerKey,
+        badCaseReasons: effectiveBadCaseReasons,
       }),
-    [expectedAnswerKey, inputs, results, selectedSampleIds]
-  );
-
-  const sampleCandidateById = useMemo(
-    () => new Map(sampleCandidates.map((candidate) => [candidate.inputId, candidate])),
-    [sampleCandidates]
+    [
+      effectiveBadCaseReasons,
+      expectedAnswerKey,
+      inputs,
+      results,
+      selectedSampleIds,
+    ]
   );
 
   const expectedCoverage = useMemo(() => {
@@ -304,7 +350,9 @@ export function EvaluationPanel({
       !scenario.trim() ||
       !businessScenario.trim() ||
       !judgeModelId ||
-      selectedGenerationSamples.length === 0
+      selectedGenerationSamples.length === 0 ||
+      hardRulesAnalysis.error ||
+      missingBadCaseReasonIds.length > 0
     ) {
       return;
     }
@@ -315,6 +363,7 @@ export function EvaluationPanel({
           objective: scenario.trim(),
           businessScenario: businessScenario.trim(),
           taskType: dimensionTaskType,
+          hardRules: hardRulesAnalysis.rules,
           samples: selectedGenerationSamples,
         },
         judgeModelId
@@ -460,6 +509,23 @@ export function EvaluationPanel({
     );
   };
 
+  const toggleBadCase = (inputId: string) => {
+    const isMarked = Object.prototype.hasOwnProperty.call(
+      effectiveBadCaseReasons,
+      inputId
+    );
+    const importedReason =
+      sampleCandidateById.get(inputId)?.importedBadCaseReason ?? "";
+    setBadCaseOverrides((current) => ({
+      ...current,
+      [inputId]: isMarked ? null : importedReason,
+    }));
+  };
+
+  const updateBadCaseReason = (inputId: string, value: string) => {
+    setBadCaseOverrides((current) => ({ ...current, [inputId]: value }));
+  };
+
   const selectedDimensions = candidates
     .filter((dim) => dim.selected)
     .map((dim) => ({
@@ -482,6 +548,8 @@ export function EvaluationPanel({
     !!businessScenario.trim() &&
     !!judgeModelId &&
     selectedGenerationSamples.length > 0 &&
+    !hardRulesAnalysis.error &&
+    missingBadCaseReasonIds.length === 0 &&
     !isGeneratingDim &&
     !reachedDimensionLimit;
   const canGenerate =
@@ -695,6 +763,41 @@ export function EvaluationPanel({
             )}
           </div>
 
+          <div className="flex flex-col gap-2 rounded-md border border-amber-200 bg-amber-50/60 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <p className="text-sm font-medium text-slate-800">
+                  硬规则（可选）
+                </p>
+                <p className="mt-0.5 text-xs text-slate-600">
+                  每行只写一条必须满足的业务规则，不解析 JSON，也不猜测段落结构。
+                </p>
+              </div>
+              <span className="shrink-0 rounded-full bg-white px-2 py-1 text-xs text-amber-800">
+                {hardRulesAnalysis.rules.length}/{MAX_DIMENSION_HARD_RULES} 条
+              </span>
+            </div>
+            <textarea
+              aria-label="维度生成硬规则"
+              aria-invalid={Boolean(hardRulesAnalysis.error)}
+              value={hardRulesText}
+              onChange={(event) => setHardRulesText(event.target.value)}
+              disabled={judgeDisabled}
+              rows={3}
+              placeholder={"例如：不得承诺未确认的退款时效\n例如：涉及账户信息时必须先完成身份核验"}
+              className="w-full resize-y rounded-md border border-amber-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+            />
+            {hardRulesAnalysis.error ? (
+              <p role="alert" className="text-xs font-medium text-red-700">
+                {hardRulesAnalysis.error}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-600">
+                重复规则会按大小写、空白归一化后合并；规则只用于生成候选维度，不会自动启动评价。
+              </p>
+            )}
+          </div>
+
           <div className="flex flex-col gap-3 rounded-md border border-cyan-200 bg-cyan-50/50 p-3">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div>
@@ -706,7 +809,7 @@ export function EvaluationPanel({
                 </p>
               </div>
               <span className="rounded-full bg-white px-2 py-1 text-xs text-cyan-700">
-                已选 {selectedGenerationSamples.length}/{sampleCandidates.length} 条
+                已选 {selectedGenerationSamples.length}/{sampleCandidates.length} 条 · Bad Case {Object.keys(effectiveBadCaseReasons).length} 条
               </span>
             </div>
 
@@ -765,9 +868,21 @@ export function EvaluationPanel({
                 {selectedSampleIds.map((inputId) => {
                   const candidate = sampleCandidateById.get(inputId);
                   if (!candidate) return null;
+                  const isBadCase = Object.prototype.hasOwnProperty.call(
+                    effectiveBadCaseReasons,
+                    inputId
+                  );
+                  const importedBadCaseActive =
+                    candidate.importedBadCase &&
+                    badCaseOverrides[inputId] === undefined;
                   return (
-                    <li key={inputId}>
-                      <label className="flex cursor-pointer gap-2 rounded-md border border-cyan-100 bg-white p-2 text-xs">
+                    <li
+                      key={inputId}
+                      className={`rounded-md border bg-white p-2 text-xs ${
+                        isBadCase ? "border-rose-200" : "border-cyan-100"
+                      }`}
+                    >
+                      <div className="flex items-start gap-2">
                         <input
                           type="checkbox"
                           aria-label={`发送代表性样本 Case ${candidate.index + 1}`}
@@ -775,7 +890,7 @@ export function EvaluationPanel({
                           onChange={() => toggleSelectedSample(inputId)}
                           className="mt-0.5"
                         />
-                        <span className="min-w-0">
+                        <div className="min-w-0 flex-1">
                           <span className="block truncate font-medium text-slate-700">
                             Case {candidate.index + 1}：
                             {candidate.prompt || "（空 prompt）"}
@@ -786,15 +901,57 @@ export function EvaluationPanel({
                               ? " 有标准答案"
                               : " 无标准答案"}
                           </span>
-                        </span>
-                      </label>
+                          {importedBadCaseActive && (
+                            <span className="mt-1 inline-flex rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700">
+                              数据集标记
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          aria-pressed={isBadCase}
+                          aria-label={`${isBadCase ? "取消" : "标记"} Case ${candidate.index + 1} Bad Case`}
+                          onClick={() => toggleBadCase(inputId)}
+                          className={`shrink-0 rounded-md border px-2 py-1 font-medium transition ${
+                            isBadCase
+                              ? "border-rose-200 bg-rose-50 text-rose-700 hover:bg-rose-100"
+                              : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                          }`}
+                        >
+                          {isBadCase ? "取消 Bad Case" : "标记 Bad Case"}
+                        </button>
+                      </div>
+                      {isBadCase && (
+                        <label className="mt-2 flex flex-col gap-1 border-t border-rose-100 pt-2 text-rose-800">
+                          Bad Case 原因（必填）
+                          <textarea
+                            aria-label={`Case ${candidate.index + 1} Bad Case 原因`}
+                            aria-invalid={
+                              !effectiveBadCaseReasons[inputId].trim()
+                            }
+                            value={effectiveBadCaseReasons[inputId]}
+                            onChange={(event) =>
+                              updateBadCaseReason(inputId, event.target.value)
+                            }
+                            maxLength={MAX_DIMENSION_BAD_CASE_REASON_LENGTH}
+                            rows={2}
+                            placeholder="说明这条输出为什么具有代表性风险，不要粘贴密钥或完整日志。"
+                            className="resize-y rounded-md border border-rose-200 bg-white px-2 py-1.5 text-slate-700"
+                          />
+                        </label>
+                      )}
                     </li>
                   );
                 })}
               </ul>
             )}
+            {missingBadCaseReasonIds.length > 0 && (
+              <p role="alert" className="text-xs font-medium text-red-700">
+                已标记的 Bad Case 必须填写原因，补充完成后才能生成维度。
+              </p>
+            )}
             <p className="text-xs text-slate-500">
-              仅发送截断后的文字、输出状态与图片数量，不发送原始图片、base64 或完整错误文本。取消勾选可排除样本；调整策略或数量会重新确定性抽样。
+              仅发送截断后的文字、规则、Bad Case 原因、输出状态与图片数量，不发送原始图片、base64 或完整错误文本。可识别 is_bad_case、bad_case_reason 等严格列名，不会猜测未知字段。
             </p>
           </div>
 
@@ -841,9 +998,11 @@ export function EvaluationPanel({
               </button>
               {(!scenario.trim() ||
                 !businessScenario.trim() ||
-                selectedGenerationSamples.length === 0) && (
+                selectedGenerationSamples.length === 0 ||
+                hardRulesAnalysis.error ||
+                missingBadCaseReasonIds.length > 0) && (
                 <span className="text-xs text-gray-500">
-                  先填写评测目标和业务场景，并保留至少 1 条样本
+                  请先补齐评测上下文，并修正规则或 Bad Case 提示
                 </span>
               )}
               {reachedDimensionLimit && (

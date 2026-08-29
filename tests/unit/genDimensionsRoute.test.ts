@@ -22,6 +22,7 @@ const validRequest = {
   objective: "判断回答是否准确",
   businessScenario: "售后客服",
   taskType: "text_generation",
+  hardRules: [],
   samples: [
     {
       inputId: "input-a",

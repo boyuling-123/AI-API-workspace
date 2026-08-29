@@ -3,6 +3,7 @@ import {
   AUTO_EXPECTED_ANSWER_KEY,
   resolveExpectedAnswer,
 } from "@/services/expectedAnswer";
+import { redactSensitiveText } from "@/lib/redactSensitive";
 
 export const DIMENSION_TASK_TYPES = [
   "text_generation",
@@ -61,6 +62,7 @@ export interface DimensionGenerationSample {
   inputImageCount: number;
   expectedAnswer?: string;
   expectedAnswerKey?: string;
+  badCaseReason?: string;
   outputs: DimensionGenerationSampleOutput[];
 }
 
@@ -68,6 +70,7 @@ export interface DimensionGenerationRequest {
   objective: string;
   businessScenario: string;
   taskType: DimensionTaskType;
+  hardRules: string[];
   samples: DimensionGenerationSample[];
 }
 
@@ -76,6 +79,8 @@ export interface DimensionSampleCandidate {
   index: number;
   prompt: string;
   hasExpectedAnswer: boolean;
+  importedBadCase: boolean;
+  importedBadCaseReason: string;
   successCount: number;
   errorCount: number;
 }
@@ -83,10 +88,98 @@ export interface DimensionSampleCandidate {
 export const MAX_DIMENSION_SAMPLES = 8;
 export const MAX_DIMENSION_OBJECTIVE_LENGTH = 2_000;
 export const MAX_DIMENSION_SCENARIO_LENGTH = 1_000;
+export const MAX_DIMENSION_HARD_RULES = 20;
+export const MAX_DIMENSION_HARD_RULE_LENGTH = 500;
+export const MAX_DIMENSION_BAD_CASE_REASON_LENGTH = 1_000;
 const MAX_SAMPLE_OUTPUTS = 5;
 const MAX_PROMPT_LENGTH = 2_000;
 const MAX_EXPECTED_LENGTH = 2_000;
 const MAX_OUTPUT_LENGTH = 3_000;
+
+const BAD_CASE_FLAG_KEYS = [
+  "is_bad_case",
+  "bad_case",
+  "badcase",
+  "isbadcase",
+  "是否坏例",
+  "是否badcase",
+  "是否bad_case",
+] as const;
+
+const BAD_CASE_REASON_KEYS = [
+  "bad_case_reason",
+  "badcase_reason",
+  "badcasereason",
+  "failure_reason",
+  "failurereason",
+  "坏例原因",
+  "badcase原因",
+  "bad_case_原因",
+] as const;
+
+export interface DimensionHardRulesAnalysis {
+  rules: string[];
+  error: string | null;
+}
+
+export function analyzeDimensionHardRules(
+  value: string
+): DimensionHardRulesAnalysis {
+  const rawRules: string[] = [];
+  const seen = new Set<string>();
+  for (const rawLine of value.split(/\r?\n/)) {
+    const rule = rawLine.trim();
+    if (!rule) continue;
+    const normalized = normalizeComparableText(rule);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    rawRules.push(rule);
+  }
+  if (rawRules.length > MAX_DIMENSION_HARD_RULES) {
+    return {
+      rules: rawRules,
+      error: `硬规则最多 ${MAX_DIMENSION_HARD_RULES} 条，请删除多余规则`,
+    };
+  }
+  const overlongIndex = rawRules.findIndex(
+    (rule) => rule.length > MAX_DIMENSION_HARD_RULE_LENGTH
+  );
+  if (overlongIndex >= 0) {
+    return {
+      rules: rawRules,
+      error: `第 ${overlongIndex + 1} 条硬规则不能超过 ${MAX_DIMENSION_HARD_RULE_LENGTH} 个字符`,
+    };
+  }
+  return { rules: redactAndDedupe(rawRules), error: null };
+}
+
+export function resolveImportedBadCase(input: TaskInput): {
+  marked: boolean;
+  reason: string;
+} {
+  const extraFields = input.extraFields ?? {};
+  const normalizedEntries = Object.entries(extraFields).map(([key, value]) => [
+    normalizeExtraFieldKey(key),
+    value,
+  ] as const);
+  const reasonValue = normalizedEntries.find(([key]) =>
+    BAD_CASE_REASON_KEYS.includes(key as (typeof BAD_CASE_REASON_KEYS)[number])
+  )?.[1];
+  const reason =
+    typeof reasonValue === "string"
+      ? clip(
+          redactSensitiveText(reasonValue.trim()),
+          MAX_DIMENSION_BAD_CASE_REASON_LENGTH
+        )
+      : "";
+  const flagValue = normalizedEntries.find(([key]) =>
+    BAD_CASE_FLAG_KEYS.includes(key as (typeof BAD_CASE_FLAG_KEYS)[number])
+  )?.[1];
+  return {
+    marked: reason.length > 0 || isExplicitBadCaseFlag(flagValue),
+    reason,
+  };
+}
 
 export function listDimensionSampleCandidates(
   inputs: TaskInput[],
@@ -97,6 +190,7 @@ export function listDimensionSampleCandidates(
   return inputs.flatMap((input, index) => {
     const row = resultByInputId.get(input.id);
     if (!row || row.items.length === 0) return [];
+    const importedBadCase = resolveImportedBadCase(input);
     return [
       {
         inputId: input.id,
@@ -105,6 +199,8 @@ export function listDimensionSampleCandidates(
         hasExpectedAnswer: Boolean(
           resolveExpectedAnswer(input, expectedAnswerKey).value
         ),
+        importedBadCase: importedBadCase.marked,
+        importedBadCaseReason: importedBadCase.reason,
         successCount: row.items.filter((item) => item.status === "success")
           .length,
         errorCount: row.items.filter((item) => item.status === "error").length,
@@ -170,12 +266,14 @@ export function buildDimensionGenerationSamples(params: {
   results: ResultRow[];
   selectedInputIds: string[];
   expectedAnswerKey?: string;
+  badCaseReasons?: Record<string, string>;
 }): DimensionGenerationSample[] {
   const {
     inputs,
     results,
     selectedInputIds,
     expectedAnswerKey = AUTO_EXPECTED_ANSWER_KEY,
+    badCaseReasons = {},
   } = params;
   const inputById = new Map(inputs.map((input) => [input.id, input]));
   const resultByInputId = new Map(results.map((row) => [row.inputId, row]));
@@ -189,6 +287,7 @@ export function buildDimensionGenerationSamples(params: {
     const row = resultByInputId.get(inputId);
     if (!input || !row || row.items.length === 0) return [];
     const expected = resolveExpectedAnswer(input, expectedAnswerKey);
+    const badCaseReason = badCaseReasons[inputId]?.trim();
     const outputs = row.items
       .filter((item) => item.status === "success" || item.status === "error")
       .slice(0, MAX_SAMPLE_OUTPUTS)
@@ -198,7 +297,7 @@ export function buildDimensionGenerationSamples(params: {
         status: item.status as "success" | "error",
         outputText:
           item.status === "success"
-            ? clip(item.outputText ?? "", MAX_OUTPUT_LENGTH) || undefined
+            ? redactAndClip(item.outputText, MAX_OUTPUT_LENGTH)
             : undefined,
         outputImageCount: item.outputImages?.length ?? 0,
         errorType: item.status === "error" ? item.errorType : undefined,
@@ -207,12 +306,18 @@ export function buildDimensionGenerationSamples(params: {
     return [
       {
         inputId: input.id,
-        prompt: clip(input.prompt, MAX_PROMPT_LENGTH),
+        prompt: redactAndClip(input.prompt, MAX_PROMPT_LENGTH) ?? "",
         inputImageCount: input.images.length,
         expectedAnswer: expected.value
-          ? clip(expected.value, MAX_EXPECTED_LENGTH)
+          ? redactAndClip(expected.value, MAX_EXPECTED_LENGTH)
           : undefined,
         expectedAnswerKey: expected.key ?? undefined,
+        badCaseReason: badCaseReason
+          ? redactAndClip(
+              badCaseReason,
+              MAX_DIMENSION_BAD_CASE_REASON_LENGTH
+            )
+          : undefined,
         outputs,
       },
     ];
@@ -228,15 +333,11 @@ export function parseDimensionGenerationRequest(
     throw new DimensionGenerationValidationError("维度生成请求必须是对象");
   }
   const raw = value as Record<string, unknown>;
-  const objective = requiredText(
-    raw.objective,
-    "评测目标",
-    MAX_DIMENSION_OBJECTIVE_LENGTH
+  const objective = redactSensitiveText(
+    requiredText(raw.objective, "评测目标", MAX_DIMENSION_OBJECTIVE_LENGTH)
   );
-  const businessScenario = requiredText(
-    raw.businessScenario,
-    "业务场景",
-    MAX_DIMENSION_SCENARIO_LENGTH
+  const businessScenario = redactSensitiveText(
+    requiredText(raw.businessScenario, "业务场景", MAX_DIMENSION_SCENARIO_LENGTH)
   );
   if (
     typeof raw.taskType !== "string" ||
@@ -244,6 +345,7 @@ export function parseDimensionGenerationRequest(
   ) {
     throw new DimensionGenerationValidationError("请选择有效的任务类型");
   }
+  const hardRules = parseHardRules(raw.hardRules);
   if (!Array.isArray(raw.samples) || raw.samples.length === 0) {
     throw new DimensionGenerationValidationError("请至少选择 1 条代表性样本");
   }
@@ -263,6 +365,7 @@ export function parseDimensionGenerationRequest(
     objective,
     businessScenario,
     taskType: raw.taskType as DimensionTaskType,
+    hardRules,
     samples,
   };
 }
@@ -273,7 +376,9 @@ function parseSample(value: unknown, index: number): DimensionGenerationSample {
   }
   const raw = value as Record<string, unknown>;
   const inputId = requiredText(raw.inputId, "样本 inputId", 200);
-  const prompt = requiredText(raw.prompt, "样本 prompt", MAX_PROMPT_LENGTH);
+  const prompt = redactSensitiveText(
+    requiredText(raw.prompt, "样本 prompt", MAX_PROMPT_LENGTH)
+  );
   if (!Array.isArray(raw.outputs) || raw.outputs.length === 0) {
     throw new DimensionGenerationValidationError(
       `第 ${index + 1} 条样本缺少模型或算法输出`
@@ -301,15 +406,26 @@ function parseSample(value: unknown, index: number): DimensionGenerationSample {
       status,
       outputText:
         status === "success" && typeof item.outputText === "string"
-          ? clip(item.outputText, MAX_OUTPUT_LENGTH) || undefined
+          ? redactAndClip(item.outputText, MAX_OUTPUT_LENGTH)
           : undefined,
       outputImageCount: boundedInteger(item.outputImageCount, 0, 100),
       errorType:
         status === "error" && typeof item.errorType === "string"
-          ? clip(item.errorType, 100) || undefined
+          ? redactAndClip(item.errorType, 100)
           : undefined,
     } satisfies DimensionGenerationSampleOutput;
   });
+
+  let badCaseReason: string | undefined;
+  if (raw.badCaseReason !== undefined) {
+    badCaseReason = redactSensitiveText(
+      requiredText(
+        raw.badCaseReason,
+        `第 ${index + 1} 条样本的 Bad Case 原因`,
+        MAX_DIMENSION_BAD_CASE_REASON_LENGTH
+      )
+    );
+  }
 
   return {
     inputId,
@@ -317,14 +433,39 @@ function parseSample(value: unknown, index: number): DimensionGenerationSample {
     inputImageCount: boundedInteger(raw.inputImageCount, 0, 100),
     expectedAnswer:
       typeof raw.expectedAnswer === "string"
-        ? clip(raw.expectedAnswer, MAX_EXPECTED_LENGTH) || undefined
+        ? redactAndClip(raw.expectedAnswer, MAX_EXPECTED_LENGTH)
         : undefined,
     expectedAnswerKey:
       typeof raw.expectedAnswerKey === "string"
         ? clip(raw.expectedAnswerKey, 200) || undefined
         : undefined,
+    badCaseReason,
     outputs,
   };
+}
+
+function parseHardRules(value: unknown): string[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) {
+    throw new DimensionGenerationValidationError("硬规则必须是字符串数组");
+  }
+  if (value.length > MAX_DIMENSION_HARD_RULES) {
+    throw new DimensionGenerationValidationError(
+      `硬规则最多 ${MAX_DIMENSION_HARD_RULES} 条`
+    );
+  }
+  const rawRules = value.map((rule, index) =>
+    requiredText(
+      rule,
+      `第 ${index + 1} 条硬规则`,
+      MAX_DIMENSION_HARD_RULE_LENGTH
+    )
+  );
+  const normalized = rawRules.map(normalizeComparableText);
+  if (new Set(normalized).size !== normalized.length) {
+    throw new DimensionGenerationValidationError("硬规则不能重复");
+  }
+  return redactAndDedupe(rawRules);
 }
 
 function requiredText(value: unknown, label: string, maxLength: number): string {
@@ -348,4 +489,41 @@ function boundedInteger(value: unknown, min: number, max: number): number {
 
 function clip(value: string, maxLength: number): string {
   return value.slice(0, maxLength);
+}
+
+function redactAndClip(
+  value: string | null | undefined,
+  maxLength: number
+): string | undefined {
+  if (typeof value !== "string") return undefined;
+  return clip(redactSensitiveText(value), maxLength) || undefined;
+}
+
+function redactAndDedupe(values: string[]): string[] {
+  const redacted: string[] = [];
+  const seen = new Set<string>();
+  for (const value of values) {
+    const safeValue = redactSensitiveText(value);
+    const normalized = normalizeComparableText(safeValue);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    redacted.push(safeValue);
+  }
+  return redacted;
+}
+
+function normalizeComparableText(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+function normalizeExtraFieldKey(value: string): string {
+  return value.trim().toLowerCase().replace(/[\s-]+/g, "_");
+}
+
+function isExplicitBadCaseFlag(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value !== "string") return false;
+  return ["true", "1", "yes", "y", "是", "坏例", "bad"].includes(
+    value.trim().toLowerCase()
+  );
 }

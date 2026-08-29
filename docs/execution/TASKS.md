@@ -148,7 +148,7 @@
 - [x] PR #17 workflow run `33236290462` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33236428567` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #17 为 Merged。
 
-## 进行中：PR 04A 结构化维度生成上下文
+## 已完成：PR 04A 结构化维度生成上下文
 
 分支：`codex/feat-dimension-generation-context`
 
@@ -162,7 +162,18 @@
 - [x] 保存视觉证据；本地 quality 与 15 项 Playwright 全量回归通过。
 - [x] 提交 `383aef7` 并在独立干净工作树全新安装 434 个包，quality 与 15 项 Playwright 复验通过，结束时零改动。
 - [x] 推送分支并创建 [PR #18](https://github.com/boyuling-123/AI-API-workspace/pull/18)；workflow run `33237473012` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终 CI 通过后，以非强推 fast-forward 安全合并并回写能力状态。
+- [x] 最终文档提交对应 workflow run `33237610485` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #18 为 Merged。
+
+## 进行中：PR 04B 硬规则与 Bad Case 上下文
+
+分支：`codex/feat-dimension-rules-bad-cases`
+
+- [x] 增加有界任务级硬规则 Schema，每行一条、去重、最多 20 条且单条最多 500 字。
+- [x] 支持用户显式标记代表性样本为 Bad Case 并填写原因；识别严格的数据集列名但不猜测任意字段。
+- [x] 将规则与 Bad Case 原因写入受控模型请求和 Prompt，不发送原图、base64 或完整失败文本。
+- [x] 未填写 Bad Case 原因、规则超限或非法外部请求不得调用维度生成模型。
+- [x] 新增真实源码测试、Mock Playwright、WCAG 门禁和视觉证据。
+- [ ] 独立干净工作树复验、创建 PR、两轮 CI 与非强推安全合并。
 
 ## 硬门禁
 
