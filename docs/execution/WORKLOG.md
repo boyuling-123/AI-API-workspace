@@ -289,6 +289,7 @@
 - `dimension-generation.spec.ts` 使用 5 条 Mock Case 验证确定性抽样、失败优先、点击前零调用、点击后恰好一次维度请求、零评价请求和敏感图片/错误不出现在请求中。
 - 新 E2E 首次发现 AI 评价页四处低对比度文字，修复后完整页面无严重或致命 WCAG 问题；视觉证据 `docs/evidence/pr-04a/dimension-sample-preview.png` 已人工检查，无截断。
 - 本地 `npm run quality` 通过：221 文件 Secret Scan、零 lint、typecheck、64 项单测、2 项压力测试和 19 路由生产构建；全量 15 项 Playwright 通过。
-- DIM-002 与 DIM-003 已具备代码、异常路径、真实源码测试、Mock 浏览器路径和视觉证据；在独立干净环境与 GitHub CI 通过前严格保持“已实现”。
+- 提交 `383aef7` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；quality 与 15 项 Playwright 再次全部通过，复验结束后工作树零改动。
+- DIM-002 与 DIM-003 已具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉证据和独立干净环境复验；在 GitHub CI 通过前严格保持“已实现”。
 
-下一步：提交实现，在独立干净工作树全新安装并复验全部门禁，再推送创建 PR 04A。
+下一步：提交干净环境证据，推送分支并创建 PR 04A，等待 GitHub 两道 CI。
