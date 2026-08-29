@@ -322,6 +322,7 @@
 - Mock E2E 验证原因为空时维度请求为零，补齐后恰好一次 `/api/gen-dimensions`，`/api/evaluate` 始终为零；页面通过 WCAG 严重与致命问题扫描。
 - 视觉证据 `docs/evidence/pr-04b/hard-rules-bad-case.png` 已人工检查，完整展示规则计数、两条样本、一条 Bad Case 及必填原因，无粘滞页头重叠或内容截断。
 - 本地 `npm run quality` 通过：224 文件 Secret Scan、零 lint、typecheck、67 项真实源码单测、2 项压力测试和 19 路由生产构建；全量 16 项 Playwright 通过。
+- 功能提交 `a054594` 在独立 `/tmp` 工作树全新 `npm ci` 安装 434 个包后再次通过完整 quality 与 16 项 Playwright，复验结束时 Git 零改动；未使用 `npm audit fix --force` 改写既有锁文件。
 - DIM-004 的标准答案、硬规则和 Bad Case 已有本地完整证据；人工评分/排序及 Iterative Rubrics Generator 尚未实现，继续保持“部分实现”。
 
-下一步：提交实现并在独立干净工作树全新安装复验，随后推送并创建 PR 04B。
+下一步：推送短生命周期分支并创建 PR 04B，等待 GitHub 核心质量与 Playwright 两道 CI。
