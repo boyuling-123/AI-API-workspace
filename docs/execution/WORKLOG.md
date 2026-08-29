@@ -326,3 +326,14 @@
 - DIM-004 的标准答案、硬规则和 Bad Case 已有本地完整证据；人工评分/排序及 Iterative Rubrics Generator 尚未实现，继续保持“部分实现”。
 
 下一步：推送短生命周期分支并创建 PR 04B，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-29：PR 04B 创建与首轮验收
+
+- 创建 [PR #19](https://github.com/boyuling-123/AI-API-workspace/pull/19)，目标为 `main`，来源为 `codex/feat-dimension-rules-bad-cases`；GitHub 确认可自动合并。
+- PR 描述明确硬规则、Bad Case、严格字段白名单、双层脱敏、零自动评价、Mock 测试、干净环境、视觉证据和普通 revert 回滚方案。
+- GitHub Actions `Quality Gate` workflow run `33239133343` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖密钥扫描、lint、typecheck、67 项真实源码单测、2 项压力测试和 19 路由生产构建。
+- `Playwright user paths and accessibility` Job 通过 16 项浏览器路径；失败 Trace 上传因没有失败而按设计跳过。
+- DIM-004 的标准答案、硬规则和 Bad Case 已具备代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、干净环境与 GitHub CI Trace；因人工评分/排序未实现，继续保持“部分实现”。
+
+下一步：提交本次 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #19。

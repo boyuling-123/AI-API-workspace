@@ -174,7 +174,8 @@
 - [x] 未填写 Bad Case 原因、规则超限或非法外部请求不得调用维度生成模型。
 - [x] 新增真实源码测试、Mock Playwright、WCAG 门禁和视觉证据。
 - [x] 功能提交 `a054594` 在独立干净工作树全新安装 434 个包，quality 与 16 项 Playwright 复验通过，结束时零改动。
-- [ ] 创建 PR、两轮 CI 与非强推安全合并。
+- [x] 推送分支并创建 [PR #19](https://github.com/boyuling-123/AI-API-workspace/pull/19)；workflow run `33239133343` 的核心质量与 Playwright 两个 Job 全部通过。
+- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 安全合并并回写状态。
 
 ## 硬门禁
 
