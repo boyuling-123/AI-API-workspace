@@ -3,9 +3,9 @@ import { evaluateOneInput } from "@/services/evaluateService";
 import type { EvaluateInputItem } from "@/services/evaluateService";
 import type { EvalDimension, EvaluationMode } from "@/types";
 import {
-  EvaluationRubricValidationError,
-  parseEvaluationRubrics,
-} from "@/lib/evaluationRubric";
+  EvaluatorPolicyValidationError,
+  parseEvaluatorPolicy,
+} from "@/lib/evaluatorPolicy";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,7 +21,7 @@ interface EvaluateBody {
 
 /**
  * 逐条评价路由（M9；v4.5 多维度）：一次处理一条输入，把该条各目标输出交给裁判模型横向对比，
- * 按每个维度独立打分（无总分）。并发由前端通过通用 Task Runner 按 Task.concurrency 管控，逐条调用本路由。
+ * Judge 逐维度打分，服务端确定性汇总策略结果。并发由前端 Task Runner 管控。
  */
 export async function POST(request: Request) {
   let body: EvaluateBody;
@@ -45,10 +45,10 @@ export async function POST(request: Request) {
   }
   let dimensions: EvalDimension[];
   try {
-    dimensions = parseEvaluationRubrics(body.dimensions);
+    dimensions = parseEvaluatorPolicy(body.dimensions);
   } catch (error) {
     const message =
-      error instanceof EvaluationRubricValidationError
+      error instanceof EvaluatorPolicyValidationError
         ? error.message
         : "评价维度校验失败";
     return NextResponse.json({ error: message }, { status: 400 });

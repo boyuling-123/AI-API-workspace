@@ -90,7 +90,14 @@ test("blocks incomplete Simple Rubrics before any Judge call", async ({
   await page.getByRole("button", { name: "AI 生成评价维度" }).click();
   await expect.poll(() => dimensionCalls).toBe(1);
   await page.getByLabel("选择维度 事实准确性").check();
-  await expect(page.getByText("已勾选 1 个 · 完整 1 个")).toBeVisible();
+  await expect(
+    page.getByText("已勾选 1 个 · Rubric 完整 1 个")
+  ).toBeVisible();
+  await expect(page.getByLabel("维度 1 权重")).toHaveValue("100");
+  await page.getByRole("button", { name: "确认评价策略" }).click();
+  await expect(
+    page.getByRole("button", { name: "评价策略已确认" })
+  ).toBeVisible();
 
   await page
     .getByText("评分锚点、证据要求与判断规则", { exact: true })
@@ -110,7 +117,9 @@ test("blocks incomplete Simple Rubrics before any Judge call", async ({
   expect(evaluateCalls).toBe(0);
 
   await fivePointCriteria.fill(originalCriteria);
-  await expect(page.getByText("已勾选 1 个 · 完整 1 个")).toBeVisible();
+  await expect(
+    page.getByText("已勾选 1 个 · Rubric 完整 1 个")
+  ).toBeVisible();
   await page
     .getByRole("button", { name: "按维度自动生成评价 Prompt" })
     .click();
@@ -118,7 +127,7 @@ test("blocks incomplete Simple Rubrics before any Judge call", async ({
   expect(promptCalls[0]).toMatchObject({
     scenario: "验证事实是否准确",
     modelId: "qwen3.6-plus",
-    dimensions: [rubric],
+    dimensions: [{ ...rubric, weight: 100 }],
   });
   await expect(page.getByLabel("评价 Prompt")).toHaveValue(
     "Mock evidence-first evaluation prompt"

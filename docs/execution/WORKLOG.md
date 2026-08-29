@@ -422,3 +422,23 @@
 - DIM-005 与 DIM-008 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。DIM-006、权重/一票否决和 Evaluator 版本化状态保持不变。
 
 下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #21。
+
+## 2026-08-29：PR 04D 合并与 PR 05A 启动
+
+- PR #21 的最终文档提交对应 workflow run `33243860373` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 未漂移后，以普通 `git push origin HEAD:main` 完成非强推 fast-forward 合并；GitHub 已确认 PR #21 为 Merged，合并 SHA 为 `6da447b`。
+- 本地 `main` 与 `origin/main` 同步到 `6da447b`，从该提交创建短生命周期分支 `codex/feat-evaluator-policy`。
+- PR 05A 只领取 DIM-009 与 PROMPT-001 的剩余范围：权重、一票否决、人工策略确认和 Prompt 透传；Evaluator 版本化、Judge 校准、OpenJudge 与 Iterative 继续保持原状态。
+
+## 2026-08-29：PR 05A 本地实现
+
+- 新增 `evaluatorPolicy.ts` 作为唯一策略真相源：以基点精确平均分配权重，校验单项范围、小数精度、总和与否决阈值，并生成确认指纹。
+- 页面为每条已选 Rubric 提供权重与否决阈值控件；策略必须显式确认，修改任一结构或策略字段后旧确认自动失效，Prompt 与评价按钮同步阻断。
+- `/api/gen-eval-prompt` 与 `/api/evaluate` 在模型调用前复验同一策略；Judge Prompt 包含完整 Rubric、权重和否决规则，但 Judge 只输出独立维度分。
+- 服务端在规范化 Judge 分数后确定性计算加权分、否决状态与原因；即时结果、AI 历史和 Excel 导出均保留这些字段，旧记录字段可缺省。
+- 新增 `evaluatorPolicy.test.ts` 与 `evaluator-policy.spec.ts`，并升级路由、Prompt、结构化 Rubric 和新增维度测试契约。非法策略在模型调用前失败，浏览器请求全部使用 Mock。
+- 修复自动保存瞬态文字和维度生成按钮的对比度问题；不等待动画消失即可通过 WCAG 严重与致命问题门禁。
+- 视觉证据 `docs/evidence/pr-05a/evaluator-policy.png` 已人工检查，权重、阈值、确认状态与策略结果同屏清晰，无粘性栏遮挡。
+- 本地 `npm run quality` 通过 243 文件 Secret Scan、零 lint、typecheck、89 项单测、2 项压力测试和 19 路由生产构建；全量 19 项 Playwright 通过。
+
+下一步：提交功能快照，并在独立干净工作树全新安装依赖后重复执行全部门禁。

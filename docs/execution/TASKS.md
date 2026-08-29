@@ -192,7 +192,7 @@
 - [x] 推送分支并创建 [PR #20](https://github.com/boyuling-123/AI-API-workspace/pull/20)；workflow run `33240897489` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33241134290` 的两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #20 为 Merged，合并 SHA 为 `2077b3b`。
 
-## 进行中：PR 04D 结构化 Simple Rubrics 与发布前校验
+## 已完成：PR 04D 结构化 Simple Rubrics 与发布前校验
 
 分支：`codex/feat-structured-simple-rubrics`
 
@@ -206,7 +206,23 @@
 - [x] 保存并人工检查视觉证据；本地 quality 通过 238 文件密钥扫描、84 项单测、2 项压力测试和 19 路由构建，全量 18 项 Playwright 通过。
 - [x] 功能提交 `a697f43` 在独立干净工作树全新安装 434 个包，quality 与 18 项 Playwright 复验通过，结束时零改动。
 - [x] 推送分支并创建 [PR #21](https://github.com/boyuling-123/AI-API-workspace/pull/21)；workflow run `33243678962` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 安全合并并回写状态。
+- [x] 最终文档提交对应 workflow run `33243860373` 两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #21 为 Merged，合并 SHA 为 `6da447b`。
+
+## 进行中：PR 05A 评价权重与一票否决策略
+
+分支：`codex/feat-evaluator-policy`
+
+- [x] 权重只接受 `0.01–100`、最多两位小数，全部已选维度必须精确合计 `100%`。
+- [x] 支持平均分配权重；勾选、新增或删除已选维度时重新安全分配，用户仍可手动调整。
+- [x] 每个维度可独立启用一票否决并设置 `0–10`、最多一位小数的阈值。
+- [x] 用户必须显式确认最终评价策略；任何 Rubric、权重或阈值修改都会使确认自动失效。
+- [x] Prompt 与 Judge 路由在模型调用前执行同一策略校验，并携带完整权重与否决规则。
+- [x] Judge 只返回独立维度分；平台确定性计算加权分、否决状态和原因，不依赖模型算术。
+- [x] 即时结果、AI 历史记录与 Excel 导出保留权重、加权分、否决状态和原因，旧历史继续可读。
+- [x] 新增真实源码单测、Mock Playwright、WCAG 门禁和视觉证据；未调用真实或付费模型。
+- [x] 本地 `quality` 通过 243 文件密钥扫描、零 lint、typecheck、89 项单测、2 项压力测试和 19 路由构建；全量 19 项 Playwright 通过。
+- [ ] 在独立干净工作树全新安装依赖并重复执行全部门禁。
+- [ ] 提交、推送、创建 PR，并在两轮 GitHub CI 通过后安全合并。
 
 ## 硬门禁
 

@@ -77,6 +77,9 @@ export function EvalHistoryPanel({
         scores: item.scores.map((score) => ({
           targetId: score.targetId,
           dimensionScores: score.dimensionScores,
+          weightedScore: score.weightedScore,
+          vetoed: score.vetoed,
+          vetoReasons: score.vetoReasons,
           overallComment: score.overallComment,
         })),
         summary: item.summary,
@@ -235,7 +238,7 @@ interface EvalDetailTableProps {
 
 /**
  * 评价详情表格（v4.5 多维度）：每「输入×目标」一行，列：# | 模型/算法 | 入参 | 出参 |
- * 各维度评分（每维度一列，hover 看理由） | 总体点评。表格末尾附该次评价的总结/推荐。无总分列。
+ * 各维度评分（每维度一列，hover 看理由） | 加权分 | 策略结果 | 总体点评。
  */
 function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
   const dimensions = record.dimensions ?? [];
@@ -250,6 +253,9 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
       string,
       {
         dimensionScores: { dimension: string; score: number; comment: string }[];
+        weightedScore?: number;
+        vetoed?: boolean;
+        vetoReasons?: string[];
         overallComment?: string;
       }
     >();
@@ -257,6 +263,9 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
       for (const score of item.scores) {
         map.set(`${item.inputId}__${score.targetId}`, {
           dimensionScores: score.dimensionScores,
+          weightedScore: score.weightedScore,
+          vetoed: score.vetoed,
+          vetoReasons: score.vetoReasons,
           overallComment: score.overallComment,
         });
       }
@@ -271,7 +280,7 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
   );
 
   const evaluatedInputIds = record.results.map((item) => item.inputId);
-  const dimensionColSpan = dimensions.length + 1; // 维度列 + 总体点评列
+  const dimensionColSpan = dimensions.length + 3; // 维度列 + 加权分 + 策略结果 + 总体点评
 
   return (
     <section className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-5">
@@ -296,8 +305,13 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
                   }
                 >
                   {dimension.name}
+                  {dimension.weight !== undefined
+                    ? ` (${dimension.weight}%)`
+                    : ""}
                 </th>
               ))}
+              <th className="whitespace-nowrap px-3 py-2">加权分</th>
+              <th className="whitespace-nowrap px-3 py-2">策略结果</th>
               <th className="px-3 py-2">总体点评</th>
             </tr>
           </thead>
@@ -383,6 +397,25 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
                         </td>
                       );
                     })}
+                    <td className="px-3 py-2.5 font-semibold text-slate-700">
+                      {lookup?.weightedScore === undefined
+                        ? "—"
+                        : lookup.weightedScore.toFixed(2)}
+                    </td>
+                    <td
+                      className={`px-3 py-2.5 text-xs font-semibold ${
+                        lookup?.vetoed
+                          ? "text-red-700"
+                          : "text-emerald-700"
+                      }`}
+                      title={lookup?.vetoReasons?.join("；") ?? ""}
+                    >
+                      {lookup?.vetoed === undefined
+                        ? "—"
+                        : lookup.vetoed
+                          ? "已否决"
+                          : "未否决"}
+                    </td>
                     <td className="px-3 py-2.5">
                       <span className="whitespace-pre-wrap break-words text-xs text-gray-600">
                         {lookup?.overallComment || (

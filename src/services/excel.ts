@@ -178,6 +178,9 @@ export interface ExportEvaluationData {
   scores: {
     targetId: string;
     dimensionScores: { dimension: string; score: number; comment: string }[];
+    weightedScore?: number;
+    vetoed?: boolean;
+    vetoReasons?: string[];
     overallComment?: string;
   }[];
   summary: string;
@@ -191,7 +194,7 @@ export interface ExportResultsParams {
   targetIds: string[];
   /** v4.5 评价导出时的选定维度（决定每目标的维度评分列）。 */
   dimensions?: EvalDimension[];
-  /** M9 可选：逐条评价结果，存在时追加每目标每维度「分/理由」+「总体结论/推荐」列（无总分）。 */
+  /** M9 可选：逐条评价结果，追加维度分、加权分、否决结果与文字结论。 */
   evaluations?: ExportEvaluationData[];
   /** 文件名中部前缀，默认「结果」；板块⑤导出评价记录时传「AI评价」（v4.3）。 */
   fileNamePrefix?: string;
@@ -281,7 +284,7 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
 
   const hasEvaluation = Array.isArray(evaluations) && evaluations.length > 0;
   if (hasEvaluation) {
-    // v4.5：每目标 × 每维度两列「分/理由」，再加每目标一列「总体点评」，无总分列。
+    // 每目标保留逐维度分数，再追加平台确定性计算的策略结果。
     for (const name of targetNames) {
       for (const dimension of dimensionList) {
         header.push(
@@ -289,7 +292,12 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
           ensureUniqueColumn(`${name}_${dimension.name}_理由`, usedColumnNames)
         );
       }
-      header.push(ensureUniqueColumn(`${name}_总体点评`, usedColumnNames));
+      header.push(
+        ensureUniqueColumn(`${name}_加权分`, usedColumnNames),
+        ensureUniqueColumn(`${name}_策略结果`, usedColumnNames),
+        ensureUniqueColumn(`${name}_否决原因`, usedColumnNames),
+        ensureUniqueColumn(`${name}_总体点评`, usedColumnNames)
+      );
     }
     header.push(
       ensureUniqueColumn("总体结论", usedColumnNames),
@@ -342,7 +350,16 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
           const cell = dimScoreByName.get(dimension.name);
           line.push(cell ? cell.score.toFixed(1) : "", cell?.comment ?? "");
         }
-        line.push(score?.overallComment ?? "");
+        line.push(
+          score?.weightedScore ?? "",
+          score?.vetoed === undefined
+            ? ""
+            : score.vetoed
+              ? "已否决"
+              : "未否决",
+          score?.vetoReasons?.join("；") ?? "",
+          score?.overallComment ?? ""
+        );
       }
       line.push(evaluation?.summary ?? "", evaluation?.recommendation ?? "");
     }

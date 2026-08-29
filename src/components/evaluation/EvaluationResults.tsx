@@ -16,6 +16,10 @@ function formatScore(score: number): string {
   return score.toFixed(1);
 }
 
+function formatWeightedScore(score: number): string {
+  return score.toFixed(2);
+}
+
 /** 评分颜色：高分绿、中分黄、低分红，便于横向扫读。 */
 function scoreClass(score: number): string {
   if (score >= 8) return "text-green-600";
@@ -29,7 +33,7 @@ type SortDir = "none" | "desc" | "asc";
  * 评价结果展示（M9；v4.5 多维度）：每条输入一张表，
  * 列 = [输入(sticky)] [目标(sticky)] [维度1..N] [总体点评]；
  * 横向滚动、首两列固定；每个维度列头可点击切换排序（默认→高到低→低到高），一次只按一个维度。
- * 维度评分单元格 hover 显示该维度理由。无总分列。
+ * 维度评分单元格 hover 显示理由，并展示平台计算的加权分与否决结果。
  */
 export function EvaluationResults({
   evalResults,
@@ -58,7 +62,7 @@ export function EvaluationResults({
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-sm font-semibold text-gray-700">
-        评价结果（按维度，各维度独立评分）
+        评价结果（Judge 独立评分，平台按已确认策略汇总）
       </h3>
       {ordered.map((evaluation) => {
         const input = inputById.get(evaluation.inputId);
@@ -167,6 +171,9 @@ function PerInputTable({
                 >
                   <span className="inline-flex items-center gap-1 whitespace-nowrap">
                     {dimension.name}
+                    {dimension.weight !== undefined
+                      ? ` (${dimension.weight}%)`
+                      : ""}
                     <span
                       className={
                         sortDimension === dimension.name
@@ -179,6 +186,8 @@ function PerInputTable({
                   </span>
                 </th>
               ))}
+              <th className="border-b border-gray-200 px-3 py-2">加权分</th>
+              <th className="border-b border-gray-200 px-3 py-2">策略结果</th>
               <th className="border-b border-gray-200 px-3 py-2">总体点评</th>
             </tr>
           </thead>
@@ -220,6 +229,23 @@ function PerInputTable({
                     </td>
                   );
                 })}
+                <td className="border-b border-gray-100 px-3 py-2 font-semibold text-slate-700">
+                  {target.weightedScore === undefined
+                    ? "—"
+                    : formatWeightedScore(target.weightedScore)}
+                </td>
+                <td
+                  className={`border-b border-gray-100 px-3 py-2 text-xs font-semibold ${
+                    target.vetoed ? "text-red-700" : "text-emerald-700"
+                  }`}
+                  title={target.vetoReasons?.join("；") ?? ""}
+                >
+                  {target.vetoed === undefined
+                    ? "—"
+                    : target.vetoed
+                      ? "已否决"
+                      : "未否决"}
+                </td>
                 <td className="border-b border-gray-100 px-3 py-2 text-xs text-gray-600">
                   {target.overallComment || "—"}
                 </td>

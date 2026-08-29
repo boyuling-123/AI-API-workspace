@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { generateEvalPrompt } from "@/services/evalPromptService";
 import type { EvalDimension } from "@/types";
 import {
-  EvaluationRubricValidationError,
-  parseEvaluationRubrics,
-} from "@/lib/evaluationRubric";
+  EvaluatorPolicyValidationError,
+  parseEvaluatorPolicy,
+} from "@/lib/evaluatorPolicy";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -20,7 +20,7 @@ interface GenEvalPromptBody {
 
 /**
  * AI 自动生成评价 Prompt（M9 需求6；v4.5 按维度）：用户描述测评场景 + 选定维度
- * → 大模型生成可编辑的评价 Prompt 文案（要求按维度逐项打分、无总分）。
+ * → 大模型生成可编辑的评价 Prompt 文案，并携带已确认的权重与否决规则。
  */
 export async function POST(request: Request) {
   let body: GenEvalPromptBody;
@@ -42,10 +42,10 @@ export async function POST(request: Request) {
 
   let dimensions: EvalDimension[];
   try {
-    dimensions = parseEvaluationRubrics(body.dimensions);
+    dimensions = parseEvaluatorPolicy(body.dimensions);
   } catch (error) {
     const message =
-      error instanceof EvaluationRubricValidationError
+      error instanceof EvaluatorPolicyValidationError
         ? error.message
         : "评价维度校验失败";
     return NextResponse.json({ error: message }, { status: 400 });

@@ -109,6 +109,7 @@ async function prepareSourceEvaluation(page: Page): Promise<{
   await page
     .getByRole("button", { name: "按定义补齐维度 1 Rubric" })
     .click();
+  await page.getByRole("button", { name: "确认评价策略" }).click();
   await page.getByLabel("评价 Prompt").fill("请按所选维度严格评价。");
   await page.getByRole("button", { name: "开始 AI 评价" }).click();
   await expect.poll(() => evaluateCalls.length).toBe(1);
@@ -146,6 +147,7 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
   await page
     .getByRole("button", { name: "按定义补齐维度 1 Rubric" })
     .click();
+  await page.getByRole("button", { name: "确认评价策略" }).click();
   await page
     .getByRole("button", { name: "预览并确认新增维度评价" })
     .click();
@@ -207,6 +209,7 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
       ],
       judgeInstruction:
         "先定位可核验的输出证据，再与 0/5/10 评分锚点比较；介于锚点时按缺陷严重度给出 0–10 分，最多 1 位小数。",
+      weight: 100,
     },
   ]);
   expect(runCalls).toHaveLength(1);

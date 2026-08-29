@@ -215,7 +215,7 @@ function SaveStatusBadge({ status }: { status: SaveStatus }) {
     );
   }
   const config: Record<"saving" | "error", { label: string; className: string }> = {
-    saving: { label: "保存中…", className: "text-brand-500" },
+    saving: { label: "保存中…", className: "text-brand-700" },
     error: { label: "保存失败", className: "text-red-600" },
   };
   const item = config[status];

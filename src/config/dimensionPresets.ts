@@ -2,7 +2,7 @@ import type { DimensionPreset } from "@/types";
 
 /**
  * 内置预设维度集（v4.5）：按常见测评场景预置一组维度，供用户一键选用后再增删改。
- * 每个维度独立打分（0-10），不算总分。可按需扩展更多预设。
+ * 每个维度由 Judge 独立打分，最终策略由用户确认。可按需扩展更多预设。
  */
 export const DIMENSION_PRESETS: DimensionPreset[] = [
   {

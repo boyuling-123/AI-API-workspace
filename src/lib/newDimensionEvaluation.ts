@@ -52,10 +52,26 @@ export function analyzeNewEvaluationDimensions(
     seen.add(normalized);
     const structured = analyzeEvaluationRubric({ ...dimension, name }).dimension;
     dimensions.push(
-      structured ?? {
-        name,
-        desc: dimension.desc?.trim() || undefined,
-      }
+      structured
+        ? {
+            ...structured,
+            ...(dimension.weight === undefined
+              ? {}
+              : { weight: dimension.weight }),
+            ...(dimension.vetoThreshold === undefined
+              ? {}
+              : { vetoThreshold: dimension.vetoThreshold }),
+          }
+        : {
+            name,
+            desc: dimension.desc?.trim() || undefined,
+            ...(dimension.weight === undefined
+              ? {}
+              : { weight: dimension.weight }),
+            ...(dimension.vetoThreshold === undefined
+              ? {}
+              : { vetoThreshold: dimension.vetoThreshold }),
+          }
     );
   }
 

@@ -305,6 +305,10 @@ export interface EvalDimension {
   evidenceRequirements?: string[];
   /** 可直接执行的判定步骤或边界；旧记录可缺省。 */
   judgeInstruction?: string;
+  /** 已确认的评价权重百分比；新评价要求全部维度合计 100，旧记录可缺省。 */
+  weight?: number;
+  /** 一票否决阈值；该维度得分低于此值时触发否决，未配置时不参与否决。 */
+  vetoThreshold?: number;
 }
 
 export interface EvalDimensionScoreLevel {
@@ -325,13 +329,19 @@ export interface DimensionPreset {
 }
 
 /**
- * 单个目标在一条输入下的多维度评分（v4.5）：每个维度独立打分（0-10）+ 一句理由，不算总分。
+ * 单个目标在一条输入下的独立维度评分，以及平台确定性计算的策略结果。
  */
 export interface TargetDimensionScores {
   targetId: string;
   targetName: string;
-  /** 按维度逐项打分，顺序与本次选定维度一致；不含总分字段。 */
+  /** Judge 按维度逐项打分，顺序与本次选定维度一致。 */
   dimensionScores: { dimension: string; score: number; comment: string }[];
+  /** 平台按已确认权重确定性计算的 0-10 加权分；旧记录可缺省。 */
+  weightedScore?: number;
+  /** 是否命中任一维度的一票否决规则；旧记录可缺省。 */
+  vetoed?: boolean;
+  /** 命中的否决规则说明；旧记录可缺省。 */
+  vetoReasons?: string[];
   /** 可选的总体点评（非分数，仅文字）。 */
   overallComment?: string;
 }
@@ -366,7 +376,7 @@ export interface EvaluationRecord {
   expectedAnswerColumn?: string;
   results: {
     inputId: string;
-    /** 各目标的多维度评分（v4.5，无总分）。 */
+    /** 各目标的独立维度评分与平台策略结果。 */
     scores: TargetDimensionScores[];
     summary: string;
     recommendation: string;

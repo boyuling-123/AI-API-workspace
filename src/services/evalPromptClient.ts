@@ -2,7 +2,7 @@ import type { EvalDimension } from "@/types";
 
 /**
  * 前端调用 /api/gen-eval-prompt（v4.5 按维度）：用户描述测评场景 + 选定维度
- * → 大模型生成可编辑的评价 Prompt（按维度逐项打分、无总分）。
+ * → 大模型生成可编辑的评价 Prompt（逐维度打分，平台执行已确认策略）。
  */
 export async function generateEvalPromptClient(
   scenario: string,

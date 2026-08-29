@@ -12,7 +12,11 @@ vi.mock("@/services/llmClient", () => ({
 import { generateEvalPrompt } from "../../src/services/evalPromptService";
 import { evaluateOneInput } from "../../src/services/evaluateService";
 
-const rubric = createDefinitionBasedRubric("准确性", "内容必须正确");
+const rubric = {
+  ...createDefinitionBasedRubric("准确性", "内容必须正确"),
+  weight: 100,
+  vetoThreshold: 5,
+};
 
 beforeEach(() => {
   mocks.chatWithModel.mockReset();
@@ -35,6 +39,8 @@ describe("Rubric-aware Prompt services", () => {
     expect(prompt).toContain("10 分：");
     expect(prompt).toContain("证据要求：");
     expect(prompt).toContain("判断规则：");
+    expect(prompt).toContain("权重：100%");
+    expect(prompt).toContain("得分低于 5 分时触发");
     expect(prompt).toContain("先引用证据再评分");
   });
 
@@ -45,7 +51,7 @@ describe("Rubric-aware Prompt services", () => {
           {
             targetId: "target-a",
             dimensionScores: [
-              { dimension: "准确性", score: 10, comment: "内容正确" },
+              { dimension: "准确性", score: 4, comment: "存在错误" },
             ],
           },
         ],
@@ -55,7 +61,7 @@ describe("Rubric-aware Prompt services", () => {
       outputImages: [],
     });
 
-    await evaluateOneInput(
+    const result = await evaluateOneInput(
       {
         inputId: "input-a",
         prompt: "我要退款",
@@ -78,5 +84,11 @@ describe("Rubric-aware Prompt services", () => {
     expect(prompt).toContain("定义：内容必须正确");
     expect(prompt).toContain("证据要求：");
     expect(prompt).toContain("判断规则：");
+    expect(prompt).toContain("权重：100%");
+    expect(result.scores[0]).toMatchObject({
+      weightedScore: 4,
+      vetoed: true,
+      vetoReasons: ["“准确性”得分 4.0，低于否决阈值 5"],
+    });
   });
 });

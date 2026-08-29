@@ -150,7 +150,11 @@ test("requires explicit Bad Case reasons and sends bounded hard rules", async ({
       )
       .map((violation) => ({
         id: violation.id,
-        nodes: violation.nodes.map((node) => node.target),
+        nodes: violation.nodes.map((node) => ({
+          target: node.target,
+          html: node.html,
+          summary: node.failureSummary,
+        })),
       }))
   ).toEqual([]);
 

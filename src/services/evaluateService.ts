@@ -6,13 +6,14 @@ import type {
 } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
 import {
-  formatEvaluationRubricForPrompt,
-  parseEvaluationRubrics,
-} from "@/lib/evaluationRubric";
+  calculateEvaluatorPolicyOutcome,
+  formatEvaluatorPolicyForPrompt,
+  parseEvaluatorPolicy,
+} from "@/lib/evaluatorPolicy";
 
 /**
  * 逐条评价（服务端，M9；v4.5 改为多维度）：一次处理一条输入，把该条各目标的输出交给裁判模型横向对比，
- * 裁判对每个目标、在每个维度上独立打分（0-10）+ 一句理由，不算总分。强制结构化 JSON 输出并容错解析。
+ * Judge 对每个目标逐维度独立打分，平台再确定性计算加权分与否决结果。
  */
 
 export interface EvaluateInputItem {
@@ -33,7 +34,7 @@ export interface EvaluateInputItem {
 
 export interface EvaluateResultPerInput {
   inputId: string;
-  /** 各目标的多维度评分（v4.5，无总分）。 */
+  /** 各目标的独立维度评分，以及平台计算的策略结果。 */
   scores: TargetDimensionScores[];
   summary: string;
   recommendation: string;
@@ -42,7 +43,7 @@ export interface EvaluateResultPerInput {
 function buildDimensionsBlock(dimensions: EvalDimension[]): string {
   return dimensions
     .map((dimension, index) =>
-      formatEvaluationRubricForPrompt(dimension, index)
+      formatEvaluatorPolicyForPrompt(dimension, index)
     )
     .join("\n\n");
 }
@@ -74,7 +75,7 @@ ${evalPrompt}
 === 结束 ===
 ${referenceInstruction}
 
-=== 评价维度（必须对每个目标、在每个维度上单独打分，不要总分）===
+=== 评价维度与已确认策略（必须逐维度独立打分）===
 ${buildDimensionsBlock(dimensions)}
 === 结束 ===
 
@@ -83,7 +84,7 @@ ${buildDimensionsBlock(dimensions)}
 - summary: 字符串，对本条对比的总体结论。
 - recommendation: 字符串，推荐选用哪个目标及理由。
 
-注意：各维度独立打分，绝对不要计算总分或加权汇总。只输出 JSON 对象本身。`;
+注意：各维度独立打分，不要自行计算总分或加权汇总。平台会根据已确认权重计算加权分，并确定性执行一票否决。只输出 JSON 对象本身。`;
 }
 
 function buildTargetsBlock(item: EvaluateInputItem): string {
@@ -173,13 +174,19 @@ function normalizeResult(
       matched && typeof matched.overallComment === "string"
         ? matched.overallComment
         : undefined;
+    const dimensionScores = normalizeDimensionScores(
+      matched?.dimensionScores,
+      dimensions
+    );
+    const policyOutcome = calculateEvaluatorPolicyOutcome(
+      dimensions,
+      dimensionScores
+    );
     return {
       targetId: target.targetId,
       targetName: target.targetName,
-      dimensionScores: normalizeDimensionScores(
-        matched?.dimensionScores,
-        dimensions
-      ),
+      dimensionScores,
+      ...policyOutcome,
       overallComment: overallComment || undefined,
     };
   });
@@ -201,7 +208,7 @@ export async function evaluateOneInput(
   evaluationMode: EvaluationMode = "comparison",
   signal?: AbortSignal
 ): Promise<EvaluateResultPerInput> {
-  const parsedDimensions = parseEvaluationRubrics(dimensions);
+  const parsedDimensions = parseEvaluatorPolicy(dimensions);
   const prompt = `${buildEvalGuide(evalPrompt, parsedDimensions, evaluationMode)}\n\n=== 输入 prompt ===\n${item.prompt}${buildExpectedBlock(item)}\n\n=== 各目标输出 ===\n${buildTargetsBlock(item)}`;
 
   const output = await chatWithModel(

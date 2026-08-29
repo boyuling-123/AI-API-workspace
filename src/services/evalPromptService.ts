@@ -1,21 +1,21 @@
 import type { EvalDimension } from "@/types";
 import { chatWithModel } from "@/services/llmClient";
 import {
-  formatEvaluationRubricForPrompt,
-  parseEvaluationRubrics,
-} from "@/lib/evaluationRubric";
+  formatEvaluatorPolicyForPrompt,
+  parseEvaluatorPolicy,
+} from "@/lib/evaluatorPolicy";
 
 /**
  * AI 自动生成评价 Prompt（服务端，M9 需求6；v4.5 改为按维度）：
  * 用户描述测评场景/要求 + 选定维度 + 目标名单 → 大模型生成一段可直接用于「裁判模型」的评价 Prompt 文案。
- * 要求裁判按每个维度逐项打分（0-10）+ 一句理由，明确不要总分。
+ * 要求 Judge 逐维度打分；平台按用户确认的权重与否决规则确定性汇总。
  * 返回纯文本，前端填入 evalPrompt 后用户可再编辑。
  */
 
 function buildDimensionsBlock(dimensions: EvalDimension[]): string {
   return dimensions
     .map((dimension, index) =>
-      formatEvaluationRubricForPrompt(dimension, index)
+      formatEvaluatorPolicyForPrompt(dimension, index)
     )
     .join("\n\n");
 }
@@ -37,8 +37,8 @@ ${buildDimensionsBlock(dimensions)}
 要求：
 - 直接输出这段评价 Prompt 本身，不要任何额外解释、不要 markdown 代码块标记。
 - Prompt 中应明确：裁判须对每个目标、在上述每一个维度上单独打分（0-10 分，可含一位小数），并为每个维度给出一句简短理由。
-- Prompt 必须原样保留每个 Rubric 的定义、0/5/10 评分锚点、证据要求和判断规则，并要求先引用证据再评分。
-- 明确要求：不要计算总分、不要加权汇总，各维度独立评分即可。
+- Prompt 必须原样保留每个 Rubric 的定义、0/5/10 评分锚点、证据要求、判断规则、权重和一票否决阈值，并要求先引用证据再评分。
+- 明确要求：Judge 只输出各维度独立分数，不自行计算总分；平台将按已确认权重确定性汇总，并在低于阈值时执行一票否决。
 - 还应要求裁判给出总体结论与推荐项（纯文字，非分数）。
 - 语言简洁、可操作，便于裁判模型稳定执行。`;
 }
@@ -49,7 +49,7 @@ export async function generateEvalPrompt(
   dimensions: EvalDimension[] = [],
   targetNames: string[] = []
 ): Promise<string> {
-  const parsedDimensions = parseEvaluationRubrics(dimensions);
+  const parsedDimensions = parseEvaluatorPolicy(dimensions);
   const guide = buildGuide(parsedDimensions, targetNames);
   const prompt = `${guide}\n\n=== 用户测评场景/要求 ===\n${scenario}\n=== 结束 ===`;
   const output = await chatWithModel({ modelId, prompt });

@@ -55,10 +55,27 @@ import {
   MAX_RUBRIC_NAME_LENGTH,
   REQUIRED_RUBRIC_SCORES,
 } from "@/lib/evaluationRubric";
+import {
+  analyzeEvaluatorPolicy,
+  buildEvaluatorPolicyFingerprint,
+  distributeEvenEvaluatorWeights,
+} from "@/lib/evaluatorPolicy";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
   selected: boolean;
+}
+
+function rebalanceSelectedCandidateWeights(
+  candidates: CandidateDimension[]
+): CandidateDimension[] {
+  const selected = distributeEvenEvaluatorWeights(
+    candidates.filter((candidate) => candidate.selected)
+  );
+  let selectedIndex = 0;
+  return candidates.map((candidate) =>
+    candidate.selected ? selected[selectedIndex++] : candidate
+  );
 }
 
 /** 候选维度总数上限（含 AI 生成 + 手动添加）。 */
@@ -204,6 +221,8 @@ export function EvaluationPanel({
   );
   // 候选维度列表（待办勾选式）：AI 生成或手动添加，selected 决定是否纳入本次评价。
   const [candidates, setCandidates] = useState<CandidateDimension[]>([]);
+  const [confirmedPolicyFingerprint, setConfirmedPolicyFingerprint] =
+    useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sampleStrategy, setSampleStrategy] =
     useState<DimensionSampleStrategy>("coverage");
@@ -469,10 +488,12 @@ export function EvaluationPanel({
       if (!evalPrompt.trim()) setEvalPrompt(REFERENCE_DEFAULT_PROMPT);
       if (!newDimensionContext && candidates.length === 0) {
         setCandidates(
-          REFERENCE_DEFAULT_DIMENSIONS.map((dimension) => ({
-            ...dimension,
-            selected: true,
-          }))
+          rebalanceSelectedCandidateWeights(
+            REFERENCE_DEFAULT_DIMENSIONS.map((dimension) => ({
+              ...dimension,
+              selected: true,
+            }))
+          )
         );
       }
     }
@@ -480,8 +501,10 @@ export function EvaluationPanel({
 
   const toggleCandidate = (index: number) => {
     setCandidates((prev) =>
-      prev.map((dim, idx) =>
-        idx === index ? { ...dim, selected: !dim.selected } : dim
+      rebalanceSelectedCandidateWeights(
+        prev.map((dim, idx) =>
+          idx === index ? { ...dim, selected: !dim.selected } : dim
+        )
       )
     );
   };
@@ -532,6 +555,8 @@ export function EvaluationPanel({
         if (!name || !definition) return dimension;
         return {
           ...createDefinitionBasedRubric(name, definition),
+          weight: dimension.weight,
+          vetoThreshold: dimension.vetoThreshold,
           selected: dimension.selected,
         };
       })
@@ -539,7 +564,11 @@ export function EvaluationPanel({
   };
 
   const removeCandidate = (index: number) => {
-    setCandidates((prev) => prev.filter((_, idx) => idx !== index));
+    setCandidates((prev) =>
+      rebalanceSelectedCandidateWeights(
+        prev.filter((_, idx) => idx !== index)
+      )
+    );
   };
 
   // 手动添加一个维度（默认勾选，等待用户填名），同样受 15 条上限约束。
@@ -547,8 +576,15 @@ export function EvaluationPanel({
     setCandidates((prev) =>
       prev.length >= MAX_DIMENSIONS
         ? prev
-        : [...prev, { ...createEmptyEvaluationRubric(), selected: true }]
+        : rebalanceSelectedCandidateWeights([
+            ...prev,
+            { ...createEmptyEvaluationRubric(), selected: true },
+          ])
     );
+  };
+
+  const rebalanceCandidateWeights = () => {
+    setCandidates((prev) => rebalanceSelectedCandidateWeights(prev));
   };
 
   const handleGenerate = async () => {
@@ -703,6 +739,10 @@ export function EvaluationPanel({
   const selectedCandidateCount = candidates.filter(
     (candidate) => candidate.selected
   ).length;
+  const selectedVetoCount = candidates.filter(
+    (candidate) =>
+      candidate.selected && candidate.vetoThreshold !== undefined
+  ).length;
   const rubricAnalysisByCandidateIndex = new Map<
     number,
     ReturnType<typeof analyzeEvaluationRubric>
@@ -717,8 +757,15 @@ export function EvaluationPanel({
   const hasRubricErrors = Array.from(
     rubricAnalysisByCandidateIndex.values()
   ).some((analysis) => analysis.issues.length > 0);
+  const evaluatorPolicyAnalysis = analyzeEvaluatorPolicy(
+    candidates.filter((candidate) => candidate.selected)
+  );
+  const evaluatorPolicyIssues = evaluatorPolicyAnalysis.issues.filter(
+    (issue) => issue.field !== "rubric"
+  );
+  const hasEvaluatorPolicyErrors = evaluatorPolicyAnalysis.issues.length > 0;
   const dimensionAnalysis = analyzeNewEvaluationDimensions(
-    selectedDimensions,
+    hasEvaluatorPolicyErrors ? [] : evaluatorPolicyAnalysis.dimensions,
     newDimensionContext?.existingDimensions ?? []
   );
   const validDimensions = dimensionAnalysis.dimensions;
@@ -729,6 +776,18 @@ export function EvaluationPanel({
       .map((candidate) => ({ name: candidate.name, desc: candidate.desc })),
     newDimensionContext?.existingDimensions ?? []
   ).duplicateNames;
+  const canConfirmPolicy =
+    selectedCandidateCount > 0 &&
+    !hasRubricErrors &&
+    !hasEvaluatorPolicyErrors &&
+    duplicateDimensionNames.length === 0 &&
+    validDimensions.length === selectedCandidateCount;
+  const currentPolicyFingerprint = canConfirmPolicy
+    ? buildEvaluatorPolicyFingerprint(validDimensions)
+    : "";
+  const policyConfirmed =
+    Boolean(currentPolicyFingerprint) &&
+    currentPolicyFingerprint === confirmedPolicyFingerprint;
   const usesHumanFeedback = selectedGenerationSamples.some(
     (sample) => sample.humanFeedback
   );
@@ -753,7 +812,9 @@ export function EvaluationPanel({
     !!judgeModelId &&
     validDimensions.length > 0 &&
     !hasRubricErrors &&
+    !hasEvaluatorPolicyErrors &&
     duplicateDimensionNames.length === 0 &&
+    policyConfirmed &&
     !isGenerating;
   const canEvaluate =
     enabled &&
@@ -762,7 +823,9 @@ export function EvaluationPanel({
     !!judgeModelId &&
     validDimensions.length > 0 &&
     !hasRubricErrors &&
+    !hasEvaluatorPolicyErrors &&
     duplicateDimensionNames.length === 0 &&
+    policyConfirmed &&
     (evaluationMode === "comparison" || expectedCoverage.matched > 0) &&
     effectiveScopeIds.length > 0 &&
     !isRunning &&
@@ -1281,10 +1344,10 @@ export function EvaluationPanel({
           <div className="flex flex-col gap-2.5 rounded-md border border-indigo-100 bg-indigo-50/40 p-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700">
-                评价维度（勾选要考察的维度，各维度独立打分、不算总分）
+                评价维度与策略（Judge 独立打分，平台确定性汇总）
               </label>
               <span className="text-xs text-gray-500">
-                已勾选 {selectedCandidateCount} 个 · 完整 {validDimensions.length} 个
+                已勾选 {selectedCandidateCount} 个 · Rubric 完整 {selectedDimensions.length} 个
               </span>
             </div>
 
@@ -1311,7 +1374,7 @@ export function EvaluationPanel({
                 type="button"
                 onClick={handleGenDimensions}
                 disabled={!canGenDimensions}
-                className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                className="rounded-md bg-indigo-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-gray-300"
               >
                 {isGeneratingDim
                   ? "AI 生成维度中…"
@@ -1424,6 +1487,69 @@ export function EvaluationPanel({
                                 按定义补齐模板
                               </button>
                             )}
+                          </div>
+                          <div className="grid gap-2 rounded-md border border-blue-100 bg-blue-50/60 p-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
+                            <label className="flex flex-col gap-1 text-[11px] font-medium text-slate-700">
+                              权重（%）
+                              <input
+                                aria-label={`维度 ${index + 1} 权重`}
+                                type="number"
+                                min="0.01"
+                                max="100"
+                                step="0.01"
+                                value={candidate.weight ?? ""}
+                                onChange={(event) =>
+                                  updateCandidate(index, {
+                                    weight:
+                                      event.target.value === ""
+                                        ? undefined
+                                        : Number(event.target.value),
+                                  })
+                                }
+                                disabled={judgeDisabled || !candidate.selected}
+                                className="rounded-md border border-blue-200 bg-white px-2 py-1 text-sm font-semibold text-blue-900 disabled:bg-gray-100 disabled:text-gray-400"
+                              />
+                            </label>
+                            <div className="flex flex-col gap-1 text-[11px] text-slate-700">
+                              <label className="inline-flex items-center gap-2 font-medium">
+                                <input
+                                  aria-label={`维度 ${index + 1} 启用一票否决`}
+                                  type="checkbox"
+                                  checked={candidate.vetoThreshold !== undefined}
+                                  onChange={(event) =>
+                                    updateCandidate(index, {
+                                      vetoThreshold: event.target.checked
+                                        ? 5
+                                        : undefined,
+                                    })
+                                  }
+                                  disabled={judgeDisabled || !candidate.selected}
+                                  className="h-4 w-4 accent-red-600"
+                                />
+                                设为一票否决项
+                              </label>
+                              {candidate.vetoThreshold !== undefined && (
+                                <label className="flex items-center gap-2">
+                                  得分低于
+                                  <input
+                                    aria-label={`维度 ${index + 1} 否决阈值`}
+                                    type="number"
+                                    min="0"
+                                    max="10"
+                                    step="0.1"
+                                    value={candidate.vetoThreshold}
+                                    onChange={(event) =>
+                                      updateCandidate(index, {
+                                        vetoThreshold: Number(event.target.value),
+                                      })
+                                    }
+                                    disabled={judgeDisabled || !candidate.selected}
+                                    className="w-20 rounded-md border border-red-200 bg-white px-2 py-1 text-sm font-semibold text-red-700 disabled:bg-gray-100"
+                                  />
+                                  分时否决
+                                </label>
+                              )}
+                            </div>
                           </div>
                           <details className="rounded-md border border-slate-200 bg-slate-50/70 px-2 py-1.5">
                             <summary className="cursor-pointer text-xs font-medium text-slate-700">
@@ -1545,6 +1671,67 @@ export function EvaluationPanel({
               <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                 所有已勾选维度都必须补齐定义、0/5/10 评分锚点、证据要求和判断规则，完成前不会生成 Judge Prompt 或启动评价。
               </p>
+            )}
+            {selectedCandidateCount > 0 && (
+              <div
+                aria-label="评价策略确认"
+                className="rounded-lg border border-slate-200 bg-white p-3"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">
+                      最终评价策略
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      权重合计 {evaluatorPolicyAnalysis.totalWeight}% · 一票否决项 {selectedVetoCount} 个
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={rebalanceCandidateWeights}
+                    disabled={judgeDisabled || selectedCandidateCount === 0}
+                    className="rounded-md border border-slate-300 px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                  >
+                    平均分配权重
+                  </button>
+                </div>
+                {evaluatorPolicyIssues.length > 0 && (
+                  <div
+                    role="alert"
+                    className="mt-3 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700"
+                  >
+                    {Array.from(
+                      new Set(
+                        evaluatorPolicyIssues.map((issue) => issue.message)
+                      )
+                    ).join("；")}
+                  </div>
+                )}
+                <p className="mt-3 text-xs leading-5 text-slate-600">
+                  Judge 只返回各维度独立分数；平台按此处权重计算加权分，并在任一否决项低于阈值时标记“已否决”。修改任何维度或策略后必须重新确认。
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setConfirmedPolicyFingerprint(currentPolicyFingerprint)
+                    }
+                    disabled={!canConfirmPolicy || policyConfirmed}
+                    className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-700"
+                  >
+                    {policyConfirmed ? "评价策略已确认" : "确认评价策略"}
+                  </button>
+                  <span
+                    className={`text-xs font-medium ${
+                      policyConfirmed ? "text-emerald-700" : "text-amber-700"
+                    }`}
+                  >
+                    {policyConfirmed
+                      ? "当前策略已锁定，可生成 Judge Prompt"
+                      : "尚未确认或内容已变化"}
+                  </span>
+                </div>
+              </div>
             )}
           </div>
 
