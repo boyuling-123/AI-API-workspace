@@ -25,6 +25,7 @@
 - 本地 `npm run test:e2e` 通过：13 项 Playwright 用户路径与可访问性测试。
 - 提交 `d1c9231` 的独立 `/tmp` 工作树执行全新 `npm ci`（434 个包），随后 quality 与 13 项 Playwright 再次全部通过，复验后工作树零改动。
 - [PR #16](https://github.com/boyuling-123/AI-API-workspace/pull/16) 已创建，目标为 `main`，来源为 `codex/feat-new-target-reruns`。
+- PR #16 的 GitHub Actions run `33231921078` 通过；核心质量与 Playwright/可访问性两个 Job 均为 success。
 
 ## 视觉证据
 

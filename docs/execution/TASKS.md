@@ -128,7 +128,8 @@
 - [x] 保存完整视觉证据，本地全量 quality 与 13 项 Playwright 通过。
 - [x] 提交 `d1c9231` 后在独立干净工作树完成全新安装、quality 与 Playwright 复验，结束时零改动。
 - [x] 提交、推送并创建 [PR #16](https://github.com/boyuling-123/AI-API-workspace/pull/16)。
-- [ ] 等待最新提交对应的两道 GitHub CI 通过后安全合并。
+- [x] PR #16 workflow run `33231921078` 的核心质量与 Playwright 两个 Job 全部通过。
+- [ ] 推送 CI 验收回写，等待最终文档提交自身门禁通过后安全合并。
 
 ## 硬门禁
 

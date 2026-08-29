@@ -222,3 +222,12 @@
 - TASK-005 已补齐失败项、指定 Case 和新增目标三类模型跑批重跑；新增评价维度尚未完成独立验收，因此继续保持“部分实现”。
 
 下一步：等待最新提交对应的核心质量与 Playwright 两道 GitHub CI；全部通过后以非强推 fast-forward 安全合并。
+
+## 2026-08-29：PR 03D 验收
+
+- GitHub Actions `Quality Gate` workflow run `33231921078` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖 210 文件 Secret Scan、lint、typecheck、52 项真实源码单测、2 项压力测试和生产构建。
+- `Playwright user paths and accessibility` Job 通过 13 项浏览器路径；失败 Trace 上传因没有失败而按设计跳过。
+- TASK-005 已具备三类模型跑批重跑的代码、异常路径、真实源码测试、Mock 浏览器精确请求、视觉截图、干净环境和 CI Trace；新增评价维度尚未独立验收，继续保持“部分实现”。
+
+下一步：提交本次 CI 验收回写，等待最终文档提交自身门禁通过后以非强推 fast-forward 安全合并 PR #16。
