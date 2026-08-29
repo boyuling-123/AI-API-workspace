@@ -1,4 +1,10 @@
-import type { Task, TaskRerun, TaskRunPair } from "@/types";
+import type {
+  ResultRow,
+  TargetConfig,
+  Task,
+  TaskRerun,
+  TaskRunPair,
+} from "@/types";
 
 export interface CaseNumberSelection {
   caseNumbers: number[];
@@ -11,6 +17,7 @@ export interface RerunPlanPreview {
   targetIds: string[];
   unavailableTargetIds: string[];
   unavailablePairCount: number;
+  reusedPairCount: number;
 }
 
 /** 解析面向用户的 1-based Case 表达式，例如 `1,3,8-12`。 */
@@ -121,12 +128,96 @@ export function buildSelectedCasesRerunPlan(
   );
 }
 
+/** 返回与源任务内容和输入兼容、可运行且尚未加入源任务的目标。 */
+export function getCompatibleNewTargets(
+  task: Task,
+  targets: TargetConfig[]
+): TargetConfig[] {
+  const sourceTargetIds = new Set(task.targetIds);
+  const hasImageInput = task.inputs.some((input) => input.images.length > 0);
+
+  return targets.filter((target) => {
+    if (sourceTargetIds.has(target.id)) return false;
+    if (!target.preset && target.status !== "tested_ok") return false;
+    if (task.contentMode === "image") return target.contentKind === "image";
+    if (target.contentKind === "image") return false;
+    return !hasImageInput || target.contentKind === "multimodal";
+  });
+}
+
+export function buildNewTargetsRerunPlan(
+  task: Task,
+  selectedInputIds: string[],
+  selectedTargetIds: string[],
+  availableNewTargetIds: string[]
+): RerunPlanPreview {
+  const selectedInputs = new Set(selectedInputIds);
+  const inputIds = task.inputs
+    .filter((input) => selectedInputs.has(input.id))
+    .map((input) => input.id);
+  const sourceTargetIds = new Set(task.targetIds);
+  const available = new Set(availableNewTargetIds);
+  const targetIds = Array.from(new Set(selectedTargetIds)).filter(
+    (targetId) => available.has(targetId) && !sourceTargetIds.has(targetId)
+  );
+  const unavailableTargetIds = Array.from(new Set(selectedTargetIds)).filter(
+    (targetId) => !available.has(targetId) || sourceTargetIds.has(targetId)
+  );
+  const pairs = inputIds.flatMap((inputId) =>
+    targetIds.map((targetId) => ({ inputId, targetId }))
+  );
+  const selectedInputIdSet = new Set(inputIds);
+  const sourceTargetIdSet = new Set(task.targetIds);
+  const reusedPairCount = task.results.reduce(
+    (count, row) =>
+      count +
+      (selectedInputIdSet.has(row.inputId)
+        ? row.items.filter(
+            (item) =>
+              sourceTargetIdSet.has(item.targetId) &&
+              (item.status === "success" || item.status === "error")
+          ).length
+        : 0),
+    0
+  );
+
+  return createPreview(
+    task,
+    "new_targets",
+    pairs,
+    new Set(unavailableTargetIds),
+    inputIds.length * unavailableTargetIds.length,
+    reusedPairCount
+  );
+}
+
+/** 为新增目标任务复制终态历史结果；复制后来源可在 UI 和导出中追溯。 */
+export function buildHistoricalResultSeed(
+  task: Task,
+  selectedInputIds: string[]
+): ResultRow[] {
+  const selected = new Set(selectedInputIds);
+  const sourceTargetIds = new Set(task.targetIds);
+  return task.results.flatMap((row) => {
+    if (!selected.has(row.inputId)) return [];
+    const items = row.items
+      .filter(
+        (item) =>
+          sourceTargetIds.has(item.targetId) &&
+          (item.status === "success" || item.status === "error")
+      )
+      .map((item) => ({ ...item, reusedFromTaskId: task.id }));
+    return items.length > 0 ? [{ inputId: row.inputId, items }] : [];
+  });
+}
+
 function createPreview(
   task: Task,
   scope: TaskRerun["scope"],
   rawPairs: TaskRunPair[],
   unavailableTargets: Set<string>,
-  unavailablePairCount: number
+  unavailablePairCount: number,
+  reusedPairCount = 0
 ): RerunPlanPreview {
   const pairKeys = new Set<string>();
   const pairs = rawPairs.filter((pair) => {
@@ -140,7 +231,16 @@ function createPreview(
   const inputIds = task.inputs
     .map((input) => input.id)
     .filter((inputId) => pairInputIds.has(inputId));
-  const targetIds = task.targetIds.filter((targetId) => pairTargetIds.has(targetId));
+  const targetIds = [
+    ...task.targetIds.filter((targetId) => pairTargetIds.has(targetId)),
+    ...pairs
+      .map((pair) => pair.targetId)
+      .filter(
+        (targetId, index, ordered) =>
+          !task.targetIds.includes(targetId) &&
+          ordered.indexOf(targetId) === index
+      ),
+  ];
 
   return {
     rerun: {
@@ -153,5 +253,6 @@ function createPreview(
     targetIds,
     unavailableTargetIds: Array.from(unavailableTargets),
     unavailablePairCount,
+    reusedPairCount,
   };
 }

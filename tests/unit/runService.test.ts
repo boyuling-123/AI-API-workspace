@@ -199,6 +199,60 @@ describe("runTargets checkpoint resume", () => {
     expect(results[1].items[0].outputText).toBe("resumed");
   });
 
+  it("runs only a new target while retaining a removed historical target", async () => {
+    const newTarget = { ...target, id: "target-new", name: "Target New" };
+    const calls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        const body = JSON.parse(String(init?.body)) as {
+          prompt: string;
+          target: { id: string };
+        };
+        calls.push(body.target.id);
+        return new Response(JSON.stringify({ outputText: "new output" }), {
+          status: 200,
+        });
+      })
+    );
+
+    const results = await runTargets({
+      inputs: [input],
+      targetIds: ["removed-target", "target-new"],
+      targetConfigs: [newTarget],
+      concurrency: 1,
+      runPolicy: { qps: 0, timeoutMs: 1_000, retryLimit: 0 },
+      runPairs: [{ inputId: "input-a", targetId: "target-new" }],
+      existingResults: [
+        {
+          inputId: "input-a",
+          items: [
+            {
+              targetId: "removed-target",
+              targetName: "Removed Target",
+              status: "success",
+              outputText: "historical output",
+              reusedFromTaskId: "source-task",
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(calls).toEqual(["target-new"]);
+    expect(results[0].items).toEqual([
+      expect.objectContaining({
+        targetId: "removed-target",
+        outputText: "historical output",
+        reusedFromTaskId: "source-task",
+      }),
+      expect.objectContaining({
+        targetId: "target-new",
+        outputText: "new output",
+      }),
+    ]);
+  });
+
   it("rejects a sparse plan that references an unknown Case", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);

@@ -77,7 +77,10 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     (targetConfigs ?? []).map((config) => [config.id, config])
   );
 
-  for (const targetId of targetIds) {
+  const executionTargetIds = runPairs
+    ? Array.from(new Set(runPairs.map((pair) => pair.targetId)))
+    : targetIds;
+  for (const targetId of executionTargetIds) {
     if (!targetById.has(targetId)) {
       throw new Error(`未知目标，未在已配置的目标中找到：${targetId}`);
     }
@@ -93,11 +96,22 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     runPairs
   );
   const inputById = new Map(inputs.map((input) => [input.id, input]));
+  const runPairKeys = runPairs
+    ? new Set(
+        runPairs.map((pair) => `${pair.inputId}\u0000${pair.targetId}`)
+      )
+    : null;
 
   const units: CallUnit[] = [];
   for (const row of currentRows) {
     const input = inputById.get(row.inputId)!;
     for (const checkpointItem of row.items) {
+      if (
+        runPairKeys &&
+        !runPairKeys.has(`${row.inputId}\u0000${checkpointItem.targetId}`)
+      ) {
+        continue;
+      }
       if (isCompletedResultItem(checkpointItem)) {
         continue;
       }

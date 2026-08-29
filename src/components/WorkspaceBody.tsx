@@ -141,11 +141,10 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [project.tasks]
   );
 
-  const availableRerunTargetIds = useMemo(
+  const availableRerunTargets = useMemo(
     () =>
       algoConfigs
-        .filter((config) => config.preset || config.status === "tested_ok")
-        .map((config) => config.id),
+        .filter((config) => config.preset || config.status === "tested_ok"),
     [algoConfigs]
   );
 
@@ -506,7 +505,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             onView={handleViewTask}
             onDelete={handleDeleteTask}
             onEvaluate={handleEvaluateTask}
-            availableTargetIds={availableRerunTargetIds}
+            availableTargets={availableRerunTargets}
             rerunBlockedReason={rerunBlockedReason}
             onRerun={handleRerunTask}
           />

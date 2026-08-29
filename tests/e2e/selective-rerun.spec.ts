@@ -197,3 +197,90 @@ test("previews and reruns only selected Case ranges", async ({ page }) => {
   await expect(historyRows(page).first()).toContainText("重跑·指定 Case");
   await expect(historyRows(page).first()).toContainText("4 / 4 调用");
 });
+
+test("runs only a selected new target and reuses source results for comparison", async ({
+  page,
+}) => {
+  const calls: RunCall[] = [];
+
+  await page.route("**/api/**", async (route) => {
+    const pathname = new URL(route.request().url()).pathname;
+    expect(pathname).toBe("/api/run-custom");
+    const body = route.request().postDataJSON() as {
+      prompt: string;
+      target: { id: string };
+    };
+    calls.push({ prompt: body.prompt, targetId: body.target.id });
+    await route.fulfill({
+      body: JSON.stringify({
+        outputText: `Mock ${body.prompt}:${body.target.id}`,
+        outputImages: [],
+      }),
+      contentType: "application/json",
+      status: 200,
+    });
+  });
+
+  await prepareBatch(page, ["Case 1", "Case 2", "Case 3"]);
+  await expect.poll(() => calls.length).toBe(6);
+  await expect(
+    page.getByRole("button", { name: "批量运行", exact: true })
+  ).toBeEnabled();
+
+  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("button", { name: "定向重跑" }).click();
+  const dialog = page.getByRole("dialog", { name: "定向重跑" });
+  await dialog.getByRole("radio", { name: "新增目标" }).check();
+  await expect(dialog.getByText("请先勾选至少一个新增目标。")).toBeVisible();
+  expect(calls).toHaveLength(6);
+
+  await dialog
+    .getByRole("checkbox", { name: /Qwen3\.6 Plus/ })
+    .check();
+  await dialog.getByLabel("要对比的 Case 序号").fill("1,3");
+  await expect(dialog.getByText("2 次调用", { exact: true })).toBeVisible();
+  await expect(dialog.getByText(/另复用 4 条源任务终态结果/)).toBeVisible();
+
+  const accessibility = await new AxeBuilder({ page })
+    .include('[role="dialog"]')
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+  expect(
+    accessibility.violations
+      .filter(
+        (violation) =>
+          violation.impact === "critical" || violation.impact === "serious"
+      )
+      .map((violation) => violation.id)
+  ).toEqual([]);
+  if (process.env.CAPTURE_EVIDENCE === "1") {
+    await page.setViewportSize({ width: 1280, height: 1100 });
+    await page.screenshot({
+      path: "docs/evidence/pr-03d/new-target-rerun-preview.png",
+      fullPage: true,
+    });
+  }
+
+  await dialog.getByRole("button", { name: "确认并开始重跑" }).click();
+  await expect.poll(() => calls.length).toBe(8);
+  expect(calls.slice(6)).toEqual([
+    { prompt: "Case 1", targetId: "qwen3.6-plus" },
+    { prompt: "Case 3", targetId: "qwen3.6-plus" },
+  ]);
+
+  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  const newestTask = historyRows(page).first();
+  await expect(newestTask).toContainText("重跑·新增目标");
+  await expect(newestTask).toContainText("2 / 2 调用");
+  await expect(newestTask).toContainText("完成");
+  await newestTask.getByRole("button", { name: "查看结果" }).click();
+
+  const resultArea = page
+    .locator("section")
+    .filter({ has: page.getByRole("heading", { name: "结果对比" }) });
+  await expect(resultArea.getByText("历史复用", { exact: true })).toHaveCount(4);
+  await expect(resultArea.getByText(/Qwen3\.6 Plus/)).toHaveCount(2);
+  expect(
+    calls.slice(6).every((call) => call.targetId === "qwen3.6-plus")
+  ).toBe(true);
+});

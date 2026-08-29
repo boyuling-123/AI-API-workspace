@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { Task } from "../../src/types";
+import type { TargetConfig, Task } from "../../src/types";
 import {
   buildFailedRerunPlan,
+  buildHistoricalResultSeed,
+  buildNewTargetsRerunPlan,
   buildSelectedCasesRerunPlan,
+  getCompatibleNewTargets,
   parseCaseNumberExpression,
 } from "../../src/lib/rerunPlan";
 
@@ -86,4 +89,84 @@ describe("rerun plan builders", () => {
       { inputId: "input-c", targetId: "target-b" },
     ]);
   });
+
+  it("builds a stable sparse plan for selected new targets", () => {
+    const preview = buildNewTargetsRerunPlan(
+      sourceTask,
+      ["input-c", "input-a", "unknown"],
+      ["target-new-b", "target-new-a", "target-new-b"],
+      ["target-new-a", "target-new-b"]
+    );
+
+    expect(preview.rerun).toEqual({
+      sourceTaskId: "source-task",
+      scope: "new_targets",
+      pairs: [
+        { inputId: "input-a", targetId: "target-new-b" },
+        { inputId: "input-a", targetId: "target-new-a" },
+        { inputId: "input-c", targetId: "target-new-b" },
+        { inputId: "input-c", targetId: "target-new-a" },
+      ],
+      selectedInputIds: ["input-a", "input-c"],
+    });
+    expect(preview.targetIds).toEqual(["target-new-b", "target-new-a"]);
+    expect(preview.reusedPairCount).toBe(2);
+  });
+
+  it("filters new targets by readiness, source membership, mode, and image input", () => {
+    const targets: TargetConfig[] = [
+      targetConfig("target-a", "text", "tested_ok"),
+      targetConfig("new-text", "text", "tested_ok"),
+      targetConfig("new-multimodal", "multimodal", "tested_ok"),
+      targetConfig("new-image", "image", "tested_ok"),
+      targetConfig("new-unverified", "multimodal", "unverified"),
+    ];
+
+    expect(getCompatibleNewTargets(sourceTask, targets).map((item) => item.id))
+      .toEqual(["new-text", "new-multimodal"]);
+
+    const taskWithImages: Task = {
+      ...sourceTask,
+      inputs: sourceTask.inputs.map((input, index) =>
+        index === 0
+          ? {
+              ...input,
+              images: [
+                { id: "image-a", name: "a.png", source: "url", value: "https://example.com/a.png" },
+              ],
+            }
+          : input
+      ),
+    };
+    expect(
+      getCompatibleNewTargets(taskWithImages, targets).map((item) => item.id)
+    ).toEqual(["new-multimodal"]);
+  });
+
+  it("copies only terminal selected results and marks their source task", () => {
+    const seed = buildHistoricalResultSeed(sourceTask, ["input-b"]);
+
+    expect(seed).toHaveLength(1);
+    expect(seed[0].inputId).toBe("input-b");
+    expect(seed[0].items).toHaveLength(2);
+    expect(
+      seed[0].items.every((item) => item.reusedFromTaskId === "source-task")
+    ).toBe(true);
+  });
 });
+
+function targetConfig(
+  id: string,
+  contentKind: TargetConfig["contentKind"],
+  status: TargetConfig["status"]
+): TargetConfig {
+  return {
+    id,
+    name: id,
+    type: "custom",
+    contentKind,
+    source: "manual",
+    status,
+    inputParams: [],
+  };
+}

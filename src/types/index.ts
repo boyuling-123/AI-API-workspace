@@ -25,7 +25,7 @@ export interface TaskRunPair {
   targetId: string;
 }
 
-export type TaskRerunScope = "failed" | "selected_cases";
+export type TaskRerunScope = "failed" | "selected_cases" | "new_targets";
 
 /** 新重跑任务保存的来源与稀疏调用计划，用于暂停续跑和历史追溯。 */
 export interface TaskRerun {
@@ -152,6 +152,8 @@ export interface ResultItem {
   attemptCount?: number;
   /** 上游接口状态码；没有 HTTP 响应时为空。 */
   httpStatus?: number;
+  /** 新增目标重跑时，标记该结果直接复用自哪个历史任务。 */
+  reusedFromTaskId?: string;
 }
 
 /**

@@ -1,26 +1,40 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Task, TaskRerun, TaskRerunScope } from "@/types";
+import type { TargetConfig, Task, TaskRerun, TaskRerunScope } from "@/types";
 import {
   buildFailedRerunPlan,
+  buildNewTargetsRerunPlan,
   buildSelectedCasesRerunPlan,
+  getCompatibleNewTargets,
   parseCaseNumberExpression,
 } from "@/lib/rerunPlan";
 
 interface RerunDialogProps {
   task: Task;
-  availableTargetIds: string[];
+  availableTargets: TargetConfig[];
   onConfirm: (task: Task, rerun: TaskRerun) => void;
   onCancel: () => void;
 }
 
 export function RerunDialog({
   task,
-  availableTargetIds,
+  availableTargets,
   onConfirm,
   onCancel,
 }: RerunDialogProps) {
+  const availableTargetIds = useMemo(
+    () => availableTargets.map((target) => target.id),
+    [availableTargets]
+  );
+  const newTargetCandidates = useMemo(
+    () => getCompatibleNewTargets(task, availableTargets),
+    [availableTargets, task]
+  );
+  const availableNewTargetIds = useMemo(
+    () => newTargetCandidates.map((target) => target.id),
+    [newTargetCandidates]
+  );
   const failedPreview = useMemo(
     () => buildFailedRerunPlan(task, availableTargetIds),
     [availableTargetIds, task]
@@ -29,6 +43,10 @@ export function RerunDialog({
     failedPreview.rerun.pairs.length > 0 ? "failed" : "selected_cases"
   );
   const [caseExpression, setCaseExpression] = useState("1");
+  const [newTargetCaseExpression, setNewTargetCaseExpression] = useState(
+    task.inputs.length > 1 ? `1-${task.inputs.length}` : "1"
+  );
+  const [selectedNewTargetIds, setSelectedNewTargetIds] = useState<string[]>([]);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -60,11 +78,51 @@ export function RerunDialog({
       ),
     [availableTargetIds, selectedInputIds, task]
   );
-  const preview = scope === "failed" ? failedPreview : selectedPreview;
+  const newTargetCaseSelection = useMemo(
+    () =>
+      parseCaseNumberExpression(newTargetCaseExpression, task.inputs.length),
+    [newTargetCaseExpression, task.inputs.length]
+  );
+  const newTargetInputIds = useMemo(
+    () =>
+      newTargetCaseSelection.caseNumbers
+        .map((caseNumber) => task.inputs[caseNumber - 1]?.id)
+        .filter((inputId): inputId is string => Boolean(inputId)),
+    [newTargetCaseSelection.caseNumbers, task.inputs]
+  );
+  const newTargetPreview = useMemo(
+    () =>
+      buildNewTargetsRerunPlan(
+        task,
+        newTargetInputIds,
+        selectedNewTargetIds,
+        availableNewTargetIds
+      ),
+    [
+      availableNewTargetIds,
+      newTargetInputIds,
+      selectedNewTargetIds,
+      task,
+    ]
+  );
+  const preview =
+    scope === "failed"
+      ? failedPreview
+      : scope === "selected_cases"
+        ? selectedPreview
+        : newTargetPreview;
   const validationErrors =
-    scope === "selected_cases" ? caseSelection.errors : [];
+    scope === "selected_cases"
+      ? caseSelection.errors
+      : scope === "new_targets"
+        ? newTargetCaseSelection.errors
+        : [];
+  const needsNewTargetSelection =
+    scope === "new_targets" && selectedNewTargetIds.length === 0;
   const canConfirm =
-    validationErrors.length === 0 && preview.rerun.pairs.length > 0;
+    validationErrors.length === 0 &&
+    !needsNewTargetSelection &&
+    preview.rerun.pairs.length > 0;
   const inputIndexById = useMemo(
     () => new Map(task.inputs.map((input, index) => [input.id, index + 1])),
     [task.inputs]
@@ -85,7 +143,7 @@ export function RerunDialog({
         aria-modal="true"
         aria-labelledby="rerun-dialog-title"
         aria-describedby="rerun-dialog-description"
-        className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+        className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
       >
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -115,7 +173,7 @@ export function RerunDialog({
           </button>
         </div>
 
-        <fieldset className="mt-5 grid gap-3 sm:grid-cols-2">
+        <fieldset className="mt-5 grid gap-3 sm:grid-cols-3">
           <legend className="sr-only">选择重跑范围</legend>
           <label
             className={`cursor-pointer rounded-xl border p-4 transition ${
@@ -159,21 +217,58 @@ export function RerunDialog({
               选中的 Case 会重新运行原任务当前仍可用的全部目标。
             </span>
           </label>
+          <label
+            className={`cursor-pointer rounded-xl border p-4 transition ${
+              scope === "new_targets"
+                ? "border-brand-500 bg-brand-50 dark:bg-brand-500/10"
+                : "border-slate-200 hover:border-slate-300 dark:border-slate-700"
+            }`}
+          >
+            <span className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+              <input
+                type="radio"
+                name="rerun-scope"
+                value="new_targets"
+                checked={scope === "new_targets"}
+                onChange={() => setScope("new_targets")}
+              />
+              新增目标
+            </span>
+            <span className="mt-2 block text-xs leading-5 text-slate-600 dark:text-slate-400">
+              只调用新模型或算法，并复用源任务结果进行同屏对比。
+            </span>
+          </label>
         </fieldset>
 
-        {scope === "selected_cases" && (
+        {(scope === "selected_cases" || scope === "new_targets") && (
           <div className="mt-4">
             <label
-              htmlFor="rerun-case-expression"
+              htmlFor={
+                scope === "new_targets"
+                  ? "new-target-case-expression"
+                  : "rerun-case-expression"
+              }
               className="text-sm font-medium text-slate-700 dark:text-slate-200"
             >
-              Case 序号
+              {scope === "new_targets" ? "要对比的 Case 序号" : "Case 序号"}
             </label>
             <input
-              id="rerun-case-expression"
+              id={
+                scope === "new_targets"
+                  ? "new-target-case-expression"
+                  : "rerun-case-expression"
+              }
               type="text"
-              value={caseExpression}
-              onChange={(event) => setCaseExpression(event.target.value)}
+              value={
+                scope === "new_targets"
+                  ? newTargetCaseExpression
+                  : caseExpression
+              }
+              onChange={(event) =>
+                scope === "new_targets"
+                  ? setNewTargetCaseExpression(event.target.value)
+                  : setCaseExpression(event.target.value)
+              }
               placeholder="例如：1,3,8-12"
               aria-invalid={validationErrors.length > 0}
               aria-describedby="rerun-case-help rerun-case-errors"
@@ -195,6 +290,50 @@ export function RerunDialog({
           </div>
         )}
 
+        {scope === "new_targets" && (
+          <fieldset className="mt-4 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <legend className="px-1 text-sm font-medium text-slate-700 dark:text-slate-200">
+              选择新增目标
+            </legend>
+            <p className="mb-3 text-xs leading-5 text-slate-600 dark:text-slate-400">
+              这里只显示已测试可用、与源任务内容模式和图片输入兼容、且源任务尚未运行过的目标。
+            </p>
+            {newTargetCandidates.length > 0 ? (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {newTargetCandidates.map((target) => (
+                  <label
+                    key={target.id}
+                    className="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-700 transition hover:border-brand-300 dark:border-slate-700 dark:text-slate-200"
+                  >
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={selectedNewTargetIds.includes(target.id)}
+                      onChange={() =>
+                        setSelectedNewTargetIds((current) =>
+                          current.includes(target.id)
+                            ? current.filter((targetId) => targetId !== target.id)
+                            : [...current, target.id]
+                        )
+                      }
+                    />
+                    <span>
+                      <span className="block font-medium">{target.name}</span>
+                      <span className="mt-0.5 block font-mono text-[11px] text-slate-500 dark:text-slate-400">
+                        {target.id} · {target.contentKind}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-300">
+                暂无兼容的新目标。请先在「接口创建&管理」中接入并测试目标，或选择尚未参与本任务的预置目标。
+              </p>
+            )}
+          </fieldset>
+        )}
+
         <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
@@ -207,6 +346,11 @@ export function RerunDialog({
           <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
             {preview.inputIds.length} 个 Case · {preview.targetIds.length} 个目标 · 沿用源任务的并发、QPS、超时和重试策略
           </p>
+          {scope === "new_targets" && (
+            <p className="mt-2 rounded-lg bg-sky-50 px-3 py-2 text-xs leading-5 text-sky-800 dark:bg-sky-500/10 dark:text-sky-300">
+              本次只会请求上方新增目标；另复用 {preview.reusedPairCount} 条源任务终态结果用于横向对比，不会重复调用旧目标。
+            </p>
+          )}
 
           {previewInputs.length > 0 && (
             <ul className="mt-3 space-y-1.5 border-t border-slate-200 pt-3 dark:border-slate-700">
@@ -239,7 +383,13 @@ export function RerunDialog({
           </div>
         )}
 
-        {!canConfirm && validationErrors.length === 0 && (
+        {needsNewTargetSelection && (
+          <p className="mt-3 text-sm text-amber-700 dark:text-amber-300" role="status">
+            请先勾选至少一个新增目标。
+          </p>
+        )}
+
+        {!canConfirm && validationErrors.length === 0 && !needsNewTargetSelection && (
           <p className="mt-3 text-sm text-amber-700 dark:text-amber-300" role="status">
             当前范围没有可执行调用，请更换重跑方式或 Case 序号。
           </p>

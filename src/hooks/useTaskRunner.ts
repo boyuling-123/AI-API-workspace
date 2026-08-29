@@ -17,11 +17,13 @@ import {
   createCheckpointRows,
   getRunProgress,
   replaceCheckpointItem,
+  selectRunPairResults,
   type RunProgress,
 } from "@/lib/batchCheckpoint";
 import { computeTaskStatus } from "@/lib/taskStatus";
 import { generateId } from "@/lib/id";
 import { normalizeRunPolicy } from "@/lib/runPolicy";
+import { buildHistoricalResultSeed } from "@/lib/rerunPlan";
 
 export type RunMode = "idle" | "trial" | "batch";
 export type RunStatus = "idle" | "running" | "paused" | "done" | "cancelled";
@@ -32,6 +34,8 @@ interface BatchContext {
   contentMode: ContentMode;
   task?: Task;
   rerun?: TaskRerun;
+  seedResults?: ResultRow[];
+  paramSnapshot?: Task["paramSnapshot"];
 }
 
 type StopReason = "paused" | "cancelled" | null;
@@ -85,6 +89,7 @@ export function useTaskRunner(
   const [lastRunMode, setLastRunMode] = useState<RunMode>("idle");
   const abortRef = useRef<AbortController | null>(null);
   const stopReasonRef = useRef<StopReason>(null);
+  const progressPairsRef = useRef<TaskRerun["pairs"]>();
 
   const execute = useCallback(
     async (
@@ -113,7 +118,7 @@ export function useTaskRunner(
         inputs,
         targetIds,
         targetConfigs,
-        previousTask?.results,
+        previousTask?.results ?? batchContext?.seedResults,
         rerun?.pairs
       );
       const taskBase: Task | null =
@@ -130,6 +135,7 @@ export function useTaskRunner(
               runPolicy: normalizedPolicy,
               paramSnapshot:
                 previousTask?.paramSnapshot ??
+                batchContext.paramSnapshot ??
                 targetConfigs
                   .filter((target) => targetIds.includes(target.id))
                   .map((target) => ({
@@ -148,7 +154,7 @@ export function useTaskRunner(
         finished: boolean
       ) => {
         if (!taskBase) return;
-        const progress = getRunProgress(snapshotResults);
+        const progress = getRunProgress(snapshotResults, rerun?.pairs);
         onBatchSnapshotRef.current?.({
           ...taskBase,
           finishTime: finished ? Date.now() : undefined,
@@ -165,6 +171,7 @@ export function useTaskRunner(
       const controller = new AbortController();
       abortRef.current = controller;
       stopReasonRef.current = null;
+      progressPairsRef.current = rerun?.pairs;
       setLastRunMode(mode);
       setRunStatus("running");
       resultsRef.current = initialRows;
@@ -204,12 +211,13 @@ export function useTaskRunner(
         setResults(finalResults);
 
         const stopReason = stopReasonRef.current;
+        const statusResults = selectRunPairResults(finalResults, rerun?.pairs);
         const taskStatus =
           stopReason === "paused"
             ? "paused"
             : stopReason === "cancelled"
               ? "cancelled"
-              : computeTaskStatus(finalResults, false);
+              : computeTaskStatus(statusResults, false);
         setRunStatus(
           stopReason === "paused"
             ? "paused"
@@ -224,7 +232,7 @@ export function useTaskRunner(
         if (stopReason) {
           emitPetStatus({ status: "idle" });
         } else {
-          const hasFailure = finalResults.some((row) =>
+          const hasFailure = statusResults.some((row) =>
             row.items.some((item) => item.status === "error")
           );
           emitPetStatus({ status: hasFailure ? "sad" : "happy", scene: "run" });
@@ -318,9 +326,44 @@ export function useTaskRunner(
       const inputIds = new Set(rerun.pairs.map((pair) => pair.inputId));
       const pairTargetIds = new Set(rerun.pairs.map((pair) => pair.targetId));
       const inputs = sourceTask.inputs.filter((input) => inputIds.has(input.id));
-      const targetIds = sourceTask.targetIds.filter((targetId) =>
-        pairTargetIds.has(targetId)
+      const targetConfigs = targetConfigsRef.current ?? [];
+      const executionTargetIds = targetConfigs
+        .filter((target) => pairTargetIds.has(target.id))
+        .map((target) => target.id);
+      if (executionTargetIds.length !== pairTargetIds.size) return;
+
+      const seedResults =
+        rerun.scope === "new_targets"
+          ? buildHistoricalResultSeed(sourceTask, rerun.selectedInputIds)
+          : undefined;
+      const baselineTargetIds = new Set(
+        seedResults?.flatMap((row) => row.items.map((item) => item.targetId)) ?? []
       );
+      const targetIds =
+        rerun.scope === "new_targets"
+          ? [
+              ...sourceTask.targetIds.filter((targetId) =>
+                baselineTargetIds.has(targetId)
+              ),
+              ...executionTargetIds,
+            ]
+          : sourceTask.targetIds.filter((targetId) =>
+              pairTargetIds.has(targetId)
+            );
+      const paramSnapshot =
+        rerun.scope === "new_targets"
+          ? [
+              ...sourceTask.paramSnapshot.filter((snapshot) =>
+                baselineTargetIds.has(snapshot.targetId)
+              ),
+              ...targetConfigs
+                .filter((target) => pairTargetIds.has(target.id))
+                .map((target) => ({
+                  targetId: target.id,
+                  paramDefs: target.inputParams,
+                })),
+            ]
+          : undefined;
       void execute(
         inputs,
         targetIds,
@@ -330,6 +373,8 @@ export function useTaskRunner(
         {
           contentMode: sourceTask.contentMode,
           rerun,
+          seedResults,
+          paramSnapshot,
         }
       );
     },
@@ -350,12 +395,16 @@ export function useTaskRunner(
 
   const clear = useCallback(() => {
     resultsRef.current = [];
+    progressPairsRef.current = undefined;
     setResults([]);
     setRunStatus("idle");
     setLastRunMode("idle");
   }, []);
 
-  const progress = useMemo(() => getRunProgress(results), [results]);
+  const progress = useMemo(
+    () => getRunProgress(results, progressPairsRef.current),
+    [results]
+  );
 
   return {
     results,

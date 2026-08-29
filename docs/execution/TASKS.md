@@ -97,7 +97,7 @@
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
 - [x] 最终 CI 通过后，以非强推 fast-forward 合并 PR #14，GitHub 已确认 Merged。
 
-## 进行中：PR 03C 失败项与指定 Case 定向重跑
+## 已完成：PR 03C 失败项与指定 Case 定向重跑
 
 分支：`codex/feat-selective-reruns`
 
@@ -112,7 +112,22 @@
 - [x] 本地完整 quality 和 12 项 Playwright 全量回归通过。
 - [x] 提交 `3ef828f` 的独立干净工作树完成全新安装、quality 和 Playwright 复验，结束后零改动。
 - [x] 提交、推送并创建 [PR #15](https://github.com/boyuling-123/AI-API-workspace/pull/15)，GitHub 核心质量与 Playwright 两道 CI 通过。
-- [ ] 最终 CI 通过后，以非强推 fast-forward 合并。
+- [x] 最终 CI 通过后，以非强推 fast-forward 合并，GitHub 已确认 PR 为 Merged。
+
+## 进行中：PR 03D 新增目标定向重跑
+
+分支：`codex/feat-new-target-reruns`
+
+- [x] 新增目标模式只列出已测试可用、内容模式兼容、源任务未运行过的模型或算法。
+- [x] 用户显式勾选新增目标和 Case，确认前预览新增调用数与历史复用数。
+- [x] 新任务只执行新增 `Case × Target` 稀疏计划，复用源任务终态结果用于同屏比较。
+- [x] 进度与最终状态只统计新增调用；已删除的历史目标仍可只读展示，不阻塞新目标执行。
+- [x] 历史列表保存“新增目标”范围与来源任务；结果页和 Excel 明确标记“历史复用”。
+- [x] 真实源码单测覆盖候选过滤、计划顺序、复用标记、精确进度与已删除历史目标。
+- [x] Mock Playwright 验证确认前零请求、确认后只调用 Qwen 两次、复用四条旧结果且不启动 AI 评价。
+- [x] 保存完整视觉证据，本地全量 quality 与 13 项 Playwright 通过。
+- [ ] 提交后在独立干净工作树完成全新安装、quality 与 Playwright 复验。
+- [ ] 提交、推送、创建 PR，等待两道 GitHub CI 通过后安全合并。
 
 ## 硬门禁
 

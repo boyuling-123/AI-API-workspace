@@ -46,6 +46,18 @@ export function LatencyText({ latencyMs }: { latencyMs?: number }) {
   );
 }
 
+export function ResultSourceTag({ item }: { item: ResultItem }) {
+  if (!item.reusedFromTaskId) return null;
+  return (
+    <span
+      className="w-fit rounded bg-sky-50 px-1.5 py-0.5 text-[11px] font-medium text-sky-700"
+      title={`复用自历史任务 ${item.reusedFromTaskId}`}
+    >
+      历史复用
+    </span>
+  );
+}
+
 interface ResultItemBodyProps {
   item: ResultItem;
   onImageClick: (src: string) => void;
@@ -63,6 +75,7 @@ export function ResultItemBody({ item, onImageClick }: ResultItemBodyProps) {
   if (item.status === "error" || item.status === "interrupted") {
     return (
       <div className="flex flex-col gap-1.5">
+        <ResultSourceTag item={item} />
         <div className="flex flex-wrap items-center gap-2">
           {item.errorType && (
             <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">
@@ -87,6 +100,7 @@ export function ResultItemBody({ item, onImageClick }: ResultItemBodyProps) {
 
   return (
     <div className="flex flex-col gap-2">
+      <ResultSourceTag item={item} />
       {typeof item.attemptCount === "number" && item.attemptCount > 1 && (
         <p className="text-xs text-amber-700">
           自动重试后成功，共尝试 {item.attemptCount} 次

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Task, TaskRerun } from "@/types";
+import type { TargetConfig, Task, TaskRerun, TaskRerunScope } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 import { TASK_STATUS_META } from "@/lib/taskStatus";
 import { normalizeRunPolicy } from "@/lib/runPolicy";
@@ -14,7 +14,7 @@ interface HistoryPanelProps {
   onDelete: (taskId: string) => void;
   /** 需求三：点击「去AI评测」携带该批次跳转板块④。 */
   onEvaluate: (task: Task) => void;
-  availableTargetIds: string[];
+  availableTargets: TargetConfig[];
   rerunBlockedReason?: string;
   onRerun: (task: Task, rerun: TaskRerun) => void;
 }
@@ -29,7 +29,7 @@ export function HistoryPanel({
   onView,
   onDelete,
   onEvaluate,
-  availableTargetIds,
+  availableTargets,
   rerunBlockedReason,
   onRerun,
 }: HistoryPanelProps) {
@@ -77,7 +77,7 @@ export function HistoryPanel({
                       title={`来源任务：${task.rerun.sourceTaskId}`}
                     >
                       重跑·
-                      {task.rerun.scope === "failed" ? "失败项" : "指定 Case"}
+                      {rerunScopeLabel(task.rerun.scope)}
                       {" · 来源 "}
                       {task.rerun.sourceTaskId.slice(0, 8)}
                     </span>
@@ -158,7 +158,7 @@ export function HistoryPanel({
         <RerunDialog
           key={rerunTask.id}
           task={rerunTask}
-          availableTargetIds={availableTargetIds}
+          availableTargets={availableTargets}
           onCancel={() => setRerunTask(null)}
           onConfirm={(task, rerun) => {
             setRerunTask(null);
@@ -168,4 +168,10 @@ export function HistoryPanel({
       )}
     </>
   );
+}
+
+function rerunScopeLabel(scope: TaskRerunScope): string {
+  if (scope === "failed") return "失败项";
+  if (scope === "selected_cases") return "指定 Case";
+  return "新增目标";
 }

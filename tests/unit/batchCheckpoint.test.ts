@@ -4,7 +4,9 @@ import {
   createCheckpointRows,
   getRunProgress,
   replaceCheckpointItem,
+  selectRunPairResults,
 } from "../../src/lib/batchCheckpoint";
+import { computeTaskStatus } from "../../src/lib/taskStatus";
 
 const inputs: TaskInput[] = [
   { id: "input-a", prompt: "A", images: [] },
@@ -109,6 +111,59 @@ describe("batch checkpoint model", () => {
       totalCalls: 2,
       remainingCalls: 1,
     });
+  });
+
+  it("keeps historical comparison results without counting them as new calls", () => {
+    const runPairs = [{ inputId: "input-a", targetId: "target-b" }];
+    const rows = createCheckpointRows(
+      [inputs[0]],
+      ["legacy-target", "target-b"],
+      [targets[1]],
+      [
+        {
+          inputId: "input-a",
+          items: [
+            {
+              targetId: "legacy-target",
+              targetName: "Removed legacy target",
+              status: "error",
+              error: "historical failure",
+              reusedFromTaskId: "source-task",
+            },
+          ],
+        },
+      ],
+      runPairs
+    );
+
+    expect(rows[0].items).toHaveLength(2);
+    expect(rows[0].items[0]).toMatchObject({
+      targetId: "legacy-target",
+      error: "historical failure",
+      reusedFromTaskId: "source-task",
+    });
+    expect(getRunProgress(rows, runPairs)).toEqual({
+      completedCalls: 0,
+      totalCalls: 1,
+      remainingCalls: 1,
+      percent: 0,
+    });
+    expect(selectRunPairResults(rows, runPairs)[0].items).toHaveLength(1);
+
+    const completed = replaceCheckpointItem(rows, "input-a", {
+      targetId: "target-b",
+      targetName: "Target B",
+      status: "success",
+    });
+    expect(getRunProgress(completed, runPairs)).toEqual({
+      completedCalls: 1,
+      totalCalls: 1,
+      remainingCalls: 0,
+      percent: 100,
+    });
+    expect(
+      computeTaskStatus(selectRunPairResults(completed, runPairs), false)
+    ).toBe("done");
   });
 
   it("preserves terminal results and resets interrupted work to pending", () => {

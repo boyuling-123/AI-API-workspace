@@ -2,7 +2,12 @@
 
 import { useState } from "react";
 import type { ResultItem, ResultRow, TaskInput } from "@/types";
-import { LatencyText, StatusTag, TargetTypeTag } from "./resultShared";
+import {
+  LatencyText,
+  ResultSourceTag,
+  StatusTag,
+  TargetTypeTag,
+} from "./resultShared";
 import { RUN_ERROR_LABELS } from "@/lib/runError";
 
 interface ResultFlatTableProps {
@@ -98,9 +103,10 @@ function FlatRow({
         <OutputCell item={item} onImageClick={onImageClick} />
       </td>
       <td className="px-3 py-2.5">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="text-gray-800">{item.targetName}</span>
           <TargetTypeTag contentKind={item.contentKind} />
+          <ResultSourceTag item={item} />
         </div>
       </td>
       <td className="px-3 py-2.5">

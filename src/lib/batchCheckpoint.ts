@@ -45,7 +45,10 @@ export function createCheckpointRows(
   return inputs.flatMap((input) => {
     const requestedTargetIds = requestedTargetsByInput
       ? targetIds.filter((targetId) =>
-          requestedTargetsByInput.get(input.id)?.has(targetId)
+          requestedTargetsByInput.get(input.id)?.has(targetId) ||
+          isCompletedResultItem(
+            existingByInput.get(input.id)?.get(targetId)
+          )
         )
       : targetIds;
     if (requestedTargetIds.length === 0) return [];
@@ -88,10 +91,31 @@ export function replaceCheckpointItem(
   );
 }
 
-export function getRunProgress(rows: ResultRow[]): RunProgress {
-  const items = rows.flatMap((row) => row.items);
+export function selectRunPairResults(
+  rows: ResultRow[],
+  runPairs?: TaskRunPair[]
+): ResultRow[] {
+  if (!runPairs) return rows;
+  const pairKeys = new Set(
+    runPairs.map((pair) => `${pair.inputId}\u0000${pair.targetId}`)
+  );
+  return rows.flatMap((row) => {
+    const items = row.items.filter((item) =>
+      pairKeys.has(`${row.inputId}\u0000${item.targetId}`)
+    );
+    return items.length > 0 ? [{ inputId: row.inputId, items }] : [];
+  });
+}
+
+export function getRunProgress(
+  rows: ResultRow[],
+  runPairs?: TaskRunPair[]
+): RunProgress {
+  const items = selectRunPairResults(rows, runPairs).flatMap((row) => row.items);
   const completedCalls = items.filter(isCompletedResultItem).length;
-  const totalCalls = items.length;
+  const totalCalls = runPairs
+    ? new Set(runPairs.map((pair) => `${pair.inputId}\u0000${pair.targetId}`)).size
+    : items.length;
   const remainingCalls = Math.max(0, totalCalls - completedCalls);
   return {
     completedCalls,
