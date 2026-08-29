@@ -144,7 +144,8 @@
 - [x] 新增真实源码单测与 Mock Playwright；确认弹窗通过 WCAG 严重与致命问题扫描。
 - [x] 保存视觉证据，本地 quality 与 14 项 Playwright 全量回归通过。
 - [x] 提交 `18bc0df` 在独立干净工作树全新安装 434 个包，quality 与 14 项 Playwright 复验通过，结束时零改动。
-- [ ] 提交、推送、创建 PR，等待两道 GitHub CI 后安全合并。
+- [x] 提交、推送并创建 [PR #17](https://github.com/boyuling-123/AI-API-workspace/pull/17)。
+- [ ] 等待最新提交的两道 GitHub CI，通过后回写证据并安全合并。
 
 ## 硬门禁
 

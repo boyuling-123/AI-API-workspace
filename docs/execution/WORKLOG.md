@@ -253,3 +253,11 @@
 - TASK-005 四种范围均已完成代码与本地验收；在 PR 03E GitHub CI 通过前严格保持“已实现”，不提前标记“已验证”。
 
 下一步：提交实现，在独立干净工作树全新安装复验，再推送并创建 PR 03E。
+
+## 2026-08-29：PR 03E 创建
+
+- 创建 [PR #17](https://github.com/boyuling-123/AI-API-workspace/pull/17)，目标为 `main`，来源为 `codex/feat-new-dimension-evaluation`。
+- PR 描述明确增量 Judge 调用、零被测模型调用、异常路径、Mock 边界、干净环境、视觉证据与普通 revert 回滚方案。
+- TASK-005 已完成四种范围的本地代码与验收；PR #17 最新提交通过两道 GitHub CI 前继续保持“已实现”。
+
+下一步：等待 PR #17 最新提交的核心质量与 Playwright 两道 CI，全部通过后回写 Trace 并安全合并。
