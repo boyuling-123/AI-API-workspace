@@ -1,6 +1,15 @@
 export const RUNTIME_CONFIG = {
   defaultConcurrency: 3,
   maxConcurrency: 10,
+  /** 跑批默认平滑限速；用户可设为 0 表示不限速。 */
+  defaultQps: 5,
+  maxQps: 100,
+  defaultRunTimeoutMs: 60_000,
+  minRunTimeoutMs: 1_000,
+  maxRunTimeoutMs: 60_000,
+  defaultRunRetryLimit: 1,
+  maxRunRetryLimit: 3,
+  retryBaseDelayMs: 250,
   callTimeoutMs: 60_000,
   bodyLimit: "25mb",
   maxTokens: 1024,

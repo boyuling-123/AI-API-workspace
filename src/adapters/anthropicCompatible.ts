@@ -1,6 +1,7 @@
 import type { ImageItem, NormalizedLlmOutput } from "@/types";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import type { AdapterCallParams } from "./types";
+import { createHttpRunError, RunError } from "@/lib/runError";
 
 interface AnthropicCompatibleOptions {
   baseUrl: string;
@@ -109,11 +110,24 @@ export async function callAnthropicCompatible(
       signal: mergedSignal,
     });
 
-    const data = (await response.json()) as AnthropicMessageResponse;
+    const raw = await response.text();
+    let data: AnthropicMessageResponse = {};
+    try {
+      data = raw ? (JSON.parse(raw) as AnthropicMessageResponse) : {};
+    } catch (error) {
+      if (!response.ok) {
+        throw createHttpRunError(response.status, raw.slice(0, 300));
+      }
+      throw new RunError("模型接口返回内容不是合法 JSON", {
+        type: "parse",
+        httpStatus: response.status,
+        cause: error,
+      });
+    }
     if (!response.ok) {
       const message =
         data.error?.message ?? data.message ?? `HTTP ${response.status}`;
-      throw new Error(message);
+      throw createHttpRunError(response.status, message);
     }
 
     const outputText = (data.content ?? [])
@@ -126,6 +140,14 @@ export async function callAnthropicCompatible(
       outputImages: [],
       latencyMs: Date.now() - startTime,
     };
+  } catch (error) {
+    if (!signal?.aborted && timeoutController.signal.aborted) {
+      throw new RunError("模型接口请求超时", {
+        type: "timeout",
+        cause: error,
+      });
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }

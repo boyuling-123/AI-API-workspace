@@ -5,6 +5,7 @@ import type {
   ContentMode,
   ResultItem,
   ResultRow,
+  RunPolicy,
   TargetConfig,
   Task,
   TaskInput,
@@ -19,6 +20,7 @@ import {
 } from "@/lib/batchCheckpoint";
 import { computeTaskStatus } from "@/lib/taskStatus";
 import { generateId } from "@/lib/id";
+import { normalizeRunPolicy } from "@/lib/runPolicy";
 
 export type RunMode = "idle" | "trial" | "batch";
 export type RunStatus = "idle" | "running" | "paused" | "done" | "cancelled";
@@ -44,12 +46,18 @@ export interface UseTaskRunnerResult {
   progress: RunProgress;
   runStatus: RunStatus;
   lastRunMode: RunMode;
-  runTrial: (inputs: TaskInput[], targetIds: string[], concurrency: number) => void;
+  runTrial: (
+    inputs: TaskInput[],
+    targetIds: string[],
+    concurrency: number,
+    runPolicy: RunPolicy
+  ) => void;
   runBatch: (
     inputs: TaskInput[],
     targetIds: string[],
     concurrency: number,
-    contentMode: ContentMode
+    contentMode: ContentMode,
+    runPolicy: RunPolicy
   ) => void;
   resumeBatch: (task: Task) => void;
   pause: () => void;
@@ -80,6 +88,7 @@ export function useTaskRunner(
       inputs: TaskInput[],
       targetIds: string[],
       concurrency: number,
+      runPolicy: RunPolicy,
       mode: RunMode,
       batchContext?: BatchContext
     ) => {
@@ -93,6 +102,9 @@ export function useTaskRunner(
 
       const targetConfigs = targetConfigsRef.current ?? [];
       const previousTask = batchContext?.task;
+      const normalizedPolicy = normalizeRunPolicy(
+        previousTask?.runPolicy ?? runPolicy
+      );
       const initialRows = createCheckpointRows(
         inputs,
         targetIds,
@@ -110,6 +122,7 @@ export function useTaskRunner(
               inputs,
               targetIds,
               concurrency,
+              runPolicy: normalizedPolicy,
               paramSnapshot:
                 previousTask?.paramSnapshot ??
                 targetConfigs
@@ -174,6 +187,7 @@ export function useTaskRunner(
           inputs,
           targetIds,
           concurrency,
+          runPolicy: normalizedPolicy,
           targetConfigs,
           existingResults: initialRows,
           signal: controller.signal,
@@ -240,8 +254,19 @@ export function useTaskRunner(
   );
 
   const runTrial = useCallback(
-    (inputs: TaskInput[], targetIds: string[], concurrency: number) => {
-      void execute(inputs.slice(0, 1), targetIds, concurrency, "trial");
+    (
+      inputs: TaskInput[],
+      targetIds: string[],
+      concurrency: number,
+      runPolicy: RunPolicy
+    ) => {
+      void execute(
+        inputs.slice(0, 1),
+        targetIds,
+        concurrency,
+        runPolicy,
+        "trial"
+      );
     },
     [execute]
   );
@@ -251,19 +276,29 @@ export function useTaskRunner(
       inputs: TaskInput[],
       targetIds: string[],
       concurrency: number,
-      contentMode: ContentMode
+      contentMode: ContentMode,
+      runPolicy: RunPolicy
     ) => {
-      void execute(inputs, targetIds, concurrency, "batch", { contentMode });
+      void execute(inputs, targetIds, concurrency, runPolicy, "batch", {
+        contentMode,
+      });
     },
     [execute]
   );
 
   const resumeBatch = useCallback(
     (task: Task) => {
-      void execute(task.inputs, task.targetIds, task.concurrency, "batch", {
-        contentMode: task.contentMode,
-        task,
-      });
+      void execute(
+        task.inputs,
+        task.targetIds,
+        task.concurrency,
+        normalizeRunPolicy(task.runPolicy),
+        "batch",
+        {
+          contentMode: task.contentMode,
+          task,
+        }
+      );
     },
     [execute]
   );

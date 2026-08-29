@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { ResultItem, ResultRow, TaskInput } from "@/types";
 import { LatencyText, StatusTag, TargetTypeTag } from "./resultShared";
+import { RUN_ERROR_LABELS } from "@/lib/runError";
 
 interface ResultFlatTableProps {
   rows: ResultRow[];
@@ -173,7 +174,28 @@ function OutputCell({ item, onImageClick }: OutputCellProps) {
 
   if (item.status === "error" || item.status === "interrupted") {
     return (
-      <span className="text-xs text-red-600">{item.error ?? "调用失败"}</span>
+      <div className="flex max-w-md flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {item.errorType && (
+            <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">
+              {RUN_ERROR_LABELS[item.errorType]}
+            </span>
+          )}
+          {typeof item.attemptCount === "number" && item.attemptCount > 0 && (
+            <span className="text-xs text-gray-500">
+              已尝试 {item.attemptCount} 次
+            </span>
+          )}
+          {item.httpStatus && (
+            <span className="font-mono text-xs text-gray-500">
+              HTTP {item.httpStatus}
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-red-600">
+          {item.error ?? "调用失败"}
+        </span>
+      </div>
     );
   }
 
@@ -185,6 +207,11 @@ function OutputCell({ item, onImageClick }: OutputCellProps) {
 
   return (
     <div className="flex max-w-md flex-col gap-2">
+      {typeof item.attemptCount === "number" && item.attemptCount > 1 && (
+        <span className="text-xs text-amber-700">
+          自动重试后成功，共尝试 {item.attemptCount} 次
+        </span>
+      )}
       {text && (
         <div className="flex flex-col items-start gap-1">
           <span className="whitespace-pre-wrap break-words text-gray-800">

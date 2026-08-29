@@ -483,6 +483,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           {viewingTask ? (
             hasViewingResults ? (
               <ResultArea
+                key={viewingTask.id}
                 results={viewingTask.results}
                 inputs={viewingTask.inputs}
                 targetIds={viewingTask.targetIds}

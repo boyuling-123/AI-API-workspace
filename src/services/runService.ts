@@ -1,11 +1,27 @@
-import type { ContentKind, ResultItem, ResultRow, TargetConfig, TaskInput } from "@/types";
-import type { NormalizedLlmOutput } from "@/types";
+import type {
+  ContentKind,
+  NormalizedLlmOutput,
+  ResultItem,
+  ResultRow,
+  RunPolicy,
+  TargetConfig,
+  TaskInput,
+} from "@/types";
 import { runWithPool } from "@/lib/taskRunner";
 import {
   createCheckpointRows,
   isCompletedResultItem,
   replaceCheckpointItem,
 } from "@/lib/batchCheckpoint";
+import { RUNTIME_CONFIG } from "@/config/runtime";
+import { createStartRateLimiter, waitForDelay, type StartRateLimiter } from "@/lib/rateLimiter";
+import {
+  createHttpRunError,
+  isRunErrorType,
+  normalizeRunError,
+  RunError,
+} from "@/lib/runError";
+import { normalizeRunPolicy } from "@/lib/runPolicy";
 
 interface CallUnit {
   inputId: string;
@@ -21,12 +37,15 @@ export interface RunParams {
   inputs: TaskInput[];
   targetIds: string[];
   concurrency: number;
+  runPolicy?: Partial<RunPolicy>;
   /** 所有目标配置（含预置 + 用户接入）；按 targetId 匹配。 */
   targetConfigs?: TargetConfig[];
   /** 已持久化的检查点；成功或失败项不会重复调用。 */
   existingResults?: ResultRow[];
   signal?: AbortSignal;
   onItemUpdate?: (inputId: string, item: ResultItem) => void;
+  /** 仅供确定性测试覆盖退避等待；产品运行使用 runtime 默认值。 */
+  retryBaseDelayMs?: number;
 }
 
 /**
@@ -45,7 +64,10 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     existingResults,
     signal,
     onItemUpdate,
+    retryBaseDelayMs = RUNTIME_CONFIG.retryBaseDelayMs,
   } = params;
+  const policy = normalizeRunPolicy(params.runPolicy);
+  const rateLimiter = createStartRateLimiter(policy.qps);
 
   const targetById = new Map<string, TargetConfig>(
     (targetConfigs ?? []).map((config) => [config.id, config])
@@ -94,7 +116,13 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
     concurrency,
     signal,
     runOne: async (unit, runSignal) => {
-      const item = await callTarget(unit, runSignal);
+      const item = await callTarget(
+        unit,
+        runSignal,
+        policy,
+        rateLimiter,
+        retryBaseDelayMs
+      );
       currentRows = replaceCheckpointItem(currentRows, unit.inputId, item);
       onItemUpdate?.(unit.inputId, item);
       return item;
@@ -114,58 +142,218 @@ export async function runTargets(params: RunParams): Promise<ResultRow[]> {
  */
 async function callTarget(
   unit: CallUnit,
-  signal: AbortSignal
+  signal: AbortSignal,
+  policy: RunPolicy,
+  rateLimiter: StartRateLimiter,
+  retryBaseDelayMs: number
 ): Promise<ResultItem> {
   const startTime = Date.now();
   const target = unit.target;
-  try {
-    const paramValues: Record<string, unknown> = {
-      ...(unit.input.extraFields ?? {}),
-    };
-    const hasPromptParam = target.inputParams.some(
-      (def) => def.name === "prompt"
-    );
-    if (hasPromptParam && paramValues.prompt === undefined) {
-      paramValues.prompt = unit.prompt;
+  const paramValues: Record<string, unknown> = {
+    ...(unit.input.extraFields ?? {}),
+  };
+  const hasPromptParam = target.inputParams.some(
+    (def) => def.name === "prompt"
+  );
+  if (hasPromptParam && paramValues.prompt === undefined) {
+    paramValues.prompt = unit.prompt;
+  }
+
+  let attemptCount = 0;
+  while (attemptCount <= policy.retryLimit) {
+    const canStart = await rateLimiter.wait(signal);
+    if (!canStart || signal.aborted) {
+      return interruptedResult(unit, startTime, attemptCount);
     }
 
+    attemptCount += 1;
+    try {
+      const output = await callTargetOnce(
+        unit,
+        paramValues,
+        signal,
+        policy.timeoutMs
+      );
+      return {
+        targetId: unit.targetId,
+        targetName: unit.targetName,
+        contentKind: unit.contentKind,
+        status: "success",
+        outputText: output.outputText,
+        outputImages: output.outputImages,
+        latencyMs: Date.now() - startTime,
+        attemptCount,
+      };
+    } catch (error) {
+      if (signal.aborted) {
+        return interruptedResult(unit, startTime, attemptCount);
+      }
+
+      const runError = normalizeRunError(error);
+      const hasRetry = attemptCount <= policy.retryLimit;
+      if (!runError.retryable || !hasRetry) {
+        return {
+          targetId: unit.targetId,
+          targetName: unit.targetName,
+          contentKind: unit.contentKind,
+          status: "error",
+          latencyMs: Date.now() - startTime,
+          error: runError.message,
+          errorType: runError.type,
+          attemptCount,
+          httpStatus: runError.httpStatus,
+        };
+      }
+
+      const backoffMs = Math.max(0, retryBaseDelayMs) * 2 ** (attemptCount - 1);
+      const shouldContinue = await waitForDelay(backoffMs, signal);
+      if (!shouldContinue) {
+        return interruptedResult(unit, startTime, attemptCount);
+      }
+    }
+  }
+
+  return interruptedResult(unit, startTime, attemptCount);
+}
+
+async function callTargetOnce(
+  unit: CallUnit,
+  paramValues: Record<string, unknown>,
+  parentSignal: AbortSignal,
+  timeoutMs: number
+): Promise<NormalizedLlmOutput> {
+  const attempt = createAttemptSignal(parentSignal, timeoutMs);
+  try {
     const response = await fetch("/api/run-custom", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        target,
+        target: unit.target,
         prompt: unit.prompt,
         images: unit.input.images,
         paramValues,
+        timeoutMs,
       }),
-      signal,
+      signal: attempt.signal,
     });
-
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error ?? `HTTP ${response.status}`);
-    }
-
-    const output = data as NormalizedLlmOutput;
-    return {
-      targetId: unit.targetId,
-      targetName: unit.targetName,
-      contentKind: unit.contentKind,
-      status: "success",
-      outputText: output.outputText,
-      outputImages: output.outputImages,
-      latencyMs: output.latencyMs,
-    };
+    return await parseRunResponse(response);
   } catch (error) {
-    const aborted = signal.aborted;
-    return {
-      targetId: unit.targetId,
-      targetName: unit.targetName,
-      contentKind: unit.contentKind,
-      status: aborted ? "interrupted" : "error",
-      latencyMs: Date.now() - startTime,
-      error:
-        error instanceof Error ? error.message : aborted ? "已取消" : "未知错误",
-    };
+    if (!parentSignal.aborted && attempt.didTimeout()) {
+      throw new RunError(`请求超过 ${formatDuration(timeoutMs)}，已自动终止`, {
+        type: "timeout",
+        cause: error,
+      });
+    }
+    throw error;
+  } finally {
+    attempt.dispose();
   }
+}
+
+interface RunApiErrorPayload {
+  error?: unknown;
+  errorType?: unknown;
+  retryable?: unknown;
+  httpStatus?: unknown;
+}
+
+async function parseRunResponse(
+  response: Response
+): Promise<NormalizedLlmOutput> {
+  const raw = await response.text();
+  let data: unknown = {};
+  if (raw.trim()) {
+    try {
+      data = JSON.parse(raw) as unknown;
+    } catch (error) {
+      if (!response.ok) {
+        throw createHttpRunError(response.status, raw.slice(0, 300));
+      }
+      throw new RunError("接口返回内容不是合法 JSON", {
+        type: "parse",
+        httpStatus: response.status,
+        cause: error,
+      });
+    }
+  }
+
+  if (!response.ok) {
+    const payload = isRecord(data) ? (data as RunApiErrorPayload) : {};
+    const message =
+      typeof payload.error === "string"
+        ? payload.error
+        : `HTTP ${response.status}`;
+    if (isRunErrorType(payload.errorType)) {
+      throw new RunError(message, {
+        type: payload.errorType,
+        retryable:
+          typeof payload.retryable === "boolean"
+            ? payload.retryable
+            : undefined,
+        httpStatus:
+          typeof payload.httpStatus === "number"
+            ? payload.httpStatus
+            : response.status,
+      });
+    }
+    throw createHttpRunError(response.status, message);
+  }
+
+  if (!isRecord(data)) {
+    throw new RunError("接口返回 JSON 结构无效", {
+      type: "parse",
+      httpStatus: response.status,
+    });
+  }
+  return data as unknown as NormalizedLlmOutput;
+}
+
+function interruptedResult(
+  unit: CallUnit,
+  startTime: number,
+  attemptCount: number
+): ResultItem {
+  return {
+    targetId: unit.targetId,
+    targetName: unit.targetName,
+    contentKind: unit.contentKind,
+    status: "interrupted",
+    latencyMs: Date.now() - startTime,
+    error: "已停止，继续任务时会重新执行",
+    attemptCount,
+  };
+}
+
+function createAttemptSignal(parent: AbortSignal, timeoutMs: number) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const onParentAbort = () => controller.abort(parent.reason);
+  if (parent.aborted) {
+    onParentAbort();
+  } else {
+    parent.addEventListener("abort", onParentAbort, { once: true });
+  }
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort(new DOMException("Request timeout", "AbortError"));
+  }, timeoutMs);
+
+  return {
+    signal: controller.signal,
+    didTimeout: () => timedOut,
+    dispose: () => {
+      clearTimeout(timeoutId);
+      parent.removeEventListener("abort", onParentAbort);
+    },
+  };
+}
+
+function formatDuration(timeoutMs: number): string {
+  return timeoutMs % 1_000 === 0
+    ? `${timeoutMs / 1_000} 秒`
+    : `${timeoutMs} 毫秒`;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

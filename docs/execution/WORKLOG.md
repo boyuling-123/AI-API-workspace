@@ -130,3 +130,24 @@
 - TASK-003、TASK-004、TASK-008 同时具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉截图、干净环境和 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交本次验收回写，等待最终 CI 通过后以非强推 fast-forward 合并 PR #13。
+
+## 2026-08-27：PR 03A 合并
+
+- PR #13 的最终文档提交通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 未发生冲突后，以非强推 fast-forward 方式合并；GitHub 已确认 PR 状态为 Merged。
+- 本地 `main` 同步到合并提交 `a715fa2`，随后创建短生命周期分支 `codex/feat-run-controls`。
+
+## 2026-08-29：PR 03B 启动
+
+- 本轮领取 TASK-002、TASK-006 和 TASK-007，范围只包含 QPS、任务级超时、有限重试、失败分类与结果筛选，不混入 TASK-005 的失败项定向重跑。
+- 新增共享平滑限速器：并发 Worker、首次调用和重试调用都在同一队列预约启动时间；QPS 设为 0 时保持不限速，暂停或终止会立即取消等待。
+- `Task.runPolicy` 固化 QPS、超时和重试上限。旧项目缺少策略时使用安全默认值，恢复任务始终沿用原快照而不是当前页面输入。
+- 每次真实请求都有独立 Abort 超时；仅 timeout、rate_limit、network、server 四类瞬时错误允许有限重试，auth、client、parse 和 unknown 不盲目重跑。
+- `/api/run-custom`、通用 HTTP adapter 和 Anthropic adapter 保留结构化错误、重试属性与上游 HTTP 状态，错误文本在离开服务端前脱敏。
+- 首页高级策略区可配置 QPS、超时和重试次数；历史任务展示策略，结果区展示并筛选失败类型、尝试次数和 HTTP 状态，Excel 导出同步保留这些诊断字段。
+- 新增 17 项单元测试后总计 38 项，覆盖严格 QPS、取消等待、429/503 有限重试、401/解析错误不重试、真实 Abort 超时、route 契约和 adapter 错误归一化。
+- 新增 2 条 Mock Playwright 路径后总计 10 项，验证 429 后成功、401 配置重试 3 次仍只调用一次、策略持久化与错误筛选；全量 E2E 和可访问性回归通过。
+- `npm run quality` 完整通过：199 文件 Secret Scan、零 lint、typecheck、38 项单测、2 项压力测试和 19 路由生产构建。
+- 视觉证据：`docs/evidence/pr-03b/run-policy-controls.png` 与 `error-classification-history.png`。视觉失败样例由本地缺失环境变量直接返回 401，服务日志确认没有上游调用。
+
+下一步：独立干净工作树复验、提交、推送并创建 PR 03B，等待 GitHub CI。

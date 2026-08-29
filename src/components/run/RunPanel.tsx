@@ -4,6 +4,7 @@ import { useState } from "react";
 import type {
   ContentMode,
   ResultRow,
+  RunPolicy,
   TargetConfig,
   Task,
   TaskInput,
@@ -13,6 +14,7 @@ import type { RunMode, RunStatus } from "@/hooks/useTaskRunner";
 import type { RunProgress } from "@/lib/batchCheckpoint";
 import { CostConfirmDialog } from "./CostConfirmDialog";
 import { TrialResultModal } from "./TrialResultModal";
+import { normalizeRunPolicy } from "@/lib/runPolicy";
 
 interface RunPanelProps {
   inputs: TaskInput[];
@@ -26,12 +28,18 @@ interface RunPanelProps {
   trialResults: ResultRow[];
   progress: RunProgress;
   resumableTask: Task | null;
-  onRunTrial: (inputs: TaskInput[], targetIds: string[], concurrency: number) => void;
+  onRunTrial: (
+    inputs: TaskInput[],
+    targetIds: string[],
+    concurrency: number,
+    runPolicy: RunPolicy
+  ) => void;
   onRunBatch: (
     inputs: TaskInput[],
     targetIds: string[],
     concurrency: number,
-    contentMode: ContentMode
+    contentMode: ContentMode,
+    runPolicy: RunPolicy
   ) => void;
   onResumeBatch: (task: Task) => void;
   onAbandonBatch: (task: Task) => void;
@@ -77,6 +85,13 @@ export function RunPanel({
   const [concurrency, setConcurrency] = useState<number>(
     RUNTIME_CONFIG.defaultConcurrency
   );
+  const [qps, setQps] = useState<number>(RUNTIME_CONFIG.defaultQps);
+  const [timeoutSeconds, setTimeoutSeconds] = useState<number>(
+    RUNTIME_CONFIG.defaultRunTimeoutMs / 1_000
+  );
+  const [retryLimit, setRetryLimit] = useState<number>(
+    RUNTIME_CONFIG.defaultRunRetryLimit
+  );
   // 待确认的生图运行：null 表示无弹框；保存待执行的运行动作与入参。
   const [pendingRun, setPendingRun] = useState<{
     mode: RunMode;
@@ -92,6 +107,9 @@ export function RunPanel({
   );
   const isRunning = runStatus === "running";
   const hasPendingRecovery = !isRunning && resumableTask !== null;
+  const resumablePolicy = resumableTask
+    ? normalizeRunPolicy(resumableTask.runPolicy)
+    : null;
   const displayedBatchTask =
     resumableTask &&
     (hasPendingRecovery || (isRunning && lastRunMode === "batch"))
@@ -121,13 +139,18 @@ export function RunPanel({
   }
 
   function dispatchRun(mode: RunMode, runInputs: TaskInput[]) {
+    const runPolicy = normalizeRunPolicy({
+      qps,
+      timeoutMs: timeoutSeconds * 1_000,
+      retryLimit,
+    });
     if (mode === "trial") {
       // 记录本次试运行输入并打开浮窗；结果由 trialResults 实时回填展示，不落历史。
       setTrialInputs(runInputs.slice(0, 1));
       setTrialModalOpen(true);
-      onRunTrial(runInputs, targetIds, concurrency);
+      onRunTrial(runInputs, targetIds, concurrency, runPolicy);
     } else {
-      onRunBatch(runInputs, targetIds, concurrency, contentMode);
+      onRunBatch(runInputs, targetIds, concurrency, contentMode, runPolicy);
     }
   }
 
@@ -170,6 +193,12 @@ export function RunPanel({
               {resumableTask.status === "running"
                 ? "，上次运行可能因刷新或关闭页面中断。"
                 : "，继续后只执行剩余单元。"}
+            </p>
+            <p className="mt-1 text-[11px] text-amber-700 dark:text-amber-300">
+              沿用原策略：并发 {resumableTask.concurrency} · QPS{" "}
+              {resumablePolicy?.qps || "不限速"} · 超时{" "}
+              {Math.round((resumablePolicy?.timeoutMs ?? 0) / 1_000)}s · 重试{" "}
+              {resumablePolicy?.retryLimit ?? 0} 次
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -239,7 +268,7 @@ export function RunPanel({
             min={1}
             max={RUNTIME_CONFIG.maxConcurrency}
             value={concurrency}
-            disabled={isRunning}
+            disabled={isRunning || hasPendingRecovery}
             onChange={(event) =>
               setConcurrency(
                 clamp(
@@ -306,6 +335,95 @@ export function RunPanel({
           </button>
         )}
         </div>
+        <details className="group mt-3 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-brand-100">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-2 text-xs font-medium marker:hidden">
+            <span className="flex items-center gap-1.5">
+              高级运行策略
+              <svg
+                aria-hidden="true"
+                className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M5.25 7.5 10 12.25 14.75 7.5" />
+              </svg>
+            </span>
+            <span className="font-mono text-brand-200">
+              QPS {qps === 0 ? "不限速" : qps} · 超时 {timeoutSeconds}s ·
+              失败重试 {retryLimit} 次
+            </span>
+          </summary>
+          <div className="mt-3 grid gap-3 border-t border-white/10 pt-3 sm:grid-cols-3">
+            <label className="flex flex-col gap-1 text-xs text-brand-200">
+              QPS 上限
+              <input
+                aria-label="QPS 上限"
+                type="number"
+                min={0}
+                max={RUNTIME_CONFIG.maxQps}
+                value={qps}
+                disabled={isRunning || hasPendingRecovery}
+                onChange={(event) =>
+                  setQps(
+                    clamp(
+                      Number(event.target.value) || 0,
+                      0,
+                      RUNTIME_CONFIG.maxQps
+                    )
+                  )
+                }
+                className="rounded-lg border border-brand-600 bg-brand-800 px-2 py-1.5 font-mono text-sm text-white outline-none focus:border-brand-400 disabled:opacity-50 dark:bg-brand-900"
+              />
+              <span className="text-[11px] text-brand-300">0 表示不限速</span>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-brand-200">
+              单次超时（秒）
+              <input
+                aria-label="单次超时（秒）"
+                type="number"
+                min={RUNTIME_CONFIG.minRunTimeoutMs / 1_000}
+                max={RUNTIME_CONFIG.maxRunTimeoutMs / 1_000}
+                value={timeoutSeconds}
+                disabled={isRunning || hasPendingRecovery}
+                onChange={(event) =>
+                  setTimeoutSeconds(
+                    clamp(
+                      Number(event.target.value) || 1,
+                      RUNTIME_CONFIG.minRunTimeoutMs / 1_000,
+                      RUNTIME_CONFIG.maxRunTimeoutMs / 1_000
+                    )
+                  )
+                }
+                className="rounded-lg border border-brand-600 bg-brand-800 px-2 py-1.5 font-mono text-sm text-white outline-none focus:border-brand-400 disabled:opacity-50 dark:bg-brand-900"
+              />
+              <span className="text-[11px] text-brand-300">每次尝试独立计时</span>
+            </label>
+            <label className="flex flex-col gap-1 text-xs text-brand-200">
+              失败重试次数
+              <input
+                aria-label="失败重试次数"
+                type="number"
+                min={0}
+                max={RUNTIME_CONFIG.maxRunRetryLimit}
+                value={retryLimit}
+                disabled={isRunning || hasPendingRecovery}
+                onChange={(event) =>
+                  setRetryLimit(
+                    clamp(
+                      Number(event.target.value) || 0,
+                      0,
+                      RUNTIME_CONFIG.maxRunRetryLimit
+                    )
+                  )
+                }
+                className="rounded-lg border border-brand-600 bg-brand-800 px-2 py-1.5 font-mono text-sm text-white outline-none focus:border-brand-400 disabled:opacity-50 dark:bg-brand-900"
+              />
+              <span className="text-[11px] text-brand-300">
+                只重试限流、网络、超时与服务端错误
+              </span>
+            </label>
+          </div>
+        </details>
       </div>
 
       {!isRunning && !hasPendingRecovery && validInputs.length === 0 && (

@@ -2,6 +2,7 @@ import * as XLSX from "xlsx";
 import type { EvalDimension, ResultItem, ResultRow, TaskInput } from "@/types";
 import { generateId } from "@/lib/id";
 import { formatTimestamp } from "@/lib/datetime";
+import { RUN_ERROR_LABELS } from "@/lib/runError";
 
 /**
  * 批量模式基础列。算法 API 参数列将在 M8 按选中目标动态扩展。
@@ -241,7 +242,7 @@ function ensureUniqueColumn(name: string, used: Set<string>): string {
 
 /**
  * 导出运行结果为 Excel。每行一条输入，固定列（序号/prompt/image_url）+
- * 每个目标三列（输出 / 状态 / 耗时(s)）。
+ * 每个目标六列（输出 / 状态 / 失败类型 / 尝试次数 / HTTP 状态 / 耗时(s)）。
  * 传入 evaluations 时，在原列之后追加：每目标「评分/点评」+ 每行「总体结论/推荐」，
  * 不改动 M6 原有列，列名经去重保证唯一。
  */
@@ -270,6 +271,9 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
     header.push(
       ensureUniqueColumn(`${name}_输出`, usedColumnNames),
       ensureUniqueColumn(`${name}_状态`, usedColumnNames),
+      ensureUniqueColumn(`${name}_失败类型`, usedColumnNames),
+      ensureUniqueColumn(`${name}_尝试次数`, usedColumnNames),
+      ensureUniqueColumn(`${name}_HTTP状态`, usedColumnNames),
       ensureUniqueColumn(`${name}_耗时(s)`, usedColumnNames)
     );
   }
@@ -311,6 +315,9 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
       line.push(
         formatOutputCell(item),
         item ? STATUS_LABEL[item.status] : "—",
+        item?.errorType ? RUN_ERROR_LABELS[item.errorType] : "",
+        item?.attemptCount ?? "",
+        item?.httpStatus ?? "",
         formatLatencyCell(item)
       );
     }

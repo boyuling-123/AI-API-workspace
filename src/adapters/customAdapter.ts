@@ -4,6 +4,7 @@ import { getApiKey } from "@/services/getApiKey";
 import { callAnthropicCompatible } from "./anthropicCompatible";
 import { applyPreprocess } from "@/services/preprocess";
 import { extractByPath } from "@/services/jsonPath";
+import { createHttpRunError, RunError } from "@/lib/runError";
 
 /**
  * 统一 custom 目标执行参数。
@@ -194,14 +195,27 @@ async function runGenericTemplate(
         : resolvedUrl;
 
     const response = await fetch(url, requestInit);
-    const data = (await response.json()) as Record<string, unknown>;
+    const raw = await response.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+    } catch (error) {
+      if (!response.ok) {
+        throw createHttpRunError(response.status, raw.slice(0, 300));
+      }
+      throw new RunError("上游接口返回内容不是合法 JSON", {
+        type: "parse",
+        httpStatus: response.status,
+        cause: error,
+      });
+    }
     if (!response.ok) {
       const message =
         (data as { error?: { message?: string }; message?: string }).error
           ?.message ??
         (data as { message?: string }).message ??
         `HTTP ${response.status}`;
-      throw new Error(message);
+      throw createHttpRunError(response.status, message);
     }
 
     const outputText = template.outputTextPath
@@ -216,6 +230,14 @@ async function runGenericTemplate(
       outputImages,
       latencyMs: Date.now() - startTime,
     };
+  } catch (error) {
+    if (!signal?.aborted && timeoutController.signal.aborted) {
+      throw new RunError("上游接口请求超时", {
+        type: "timeout",
+        cause: error,
+      });
+    }
+    throw error;
   } finally {
     clearTimeout(timeoutId);
   }

@@ -62,7 +62,7 @@
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
 - [x] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #12。
 
-## 进行中：PR 03A 批量检查点与中断续跑
+## 已完成：PR 03A 批量检查点与中断续跑
 
 分支：`codex/feat-batch-checkpoints`
 
@@ -78,7 +78,24 @@
 - [x] 完整 quality、独立干净工作树复验与敏感信息扫描。
 - [x] 提交、推送并创建 [PR #13](https://github.com/boyuling-123/AI-API-workspace/pull/13)。
 - [x] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
-- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #13。
+- [x] 最终文档提交 CI 通过后，以非强推 fast-forward 合并 PR #13，GitHub 已确认 Merged。
+
+## 进行中：PR 03B 跑批限速、超时与错误分类
+
+分支：`codex/feat-run-controls`
+
+- [x] 在首页顶部高级策略区配置全局 QPS、单次超时和失败重试次数。
+- [x] 全部并发 Worker 与自动重试共享同一平滑 QPS 队列，取消时立即停止等待。
+- [x] 任务快照持久化运行策略，暂停后继续严格沿用原批次配置。
+- [x] 每次尝试独立超时；仅超时、限流、网络和服务端错误允许自动重试，最多 3 次。
+- [x] 服务端 route 和 adapter 保留失败类型、是否可重试与上游 HTTP 状态，并对错误文本脱敏。
+- [x] 历史结果展示并筛选失败类型、尝试次数和 HTTP 状态，Excel 导出同步增加这些列。
+- [x] 38 项单测、2 项压力测试、10 项 Playwright 与生产构建在本地通过。
+- [x] 保存首页策略区与历史错误分类两张视觉证据；未读取真实 Key、未调用付费模型或 AI 评价。
+- [ ] 独立干净工作树完成全新 `npm ci`、quality 和 Playwright 复验。
+- [ ] 提交、推送并创建 PR 03B。
+- [ ] GitHub 核心质量与 Playwright 两道 CI 通过并回写证据。
+- [ ] 最终 CI 通过后，以非强推 fast-forward 合并 PR 03B。
 
 ## 硬门禁
 

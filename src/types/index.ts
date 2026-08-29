@@ -9,6 +9,27 @@ export type RunMode = "single" | "batch";
 /** AI 评价模式：横向对比 / 按每条样本标准答案判分。 */
 export type EvaluationMode = "comparison" | "reference";
 
+/** 单次跑批的限速、超时与重试快照；恢复任务时必须沿用原策略。 */
+export interface RunPolicy {
+  /** 全局每秒最多启动的真实请求数；0 表示不限速。 */
+  qps: number;
+  /** 单次请求超时，单位毫秒。 */
+  timeoutMs: number;
+  /** 首次调用失败后最多自动重试的次数。 */
+  retryLimit: number;
+}
+
+/** 统一失败分类，供重试决策、结果展示和历史筛选复用。 */
+export type RunErrorType =
+  | "timeout"
+  | "rate_limit"
+  | "auth"
+  | "network"
+  | "parse"
+  | "server"
+  | "client"
+  | "unknown";
+
 /**
  * 统一目标类型（v4 重构核心）：
  * - 'custom'：所有通过接入机制（AI 解析或手动）配置的目标，涵盖大模型/多模态/生图/算法 API。
@@ -51,6 +72,8 @@ export interface Task {
   inputs: TaskInput[];
   targetIds: string[];
   concurrency: number;
+  /** 旧项目可缺省；读取时使用当前安全默认值补齐。 */
+  runPolicy?: RunPolicy;
   /** 只存定义/列映射，不存值。 */
   paramSnapshot: {
     targetId: string;
@@ -106,6 +129,11 @@ export interface ResultItem {
   outputImages?: string[];
   latencyMs?: number;
   error?: string;
+  errorType?: RunErrorType;
+  /** 实际请求次数，包含首次调用和自动重试。 */
+  attemptCount?: number;
+  /** 上游接口状态码；没有 HTTP 响应时为空。 */
+  httpStatus?: number;
 }
 
 /**

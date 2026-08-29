@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { runTarget } from "@/adapters/registry";
 import type { ImageItem, TargetConfig } from "@/types";
+import { normalizeRunPolicy } from "@/lib/runPolicy";
+import { normalizeRunError, RunError } from "@/lib/runError";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -10,6 +12,7 @@ interface RunCustomBody {
   prompt: string;
   images?: ImageItem[];
   paramValues?: Record<string, unknown>;
+  timeoutMs?: number;
 }
 
 /**
@@ -26,17 +29,41 @@ export async function POST(request: Request) {
     body = (await request.json()) as RunCustomBody;
   } catch {
     return NextResponse.json(
-      { error: "请求体解析失败，需为合法 JSON" },
+      {
+        error: "请求体解析失败，需为合法 JSON",
+        errorType: "client",
+        retryable: false,
+      },
       { status: 400 }
     );
   }
 
   if (!body.target?.id) {
-    return NextResponse.json({ error: "缺少 target 配置" }, { status: 400 });
+    return NextResponse.json(
+      { error: "缺少 target 配置", errorType: "client", retryable: false },
+      { status: 400 }
+    );
   }
   if (typeof body.prompt !== "string") {
-    return NextResponse.json({ error: "缺少 prompt" }, { status: 400 });
+    return NextResponse.json(
+      { error: "缺少 prompt", errorType: "client", retryable: false },
+      { status: 400 }
+    );
   }
+
+  const timeoutMs = normalizeRunPolicy({ timeoutMs: body.timeoutMs }).timeoutMs;
+  const controller = new AbortController();
+  let timedOut = false;
+  const onRequestAbort = () => controller.abort(request.signal.reason);
+  if (request.signal.aborted) {
+    onRequestAbort();
+  } else {
+    request.signal.addEventListener("abort", onRequestAbort, { once: true });
+  }
+  const timeoutId = setTimeout(() => {
+    timedOut = true;
+    controller.abort(new DOMException("Request timeout", "AbortError"));
+  }, timeoutMs);
 
   try {
     const result = await runTarget(body.target, {
@@ -44,6 +71,7 @@ export async function POST(request: Request) {
       images: body.images,
       paramValues: body.paramValues,
       baseOrigin: new URL(request.url).origin,
+      signal: controller.signal,
     });
     return NextResponse.json({
       outputText: result.outputText,
@@ -51,7 +79,35 @@ export async function POST(request: Request) {
       latencyMs: result.latencyMs,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "未知错误";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const runError =
+      timedOut && !request.signal.aborted
+        ? new RunError(`请求超过 ${Math.round(timeoutMs / 1_000)} 秒`, {
+            type: "timeout",
+            cause: error,
+          })
+        : normalizeRunError(error);
+    return NextResponse.json(
+      {
+        error: runError.message,
+        errorType: runError.type,
+        retryable: runError.retryable,
+        httpStatus: runError.httpStatus,
+      },
+      { status: responseStatusFor(runError) }
+    );
+  } finally {
+    clearTimeout(timeoutId);
+    request.signal.removeEventListener("abort", onRequestAbort);
   }
+}
+
+function responseStatusFor(error: RunError): number {
+  if (error.type === "auth") return error.httpStatus ?? 401;
+  if (error.type === "rate_limit") return 429;
+  if (error.type === "timeout") return 504;
+  if (error.type === "client") return error.httpStatus ?? 400;
+  if (error.type === "parse" || error.type === "network" || error.type === "server") {
+    return 502;
+  }
+  return 500;
 }

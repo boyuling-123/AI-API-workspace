@@ -1,6 +1,7 @@
 "use client";
 
 import type { ResultItem } from "@/types";
+import { RUN_ERROR_LABELS } from "@/lib/runError";
 
 export function StatusTag({ status }: { status: ResultItem["status"] }) {
   const config: Record<string, { label: string; className: string }> = {
@@ -60,11 +61,37 @@ export function ResultItemBody({ item, onImageClick }: ResultItemBodyProps) {
   }
 
   if (item.status === "error" || item.status === "interrupted") {
-    return <p className="text-sm text-red-600">{item.error ?? "调用失败"}</p>;
+    return (
+      <div className="flex flex-col gap-1.5">
+        <div className="flex flex-wrap items-center gap-2">
+          {item.errorType && (
+            <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">
+              {RUN_ERROR_LABELS[item.errorType]}
+            </span>
+          )}
+          {typeof item.attemptCount === "number" && item.attemptCount > 0 && (
+            <span className="text-xs text-gray-500">
+              已尝试 {item.attemptCount} 次
+            </span>
+          )}
+          {item.httpStatus && (
+            <span className="font-mono text-xs text-gray-500">
+              HTTP {item.httpStatus}
+            </span>
+          )}
+        </div>
+        <p className="text-sm text-red-600">{item.error ?? "调用失败"}</p>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-2">
+      {typeof item.attemptCount === "number" && item.attemptCount > 1 && (
+        <p className="text-xs text-amber-700">
+          自动重试后成功，共尝试 {item.attemptCount} 次
+        </p>
+      )}
       {item.outputText && (
         <p className="whitespace-pre-wrap text-sm text-gray-800">
           {item.outputText}

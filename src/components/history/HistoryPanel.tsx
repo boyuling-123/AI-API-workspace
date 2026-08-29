@@ -3,6 +3,7 @@
 import type { Task } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 import { TASK_STATUS_META } from "@/lib/taskStatus";
+import { normalizeRunPolicy } from "@/lib/runPolicy";
 
 interface HistoryPanelProps {
   tasks: Task[];
@@ -40,12 +41,13 @@ export function HistoryPanel({
         <ul className="flex flex-col divide-y divide-gray-100">
           {sortedTasks.map((task) => {
             const meta = TASK_STATUS_META[task.status];
+            const policy = normalizeRunPolicy(task.runPolicy);
             const isViewing = task.id === viewingTaskId;
             const isActive = task.status === "running" || task.status === "paused";
             return (
               <li
                 key={task.id}
-                className={`flex items-center gap-3 py-2.5 ${
+                className={`flex flex-wrap items-center gap-3 py-2.5 ${
                   isViewing ? "bg-blue-50/50" : ""
                 }`}
               >
@@ -63,6 +65,13 @@ export function HistoryPanel({
                     {task.checkpoint.completedCalls} / {task.checkpoint.totalCalls} 调用
                   </span>
                 )}
+                <span
+                  className="text-xs text-gray-500"
+                  title="该任务启动时保存的运行策略"
+                >
+                  并发 {task.concurrency} · QPS {policy.qps || "不限速"} · 超时{" "}
+                  {Math.round(policy.timeoutMs / 1_000)}s · 重试 {policy.retryLimit}
+                </span>
                 <span
                   className={`rounded-full px-2 py-0.5 text-xs ${meta.className}`}
                 >
