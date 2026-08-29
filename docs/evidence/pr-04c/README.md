@@ -12,3 +12,4 @@
 - `npm run quality`：72 项单测、2 项压力测试、19 个生产路由构建通过，lint 零警告。
 - `npm run test:e2e`：17 项 Playwright 全量通过。
 - 提交 `c5266d6` 在独立 `/tmp` 工作树全新 `npm ci` 安装 434 个包后重复执行以上门禁，结果一致且复验后工作树零改动。
+- [PR #20](https://github.com/boyuling-123/AI-API-workspace/pull/20) workflow run `33240897489` 的核心质量与 Playwright 两个 Job 全部通过。

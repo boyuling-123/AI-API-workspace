@@ -360,3 +360,14 @@
 - 功能提交 `c5266d6` 在独立 `/tmp` 工作树全新 `npm ci` 安装 434 个包后，再次通过 229 文件 Secret Scan、零 lint、typecheck、72 项单测、2 项压力测试、19 路由构建与 17 项 Playwright；复验结束时 Git 零改动。
 
 下一步：提交干净环境证据，推送分支并创建 PR 04C，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-29：PR 04C 创建与首轮验收
+
+- 创建 [PR #20](https://github.com/boyuling-123/AI-API-workspace/pull/20)，目标为 `main`，来源为 `codex/feat-dimension-human-feedback`；GitHub 确认可自动合并。
+- PR 描述记录人工评分与排序契约、异常阻断、双层脱敏、未接入能力口径、零自动评价、Mock 边界、干净环境、视觉证据与普通 revert 回滚方案。
+- GitHub Actions `Quality Gate` workflow run `33240897489` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖密钥扫描、lint、typecheck、72 项真实源码单测、2 项压力测试和 19 路由生产构建。
+- `Playwright user paths and accessibility` Job 通过 17 项浏览器路径；失败 Trace 上传因没有失败而按设计跳过。
+- DOC-003 与 DIM-004 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。DIM-006 仍保持“设计中”。
+
+下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #20。

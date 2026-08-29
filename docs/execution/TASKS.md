@@ -189,7 +189,8 @@
 - [x] 真实源码单测覆盖 Schema、规范化、Prompt 和服务端零调用阻断；Mock Playwright 覆盖完整评分、非法排序修正、精确请求、零自动评价与 WCAG。
 - [x] 视觉证据已人工检查；本地 quality 通过 72 项单测、2 项压力测试与 19 路由构建，全量 17 项 Playwright 通过。
 - [x] 功能提交 `c5266d6` 在独立干净工作树全新安装 434 个包，quality 与 17 项 Playwright 复验通过，结束时零改动。
-- [ ] 推送分支、创建 PR、等待两道 GitHub CI，并在最终文档提交通过后安全合并。
+- [x] 推送分支并创建 [PR #20](https://github.com/boyuling-123/AI-API-workspace/pull/20)；workflow run `33240897489` 的核心质量与 Playwright 两个 Job 全部通过。
+- [ ] 最终文档提交 CI 通过后，以非强推 fast-forward 安全合并并回写状态。
 
 ## 硬门禁
 
