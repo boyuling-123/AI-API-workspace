@@ -6,3 +6,4 @@
 - 浏览器路径全部使用 Mock；不会调用真实模型，也不会自动启动 AI 评价。
 - 测试会在跑批结果中注入假的图片 base64 和完整错误文本，并断言维度生成请求仅保留图片数量和错误类型。
 - 提交 `383aef7` 已在独立干净工作树完成全新安装、quality 与 15 项 Playwright 复验，结束时零改动。
+- [PR #18](https://github.com/boyuling-123/AI-API-workspace/pull/18) workflow run `33237473012` 的核心质量与 Playwright 两个 Job 全部通过。

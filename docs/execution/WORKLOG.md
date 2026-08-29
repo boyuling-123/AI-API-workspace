@@ -293,3 +293,14 @@
 - DIM-002 与 DIM-003 已具备代码、异常路径、真实源码测试、Mock 浏览器路径、视觉证据和独立干净环境复验；在 GitHub CI 通过前严格保持“已实现”。
 
 下一步：提交干净环境证据，推送分支并创建 PR 04A，等待 GitHub 两道 CI。
+
+## 2026-08-29：PR 04A 创建与验收
+
+- 创建 [PR #18](https://github.com/boyuling-123/AI-API-workspace/pull/18)，目标为 `main`，来源为 `codex/feat-dimension-generation-context`；GitHub 确认可自动合并。
+- PR 描述记录结构化上下文、代表性抽样、数据最小化、提示注入边界、零自动评价、真实源码测试、Mock 用户路径、视觉证据和普通 revert 回滚方案。
+- GitHub Actions `Quality Gate` workflow run `33237473012` 完成且结论为 success。
+- `Lint, test, build, and secret scan` Job 全部步骤通过，覆盖 221 文件 Secret Scan、lint、typecheck、64 项真实源码单测、2 项压力测试和生产构建。
+- `Playwright user paths and accessibility` Job 通过 15 项浏览器路径；失败 Trace 上传因没有失败而按设计跳过。
+- DOC-003、DIM-002 与 DIM-003 已同时具备准确产品口径、代码、异常路径、真实源码测试、Mock 精确请求、视觉证据、独立干净环境和 GitHub CI Trace，升级为“已验证”。DIM-004 因仍缺硬规则、Bad Case 与人工结果输入，保持“部分实现”。
+
+下一步：提交本次 PR 与 CI 验收回写，等待最终文档提交自身门禁通过后，以非强推 fast-forward 安全合并 PR #18。
