@@ -22,7 +22,7 @@
 - 本地 `npm run quality` 通过：213 文件 Secret Scan、零 lint、typecheck、55 项单测、2 项压力测试和 19 路由生产构建。
 - 本地 `npm run test:e2e` 通过：14 项 Playwright 用户路径与可访问性测试。
 - 提交 `18bc0df` 的独立 `/tmp` 工作树执行全新 `npm ci`（434 个包），随后 quality 与 14 项 Playwright 再次全部通过，复验结束时零改动。
-- [PR #17](https://github.com/boyuling-123/AI-API-workspace/pull/17) 已创建；最新提交的 GitHub CI 证据通过后回写。
+- [PR #17](https://github.com/boyuling-123/AI-API-workspace/pull/17) 的 GitHub Actions run `33236290462` 通过；核心质量与 Playwright/可访问性两个 Job 均为 success。
 
 ## 视觉证据
 
