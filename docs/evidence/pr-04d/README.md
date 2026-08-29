@@ -18,5 +18,6 @@
 - `npm run quality`：238 文件密钥扫描、84 项单测、2 项压力测试、19 个生产路由构建通过，lint 与 typecheck 零错误。
 - `npm run test:e2e`：18 项 Playwright 全量通过。
 - 截图已人工检查，固定页头位于页面顶部，关键内容无遮挡、截断或重叠。
-- 独立干净工作树和 GitHub CI 结果将在对应步骤完成后回写。
+- 提交 `a697f43` 在独立 `/tmp` 工作树全新 `npm ci` 安装 434 个包后重复执行以上门禁，结果一致且复验结束时工作树零改动。
+- GitHub CI 结果将在对应步骤完成后回写。
 - OpenJudge、Iterative Rubrics Generator、权重、一票否决和 Evaluator 版本化不属于本 PR，状态未被抬高。

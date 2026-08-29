@@ -400,3 +400,14 @@
 - DIM-005 与 DIM-008 已达到本地“已实现”；独立干净工作树、GitHub 两道 CI 和最终 Trace 完成前不标记“已验证”。
 
 下一步：提交当前功能与本地证据，在独立 `/tmp` 工作树全新安装依赖并重复执行全部门禁。
+
+## 2026-08-29：PR 04D 独立干净环境复验
+
+- 功能与本地证据提交为 `a697f43`，父提交为已合并的 `2077b3b`；远端 `main` 在提交前没有漂移。
+- 在 `/tmp/eval-platform-pr04d-a697f43` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 再次通过 238 文件 Secret Scan、零 lint、typecheck、84 项单测、2 项压力测试和 19 路由生产构建。
+- 干净环境 `npm run test:e2e` 再次通过全部 18 项 Playwright；所有 API 路径均为 Mock，未读取真实密钥、未调用真实或付费模型、未启动 AI 评价。
+- 全部门禁结束后 `git status --short` 无输出，证明构建、测试和证据校验没有污染提交工作树。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，该风险留给专门依赖治理 PR。
+
+下一步：提交干净环境证据，推送分支并创建 PR 04D，等待 GitHub 核心质量与 Playwright 两道 CI。
