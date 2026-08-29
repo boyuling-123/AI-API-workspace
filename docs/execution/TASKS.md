@@ -188,7 +188,7 @@
 - [x] 当前通用维度模型仅将人工信号作为受控上下文；页面明确 OpenJudge 与 Iterative Rubrics Generator 均未接入。
 - [x] 真实源码单测覆盖 Schema、规范化、Prompt 和服务端零调用阻断；Mock Playwright 覆盖完整评分、非法排序修正、精确请求、零自动评价与 WCAG。
 - [x] 视觉证据已人工检查；本地 quality 通过 72 项单测、2 项压力测试与 19 路由构建，全量 17 项 Playwright 通过。
-- [ ] 提交功能后在独立干净工作树执行全新安装、quality 与 Playwright 复验。
+- [x] 功能提交 `c5266d6` 在独立干净工作树全新安装 434 个包，quality 与 17 项 Playwright 复验通过，结束时零改动。
 - [ ] 推送分支、创建 PR、等待两道 GitHub CI，并在最终文档提交通过后安全合并。
 
 ## 硬门禁

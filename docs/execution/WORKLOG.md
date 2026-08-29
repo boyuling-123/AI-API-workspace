@@ -357,5 +357,6 @@
 - 视觉证据 `docs/evidence/pr-04c/human-score-ranking.png` 已人工检查，评分、排序、备注、模式提示与未接入能力说明均完整可见，无截断或重叠。
 - 本地 `npm run quality` 通过密钥扫描、零 lint、typecheck、72 项单测、2 项压力测试和 19 路由生产构建；全量 17 项 Playwright 通过。
 - DIM-004 已在本地补齐标准答案、硬规则、Bad Case、人工评分和偏好排序，状态升级为“已实现”；GitHub CI 与最终 Trace 完成前不标记“已验证”。DIM-006 仍为“设计中”。
+- 功能提交 `c5266d6` 在独立 `/tmp` 工作树全新 `npm ci` 安装 434 个包后，再次通过 229 文件 Secret Scan、零 lint、typecheck、72 项单测、2 项压力测试、19 路由构建与 17 项 Playwright；复验结束时 Git 零改动。
 
-下一步：提交功能与本地证据，在独立干净工作树全新安装依赖并复验完整门禁。
+下一步：提交干净环境证据，推送分支并创建 PR 04C，等待 GitHub 核心质量与 Playwright 两道 CI。
