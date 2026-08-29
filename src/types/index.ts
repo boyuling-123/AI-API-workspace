@@ -333,6 +333,10 @@ export interface EvaluationRecord {
   id: string;
   /** 来源批次 Task id。 */
   sourceTaskId: string;
+  /** 评价类型。旧记录为空时按 full 兼容。 */
+  evaluationKind?: "full" | "new_dimensions";
+  /** 新增维度评价所基于的根评价记录 id。 */
+  sourceEvaluationId?: string;
   createTime: number;
   /** 裁判目标 id（含图裁判须 contentKind='multimodal'）。 */
   evalModelId: string;

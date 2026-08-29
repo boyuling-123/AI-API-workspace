@@ -114,7 +114,7 @@
 - [x] 提交、推送并创建 [PR #15](https://github.com/boyuling-123/AI-API-workspace/pull/15)，GitHub 核心质量与 Playwright 两道 CI 通过。
 - [x] 最终 CI 通过后，以非强推 fast-forward 合并，GitHub 已确认 PR 为 Merged。
 
-## 进行中：PR 03D 新增目标定向重跑
+## 已完成：PR 03D 新增目标定向重跑
 
 分支：`codex/feat-new-target-reruns`
 
@@ -129,7 +129,22 @@
 - [x] 提交 `d1c9231` 后在独立干净工作树完成全新安装、quality 与 Playwright 复验，结束时零改动。
 - [x] 提交、推送并创建 [PR #16](https://github.com/boyuling-123/AI-API-workspace/pull/16)。
 - [x] PR #16 workflow run `33231921078` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 推送 CI 验收回写，等待最终文档提交自身门禁通过后安全合并。
+- [x] 最终文档提交对应 workflow run `33232064639` 通过后，以非强推 fast-forward 合并；GitHub 已确认 PR #16 为 Merged。
+
+## 进行中：PR 03E 新增评价维度
+
+分支：`codex/feat-new-dimension-evaluation`
+
+- [x] 在每条评价历史记录旁提供“新增维度评价”入口；来源批次不存在时禁用。
+- [x] 继承来源裁判、需求、Prompt、模式与标准答案字段，并把范围锁定为来源评价已完成的样本。
+- [x] 汇总同一评价血缘的历史维度，按大小写与连续空白归一化去重，禁止重复评价已有维度。
+- [x] 调用前预览裁判调用数、被测模型调用数、历史复用输出数和新增维度数；未经确认不发请求。
+- [x] 确认后只调用 `/api/evaluate`，不调用 `/api/run-custom`，不覆盖来源 Task 或来源 Evaluation。
+- [x] 新记录保存 `evaluationKind=new_dimensions` 与根 `sourceEvaluationId`，历史列表可追溯来源评价。
+- [x] 新增真实源码单测与 Mock Playwright；确认弹窗通过 WCAG 严重与致命问题扫描。
+- [x] 保存视觉证据，本地 quality 与 14 项 Playwright 全量回归通过。
+- [ ] 在独立干净工作树完成全新安装与全门禁复验。
+- [ ] 提交、推送、创建 PR，等待两道 GitHub CI 后安全合并。
 
 ## 硬门禁
 

@@ -231,3 +231,24 @@
 - TASK-005 已具备三类模型跑批重跑的代码、异常路径、真实源码测试、Mock 浏览器精确请求、视觉截图、干净环境和 CI Trace；新增评价维度尚未独立验收，继续保持“部分实现”。
 
 下一步：提交本次 CI 验收回写，等待最终文档提交自身门禁通过后以非强推 fast-forward 安全合并 PR #16。
+
+## 2026-08-29：PR 03D 合并
+
+- PR #16 的最终文档提交对应 workflow run `33232064639` 通过核心质量与 Playwright 两道 GitHub CI。
+- 确认远端 `main` 仍为预期祖先后，以非强推 fast-forward 方式合并；GitHub 已确认 PR #16 状态为 Merged。
+- 本地 `main` 同步到 `6636dcf`，临时干净工作树已移除，随后从最新 `main` 创建 `codex/feat-new-dimension-evaluation`。
+
+## 2026-08-29：PR 03E 启动与本地验收
+
+- 本轮只领取 TASK-005 的最后一种范围“新增评价维度”，不混入 Evaluator 生命周期、Judge 校准或报告聚合。
+- “AI历史评价”每条记录新增独立入口。进入后继承来源评价配置，样本范围锁定为来源评价已完成结果，旧维度只读展示。
+- 同一根评价及其增量子记录组成评价血缘；新维度按大小写与连续空白归一化去重，重复维度会明确阻止确认。
+- 确认弹窗精确展示 Judge 调用、被测模型调用、历史复用输出与新增维度数量。用户确认前零请求，确认后只调用 `/api/evaluate`，`/api/run-custom` 调用增量严格为零。
+- 新增评价独立写入 `Project.evaluations`，保存 `evaluationKind=new_dimensions` 和根 `sourceEvaluationId`；来源 Task、来源评价和历史输出均不覆盖。
+- `newDimensionEvaluation.test.ts` 覆盖维度归一化、血缘汇总和标准答案缺失跳过；单测总数增至 55 项。
+- `new-dimension-evaluation.spec.ts` 通过 Mock 验证普通评价到增量评价的完整路径、确认边界、精确请求、独立留档与来源追溯；弹窗无严重或致命 WCAG 问题。
+- 视觉证据 `docs/evidence/pr-03e/new-dimension-confirmation.png` 已人工检查，完整显示 1 次 Judge、0 次被测模型、1 条历史复用和 1 个新维度，无遮挡或截断。
+- 本地 `npm run quality` 通过：213 文件 Secret Scan、零 lint、typecheck、55 项单测、2 项压力测试和 19 路由生产构建；全量 14 项 Playwright 通过。
+- TASK-005 四种范围均已完成代码与本地验收；在 PR 03E GitHub CI 通过前严格保持“已实现”，不提前标记“已验证”。
+
+下一步：提交实现，在独立干净工作树全新安装复验，再推送并创建 PR 03E。

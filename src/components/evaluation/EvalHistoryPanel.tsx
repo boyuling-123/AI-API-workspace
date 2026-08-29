@@ -14,6 +14,7 @@ interface EvalHistoryPanelProps {
   tasks: Task[];
   projectName: string;
   onDelete: (evaluationId: string) => void;
+  onAddDimensions: (record: EvaluationRecord, task: Task) => void;
 }
 
 const TEXT_TRUNCATE_LENGTH = 120;
@@ -27,6 +28,7 @@ export function EvalHistoryPanel({
   tasks,
   projectName,
   onDelete,
+  onAddDimensions,
 }: EvalHistoryPanelProps) {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -39,6 +41,10 @@ export function EvalHistoryPanel({
   const taskById = useMemo(
     () => new Map(tasks.map((task) => [task.id, task])),
     [tasks]
+  );
+  const evaluationById = useMemo(
+    () => new Map(evaluations.map((record) => [record.id, record])),
+    [evaluations]
   );
 
   const viewingRecord = viewingId
@@ -97,11 +103,14 @@ export function EvalHistoryPanel({
           <ul className="flex flex-col divide-y divide-gray-100">
             {sorted.map((record) => {
               const task = taskById.get(record.sourceTaskId);
+              const sourceEvaluation = record.sourceEvaluationId
+                ? evaluationById.get(record.sourceEvaluationId)
+                : null;
               const isViewing = record.id === viewingId;
               return (
                 <li
                   key={record.id}
-                  className={`flex items-center gap-3 py-2.5 ${
+                  className={`flex flex-wrap items-center gap-3 py-2.5 ${
                     isViewing ? "bg-blue-50/50" : ""
                   }`}
                 >
@@ -122,6 +131,19 @@ export function EvalHistoryPanel({
                       ? `标准答案${formatExpectedColumn(record.expectedAnswerColumn)}`
                       : "横向对比"}
                   </span>
+                  {record.evaluationKind === "new_dimensions" && (
+                    <span
+                      title={record.sourceEvaluationId}
+                      className="rounded bg-emerald-50 px-1.5 py-0.5 text-xs text-emerald-700"
+                    >
+                      新增维度 · 来源评价：
+                      {sourceEvaluation
+                        ? formatDateTime(sourceEvaluation.createTime)
+                        : record.sourceEvaluationId
+                          ? `${record.sourceEvaluationId.slice(0, 10)}（已删除）`
+                          : "未知"}
+                    </span>
+                  )}
                   <span className="text-xs text-gray-500">
                     {record.count} 条
                   </span>
@@ -133,6 +155,14 @@ export function EvalHistoryPanel({
                       className="rounded-md border border-gray-300 px-2.5 py-1 text-xs transition hover:bg-gray-50"
                     >
                       {isViewing ? "查看中" : "查看"}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!task || record.results.length === 0}
+                      onClick={() => task && onAddDimensions(record, task)}
+                      className="rounded-md border border-emerald-200 px-2.5 py-1 text-xs text-emerald-700 transition hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      新增维度评价
                     </button>
                     <button
                       type="button"

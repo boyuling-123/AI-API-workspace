@@ -16,6 +16,11 @@ import {
   resolveExpectedAnswer,
   sortExpectedAnswerKeys,
 } from "@/services/expectedAnswer";
+import {
+  analyzeNewEvaluationDimensions,
+  buildNewDimensionPreview,
+  normalizeEvaluationDimensionName,
+} from "@/lib/newDimensionEvaluation";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -71,7 +76,20 @@ export interface EvaluationCompletePayload {
   expectedAnswerColumn?: string;
   scope: "all" | "selected";
   selectedInputIds?: string[];
+  evaluationKind: "full" | "new_dimensions";
+  sourceEvaluationId?: string;
   results: EvaluateResultPerInput[];
+}
+
+export interface NewDimensionEvaluationContext {
+  sourceEvaluationId: string;
+  sourceInputIds: string[];
+  existingDimensions: EvalDimension[];
+  evalModelId: string;
+  userRequirement: string;
+  evalPrompt: string;
+  evaluationMode: EvaluationMode;
+  expectedAnswerColumn?: string;
 }
 
 interface EvaluationPanelProps {
@@ -85,6 +103,8 @@ interface EvaluationPanelProps {
   evaluation: UseEvaluationResult;
   /** 可用作裁判的模型列表（从 apiConfigs 中筛选 llm 类型传入）。 */
   judgeModels: JudgeModel[];
+  /** 从历史评价发起时，仅评价新维度并复用来源批次输出。 */
+  newDimensionContext?: NewDimensionEvaluationContext;
   /** v4.3：一次评价跑完（非取消）后回调，上层据此生成 EvaluationRecord 存入 Project.evaluations。 */
   onEvaluationComplete?: (payload: EvaluationCompletePayload) => void;
 }
@@ -118,21 +138,35 @@ export function EvaluationPanel({
   concurrency,
   evaluation,
   judgeModels,
+  newDimensionContext,
   onEvaluationComplete,
 }: EvaluationPanelProps) {
-  const [enabled, setEnabled] = useState(false);
-  const [scenario, setScenario] = useState("");
-  const [evalPrompt, setEvalPrompt] = useState("");
-  const [judgeModelId, setJudgeModelId] = useState("");
-  const [evaluationMode, setEvaluationMode] =
-    useState<EvaluationMode>("comparison");
-  const [expectedAnswerKey, setExpectedAnswerKey] = useState(
-    AUTO_EXPECTED_ANSWER_KEY
+  const [enabled, setEnabled] = useState(Boolean(newDimensionContext));
+  const [scenario, setScenario] = useState(
+    newDimensionContext?.userRequirement ?? ""
   );
-  const [scopeMode, setScopeMode] = useState<ScopeMode>("all");
-  const [selectedInputIds, setSelectedInputIds] = useState<string[]>([]);
+  const [evalPrompt, setEvalPrompt] = useState(
+    newDimensionContext?.evalPrompt ?? ""
+  );
+  const [judgeModelId, setJudgeModelId] = useState(
+    newDimensionContext?.evalModelId ?? ""
+  );
+  const [evaluationMode, setEvaluationMode] =
+    useState<EvaluationMode>(
+      newDimensionContext?.evaluationMode ?? "comparison"
+    );
+  const [expectedAnswerKey, setExpectedAnswerKey] = useState(
+    newDimensionContext?.expectedAnswerColumn ?? AUTO_EXPECTED_ANSWER_KEY
+  );
+  const [scopeMode, setScopeMode] = useState<ScopeMode>(
+    newDimensionContext ? "selected" : "all"
+  );
+  const [selectedInputIds, setSelectedInputIds] = useState<string[]>(
+    newDimensionContext?.sourceInputIds ?? []
+  );
   // 候选维度列表（待办勾选式）：AI 生成或手动添加，selected 决定是否纳入本次评价。
   const [candidates, setCandidates] = useState<CandidateDimension[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { evalResults, status, error, genDimensions, generatePrompt, evaluate, cancel } =
     evaluation;
@@ -143,16 +177,41 @@ export function EvaluationPanel({
   );
   const judgeDisabled =
     judgeModels.length === 0 || (hasImage && multimodalModels.length === 0);
+  const selectedJudge = judgeModels.find((model) => model.id === judgeModelId);
+  const judgeReady = Boolean(
+    selectedJudge && (!hasImage || selectedJudge.supportsImage)
+  );
 
   const evaluableInputIds = useMemo(
     () => pickEvaluableInputIds(inputs, results),
     [inputs, results]
   );
 
+  const incrementalPreview = useMemo(
+    () =>
+      newDimensionContext
+        ? buildNewDimensionPreview({
+            inputs,
+            results,
+            sourceInputIds: newDimensionContext.sourceInputIds,
+            evaluationMode,
+            expectedAnswerKey,
+          })
+        : null,
+    [
+      evaluationMode,
+      expectedAnswerKey,
+      inputs,
+      newDimensionContext,
+      results,
+    ]
+  );
+
   const effectiveScopeIds = useMemo(() => {
+    if (incrementalPreview) return incrementalPreview.inputIds;
     if (scopeMode === "all") return evaluableInputIds;
     return selectedInputIds.filter((id) => evaluableInputIds.includes(id));
-  }, [scopeMode, selectedInputIds, evaluableInputIds]);
+  }, [scopeMode, selectedInputIds, evaluableInputIds, incrementalPreview]);
 
   const extraFieldKeys = useMemo(
     () => sortExpectedAnswerKeys(collectExtraFieldKeys(inputs)),
@@ -197,10 +256,15 @@ export function EvaluationPanel({
       const generated = await genDimensions(scenario.trim(), judgeModelId);
       setCandidates((prev) => {
         const existingNames = new Set(
-          prev.map((dim) => dim.name.trim()).filter((name) => name.length > 0)
+          [...(newDimensionContext?.existingDimensions ?? []), ...prev]
+            .map((dim) => normalizeEvaluationDimensionName(dim.name))
+            .filter(Boolean)
         );
         const fresh = generated
-          .filter((dim) => !existingNames.has(dim.name.trim()))
+          .filter(
+            (dim) =>
+              !existingNames.has(normalizeEvaluationDimensionName(dim.name))
+          )
           .map((dim) => ({ ...dim, selected: false }));
         const remaining = MAX_DIMENSIONS - prev.length;
         return [...prev, ...fresh.slice(0, Math.max(0, remaining))];
@@ -215,7 +279,7 @@ export function EvaluationPanel({
     if (mode === "reference") {
       if (!scenario.trim()) setScenario(REFERENCE_DEFAULT_SCENARIO);
       if (!evalPrompt.trim()) setEvalPrompt(REFERENCE_DEFAULT_PROMPT);
-      if (candidates.length === 0) {
+      if (!newDimensionContext && candidates.length === 0) {
         setCandidates(
           REFERENCE_DEFAULT_DIMENSIONS.map((dimension) => ({
             ...dimension,
@@ -268,10 +332,11 @@ export function EvaluationPanel({
     }
   };
 
-  const handleEvaluate = async () => {
+  const executeEvaluation = async () => {
     if (!evalPrompt.trim() || !judgeModelId) return;
     if (effectiveScopeIds.length === 0) return;
     if (validDimensions.length === 0) return;
+    setConfirmOpen(false);
     const collected = await evaluate({
       inputs,
       results,
@@ -296,9 +361,20 @@ export function EvaluationPanel({
         scope: scopeMode,
         selectedInputIds:
           scopeMode === "selected" ? [...effectiveScopeIds] : undefined,
+        evaluationKind: newDimensionContext ? "new_dimensions" : "full",
+        sourceEvaluationId: newDimensionContext?.sourceEvaluationId,
         results: collected,
       });
     }
+  };
+
+  const handleEvaluate = () => {
+    if (!canEvaluate) return;
+    if (newDimensionContext) {
+      setConfirmOpen(true);
+      return;
+    }
+    void executeEvaluation();
   };
 
   const toggleSelectedInput = (inputId: string) => {
@@ -309,41 +385,53 @@ export function EvaluationPanel({
     );
   };
 
-  // 有效维度 = 已勾选且名称非空（防空行/未勾选干扰打分）。
-  const validDimensions = candidates
+  const selectedDimensions = candidates
     .filter((dim) => dim.selected)
-    .map((dim) => ({ name: dim.name.trim(), desc: dim.desc?.trim() || undefined }))
+    .map((dim) => ({
+      name: dim.name,
+      desc: dim.desc,
+    }))
     .filter((dim) => dim.name.length > 0);
+  const dimensionAnalysis = analyzeNewEvaluationDimensions(
+    selectedDimensions,
+    newDimensionContext?.existingDimensions ?? []
+  );
+  const validDimensions = dimensionAnalysis.dimensions;
+  const duplicateDimensionNames = dimensionAnalysis.duplicateNames;
 
   const reachedDimensionLimit = candidates.length >= MAX_DIMENSIONS;
   const canGenDimensions =
     enabled &&
-    !judgeDisabled &&
+    judgeReady &&
     !!scenario.trim() &&
     !!judgeModelId &&
     !isGeneratingDim &&
     !reachedDimensionLimit;
   const canGenerate =
     enabled &&
-    !judgeDisabled &&
+    judgeReady &&
     !!scenario.trim() &&
     !!judgeModelId &&
     validDimensions.length > 0 &&
     !isGenerating;
   const canEvaluate =
     enabled &&
-    !judgeDisabled &&
+    judgeReady &&
     !!evalPrompt.trim() &&
     !!judgeModelId &&
     validDimensions.length > 0 &&
+    duplicateDimensionNames.length === 0 &&
     (evaluationMode === "comparison" || expectedCoverage.matched > 0) &&
     effectiveScopeIds.length > 0 &&
-    !isRunning;
+    !isRunning &&
+    (!newDimensionContext || status !== "done");
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold">AI 自评</h2>
+        <h2 className="text-base font-semibold">
+          {newDimensionContext ? "新增评价维度" : "AI 自评"}
+        </h2>
         <label className="flex cursor-pointer items-center gap-2 text-sm">
           <input
             type="checkbox"
@@ -351,16 +439,31 @@ export function EvaluationPanel({
             onChange={(event) => setEnabled(event.target.checked)}
             className="h-4 w-4"
           />
-          启用 AI 自评
+          {newDimensionContext ? "启用新增维度评价" : "启用 AI 自评"}
         </label>
       </div>
 
       {enabled && (
         <div className="flex flex-col gap-4">
+          {newDimensionContext && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+              <p className="font-semibold">只新增裁判维度，不重新跑模型或算法</p>
+              <p className="mt-1 text-xs text-emerald-700">
+                来源评价：{newDimensionContext.sourceEvaluationId}。本次复用历史输出，评价范围锁定为来源评价已完成的样本；确认前不会调用裁判模型。
+              </p>
+            </div>
+          )}
+
           {judgeDisabled && (
             <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
-              当前输入包含图片，裁判模型需支持多模态（multimodal），
-              但目前无可用的多模态模型，AI 自评暂不可用。
+              {hasImage
+                ? "当前输入包含图片，但目前没有可用的多模态裁判模型，AI 自评暂不可用。"
+                : "当前没有可用的文字裁判模型，请先在接口管理中完成配置。"}
+            </p>
+          )}
+          {!judgeDisabled && judgeModelId && !judgeReady && (
+            <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-700">
+              来源评价使用的裁判模型当前不可用，请重新选择后再继续。
             </p>
           )}
 
@@ -369,6 +472,7 @@ export function EvaluationPanel({
               裁判模型
             </label>
             <select
+              aria-label="裁判模型"
               value={judgeModelId}
               onChange={(event) => setJudgeModelId(event.target.value)}
               disabled={judgeDisabled}
@@ -396,6 +500,7 @@ export function EvaluationPanel({
               测评需求（描述你的评价场景）
             </label>
             <textarea
+              aria-label="测评需求"
               value={scenario}
               onChange={(event) => setScenario(event.target.value)}
               disabled={judgeDisabled}
@@ -486,6 +591,24 @@ export function EvaluationPanel({
               </span>
             </div>
 
+            {newDimensionContext && (
+              <div className="rounded-md border border-indigo-100 bg-white px-3 py-2">
+                <p className="text-xs font-medium text-indigo-800">
+                  已评价维度（只读，不能重复）
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {newDimensionContext.existingDimensions.map((dimension) => (
+                    <span
+                      key={normalizeEvaluationDimensionName(dimension.name)}
+                      className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600"
+                    >
+                      {dimension.name}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -529,6 +652,7 @@ export function EvaluationPanel({
                     }`}
                   >
                     <input
+                      aria-label={`选择维度 ${candidate.name || index + 1}`}
                       type="checkbox"
                       checked={candidate.selected}
                       onChange={() => toggleCandidate(index)}
@@ -537,6 +661,7 @@ export function EvaluationPanel({
                     />
                     <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <input
+                        aria-label={`维度 ${index + 1} 名称`}
                         type="text"
                         value={candidate.name}
                         onChange={(event) =>
@@ -547,6 +672,7 @@ export function EvaluationPanel({
                         className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm font-medium disabled:bg-gray-100"
                       />
                       <input
+                        aria-label={`维度 ${index + 1} 说明`}
                         type="text"
                         value={candidate.desc ?? ""}
                         onChange={(event) =>
@@ -583,6 +709,12 @@ export function EvaluationPanel({
                 共 {candidates.length}/{MAX_DIMENSIONS} 条
               </span>
             </div>
+            {duplicateDimensionNames.length > 0 && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                以下维度与来源评价或本次其他维度重复，请修改后再继续：
+                {duplicateDimensionNames.join("、")}
+              </p>
+            )}
           </div>
 
           <div className="flex flex-col gap-1.5">
@@ -600,6 +732,7 @@ export function EvaluationPanel({
               </button>
             </div>
             <textarea
+              aria-label="评价 Prompt"
               value={evalPrompt}
               onChange={(event) => setEvalPrompt(event.target.value)}
               disabled={judgeDisabled}
@@ -613,53 +746,68 @@ export function EvaluationPanel({
             <label className="text-sm font-medium text-gray-700">
               评价范围
             </label>
-            <div className="flex items-center gap-4 text-sm">
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="radio"
-                  name="eval-scope"
-                  checked={scopeMode === "all"}
-                  onChange={() => setScopeMode("all")}
-                  disabled={judgeDisabled}
-                />
-                全部（{evaluableInputIds.length} 条可评）
-              </label>
-              <label className="flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="radio"
-                  name="eval-scope"
-                  checked={scopeMode === "selected"}
-                  onChange={() => setScopeMode("selected")}
-                  disabled={judgeDisabled}
-                />
-                手动勾选
-              </label>
-            </div>
-            {scopeMode === "selected" && (
-              <div className="flex flex-col gap-1 rounded-md border border-gray-200 p-2">
-                {evaluableInputIds.length === 0 ? (
-                  <p className="text-xs text-gray-400">无可评价的输入。</p>
-                ) : (
-                  inputs
-                    .filter((input) => evaluableInputIds.includes(input.id))
-                    .map((input, index) => (
-                      <label
-                        key={input.id}
-                        className="flex cursor-pointer items-center gap-2 text-xs"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedInputIds.includes(input.id)}
-                          onChange={() => toggleSelectedInput(input.id)}
-                          disabled={judgeDisabled}
-                        />
-                        <span className="truncate">
-                          #{index + 1} {input.prompt.slice(0, 40) || "(无 prompt)"}
-                        </span>
-                      </label>
-                    ))
-                )}
+            {newDimensionContext ? (
+              <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">
+                已锁定来源评价的 {newDimensionContext.sourceInputIds.length} 条结果；
+                本次可评价 {incrementalPreview?.judgeCallCount ?? 0} 条，复用
+                {incrementalPreview?.reusedOutputCount ?? 0} 条模型或算法输出。
+                {(incrementalPreview?.skippedMissingExpectedCount ?? 0) > 0 &&
+                  ` 另有 ${incrementalPreview?.skippedMissingExpectedCount} 条因缺少标准答案跳过。`}
               </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-4 text-sm">
+                  <label className="flex cursor-pointer items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="eval-scope"
+                      checked={scopeMode === "all"}
+                      onChange={() => setScopeMode("all")}
+                      disabled={judgeDisabled}
+                    />
+                    全部（{evaluableInputIds.length} 条可评）
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-1.5">
+                    <input
+                      type="radio"
+                      name="eval-scope"
+                      checked={scopeMode === "selected"}
+                      onChange={() => setScopeMode("selected")}
+                      disabled={judgeDisabled}
+                    />
+                    手动勾选
+                  </label>
+                </div>
+                {scopeMode === "selected" && (
+                  <div className="flex flex-col gap-1 rounded-md border border-gray-200 p-2">
+                    {evaluableInputIds.length === 0 ? (
+                      <p className="text-xs text-gray-400">无可评价的输入。</p>
+                    ) : (
+                      inputs
+                        .filter((input) =>
+                          evaluableInputIds.includes(input.id)
+                        )
+                        .map((input, index) => (
+                          <label
+                            key={input.id}
+                            className="flex cursor-pointer items-center gap-2 text-xs"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedInputIds.includes(input.id)}
+                              onChange={() => toggleSelectedInput(input.id)}
+                              disabled={judgeDisabled}
+                            />
+                            <span className="truncate">
+                              #{index + 1}{" "}
+                              {input.prompt.slice(0, 40) || "(无 prompt)"}
+                            </span>
+                          </label>
+                        ))
+                    )}
+                  </div>
+                )}
+              </>
             )}
           </div>
 
@@ -676,7 +824,13 @@ export function EvaluationPanel({
               disabled={!canEvaluate}
               className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isRunning ? "评价进行中…" : "开始 AI 评价"}
+              {isRunning
+                ? "评价进行中…"
+                : status === "done" && newDimensionContext
+                  ? "新增维度评价已完成"
+                  : newDimensionContext
+                    ? "预览并确认新增维度评价"
+                    : "开始 AI 评价"}
             </button>
             {isRunning && (
               <button
@@ -695,6 +849,78 @@ export function EvaluationPanel({
             results={results}
             dimensions={validDimensions}
           />
+        </div>
+      )}
+
+      {confirmOpen && newDimensionContext && incrementalPreview && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="new-dimension-confirm-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
+        >
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
+            <h3
+              id="new-dimension-confirm-title"
+              className="text-base font-semibold text-slate-900"
+            >
+              确认新增维度评价
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              将创建一条独立评价记录，来源评价与原始跑批结果都不会被覆盖。
+            </p>
+
+            <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
+              <div className="rounded-lg bg-amber-50 p-3">
+                <dt className="text-xs text-amber-700">裁判模型调用</dt>
+                <dd className="mt-1 text-lg font-semibold text-amber-900">
+                  {incrementalPreview.judgeCallCount} 次
+                </dd>
+              </div>
+              <div className="rounded-lg bg-emerald-50 p-3">
+                <dt className="text-xs text-emerald-700">被测模型/算法调用</dt>
+                <dd className="mt-1 text-lg font-semibold text-emerald-900">
+                  0 次
+                </dd>
+              </div>
+              <div className="rounded-lg bg-slate-50 p-3">
+                <dt className="text-xs text-slate-500">复用历史输出</dt>
+                <dd className="mt-1 font-semibold text-slate-800">
+                  {incrementalPreview.reusedOutputCount} 条
+                </dd>
+              </div>
+              <div className="rounded-lg bg-indigo-50 p-3">
+                <dt className="text-xs text-indigo-600">本次新增维度</dt>
+                <dd className="mt-1 font-semibold text-indigo-900">
+                  {validDimensions.length} 个
+                </dd>
+              </div>
+            </dl>
+
+            <div className="mt-3 rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-600">
+              {validDimensions.map((dimension) => dimension.name).join("、")}
+            </div>
+            <p className="mt-3 text-xs text-amber-700">
+              确认后才会调用裁判模型，可能产生模型费用；不会重新执行任何被测模型或算法。
+            </p>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirmOpen(false)}
+                className="rounded-md border border-slate-300 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                返回修改
+              </button>
+              <button
+                type="button"
+                onClick={() => void executeEvaluation()}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                确认并开始评价
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </section>

@@ -8,7 +8,10 @@ import { useTargetSelection } from "@/hooks/useTargetSelection";
 import { useTaskRunner } from "@/hooks/useTaskRunner";
 import type { ProjectUpdateOptions } from "@/hooks/useProject";
 import { useEvaluation } from "@/hooks/useEvaluation";
-import type { EvaluationCompletePayload } from "@/components/evaluation/EvaluationPanel";
+import type {
+  EvaluationCompletePayload,
+  NewDimensionEvaluationContext,
+} from "@/components/evaluation/EvaluationPanel";
 import { EvalHistoryPanel } from "@/components/evaluation/EvalHistoryPanel";
 import { computeInputImageState } from "@/lib/inputImageState";
 import { generateId } from "@/lib/id";
@@ -25,6 +28,10 @@ import { HistoryPanel } from "@/components/history/HistoryPanel";
 import { AppTabs } from "@/components/layout/AppTabs";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import { targetSupportsImage } from "@/config/presetTargets";
+import {
+  collectEvaluationLineageDimensions,
+  getEvaluationRootId,
+} from "@/lib/newDimensionEvaluation";
 
 // 5 板块导航（v4.3）：① 跑批 ② 接口创建&管理 ③ 跑批历史 ④ AI 评价 ⑤ AI历史评价。
 // 评价入口只在 ③→④（结果区进入），不在跑批板块；⑤ 为历史仓库可随便进。
@@ -45,6 +52,8 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   const [viewingTask, setViewingTask] = useState<Task | null>(null);
   // 需求二：AI 评价数据源洁癖——仅当从③带入批次时有值，离开板块④即清空。
   const [evaluatingTask, setEvaluatingTask] = useState<Task | null>(null);
+  const [newDimensionContext, setNewDimensionContext] =
+    useState<NewDimensionEvaluationContext | null>(null);
   const [activeTab, setActiveTab] = useState<WorkspaceTab>("run");
 
   useEffect(() => {
@@ -176,6 +185,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   );
 
   const evaluation = useEvaluation();
+  const clearEvaluation = evaluation.clear;
 
   const currentInputs = useMemo(
     () =>
@@ -196,12 +206,16 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       setEvaluatingTask((current) =>
         current?.id === taskId ? null : current
       );
+      if (evaluatingTask?.id === taskId) {
+        setNewDimensionContext(null);
+        clearEvaluation();
+      }
       updateProject((current) => ({
         ...current,
         tasks: current.tasks.filter((task) => task.id !== taskId),
       }));
     },
-    [updateProject]
+    [clearEvaluation, evaluatingTask?.id, updateProject]
   );
 
   // 需求三：结果对比区只展示「被选中的历史批次」，默认空。
@@ -214,17 +228,20 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   );
 
   // 需求二+四：离开板块④清空评测批次；切到结果板块外清空查看批次。
-  const handleTabChange = useCallback((next: WorkspaceTab) => {
-    setActiveTab((prev) => {
-      if (prev === "evaluate" && next !== "evaluate") {
+  const handleTabChange = useCallback(
+    (next: WorkspaceTab) => {
+      if (activeTab === "evaluate" && next !== "evaluate") {
         setEvaluatingTask(null);
+        setNewDimensionContext(null);
+        clearEvaluation();
       }
-      if (prev === "result" && next !== "result") {
+      if (activeTab === "result" && next !== "result") {
         setViewingTask(null);
       }
-      return next;
-    });
-  }, []);
+      setActiveTab(next);
+    },
+    [activeTab, clearEvaluation]
+  );
 
   // 需求三：点击历史某条 → 下方展开该批次结果对比。
   const handleViewTask = useCallback((task: Task) => {
@@ -233,18 +250,45 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
 
   // 需求二：从③某批次「去AI评测」→ 携带批次跳板块④。
   const handleEvaluateTask = useCallback((task: Task) => {
+    clearEvaluation();
+    setNewDimensionContext(null);
     setEvaluatingTask(task);
     setActiveTab("evaluate");
-  }, []);
+  }, [clearEvaluation]);
+
+  const handleAddEvaluationDimensions = useCallback(
+    (record: EvaluationRecord, task: Task) => {
+      const evaluations = project.evaluations ?? [];
+      clearEvaluation();
+      setNewDimensionContext({
+        sourceEvaluationId: getEvaluationRootId(record),
+        sourceInputIds: record.results.map((result) => result.inputId),
+        existingDimensions: collectEvaluationLineageDimensions(
+          evaluations,
+          record
+        ),
+        evalModelId: record.evalModelId,
+        userRequirement: record.userRequirement,
+        evalPrompt: record.evalPrompt,
+        evaluationMode: record.evaluationMode ?? "comparison",
+        expectedAnswerColumn: record.expectedAnswerColumn,
+      });
+      setEvaluatingTask(task);
+      setActiveTab("evaluate");
+    },
+    [clearEvaluation, project.evaluations]
+  );
 
   const handleRerunTask = useCallback(
     (sourceTask: Task, rerun: TaskRerun) => {
       setViewingTask(null);
       setEvaluatingTask(null);
+      setNewDimensionContext(null);
+      clearEvaluation();
       setActiveTab("run");
       runRerun(sourceTask, rerun);
     },
-    [runRerun]
+    [clearEvaluation, runRerun]
   );
 
   // v4.3 增量2：一次评价跑完 → 生成 EvaluationRecord 存入 Project.evaluations（唯一权威来源，⑤只读这里）。
@@ -264,6 +308,8 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       const record: EvaluationRecord = {
         id: generateId(),
         sourceTaskId: sourceTask.id,
+        evaluationKind: payload.evaluationKind,
+        sourceEvaluationId: payload.sourceEvaluationId,
         createTime: Date.now(),
         evalModelId: payload.evalModelId,
         userRequirement: payload.userRequirement,
@@ -575,13 +621,14 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                 </div>
                 <div className="p-5">
                   <EvaluationPanel
-                    key={evaluatingTask.id}
+                    key={`${evaluatingTask.id}:${newDimensionContext?.sourceEvaluationId ?? "full"}`}
                     inputs={evaluatingTask.inputs}
                     results={evaluatingTask.results}
                     hasImage={evaluatingImageState.hasImage}
                     concurrency={RUNTIME_CONFIG.defaultConcurrency}
                     evaluation={evaluation}
                     judgeModels={judgeModels}
+                    newDimensionContext={newDimensionContext ?? undefined}
                     onEvaluationComplete={handleEvaluationComplete}
                   />
                 </div>
@@ -611,6 +658,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             tasks={project.tasks}
             projectName={project.name}
             onDelete={handleDeleteEvaluation}
+            onAddDimensions={handleAddEvaluationDimensions}
           />
         </div>
       )}
