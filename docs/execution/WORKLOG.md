@@ -211,5 +211,6 @@
 - 新浏览器路径以 Mock 证明：确认前零请求，选择 Case 1/3 与 Qwen 后恰好新增两次调用，结果页复用四条旧结果，且弹窗无严重或致命 WCAG 问题。
 - 视觉证据 `docs/evidence/pr-03d/new-target-rerun-preview.png` 已人工检查，完整覆盖新增目标、Case、调用数、复用数、费用提示和确认入口，无截断。
 - 本地 `npm run quality` 通过：210 文件 Secret Scan、零 lint、typecheck、52 项单测、2 项压力测试和 19 路由生产构建；全量 13 项 Playwright 通过。
+- 提交 `d1c9231` 后创建独立 `/tmp` 工作树，全新 `npm ci` 安装 434 个包；quality 与 13 项 Playwright 再次全部通过，复验后工作树保持零改动。
 
-下一步：提交功能与文档，在独立干净工作树完成全新安装和全量复验，然后推送并创建 PR 03D。
+下一步：提交干净环境证据，推送分支并创建 PR 03D，等待 GitHub 两道 CI。
