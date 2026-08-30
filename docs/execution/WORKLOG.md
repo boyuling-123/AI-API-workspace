@@ -524,3 +524,13 @@
 - 复验结束时 HEAD 为 `41197b2`，Git 状态零改动，确认本 PR 不依赖原工作树的未跟踪文件、旧构建产物或依赖缓存。
 
 下一步：提交独立环境证据，推送分支并创建 PR 05C，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-30：PR 05C 创建与首轮 GitHub CI
+
+- 独立环境证据提交为 `b88d4b2`，分支 `codex/feat-evaluator-version-diff` 已推送并创建 [PR #24](https://github.com/boyuling-123/AI-API-workspace/pull/24)。
+- 创建 PR 前后确认远端 `main` 保持在 `64b891b`，PR 含 2 个提交、11 个文件，GitHub 判定可自动合并。
+- workflow run `33290243949` 的 `Lint, test, build, and secret scan` Job 全部通过，覆盖 254 文件密钥扫描、lint、typecheck、101 项真实源码单测、2 项压力测试与 19 路由生产构建。
+- 同一 run 的 `Playwright user paths and accessibility` Job 通过全部 21 项浏览器与 WCAG 路径；失败 Trace 上传因没有失败而按设计跳过。
+- PROMPT-005 与 PROMPT-006 已同时具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
+
+下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #24。
