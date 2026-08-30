@@ -359,7 +359,8 @@
 - [x] Mock E2E 以 20 Case 验证 v1 漏判率 10% 被阻断，v2 达标后确认发布、刷新持久化、Judge 调用严格为 40 且发布新增 0 次；Axe 严重/致命问题为 0。
 - [x] 保存并人工检查 `docs/evidence/pr-06f/evaluator-release-gate.png`；本地 Secret Scan、零警告 lint、typecheck、137 项单测、2 项压力测试、20 路由构建和全量 27 项 Playwright 已通过。
 - [x] 功能快照 `7e81ea6` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR，等待两轮 GitHub CI、远端漂移与审查审计后安全合并。
+- [x] 分支已推送并创建 [PR #31](https://github.com/boyuling-123/AI-API-workspace/pull/31)；首轮 workflow run `33297002754` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再执行远端漂移、Review/线程与可合并状态审计并安全合并。
 
 ## 硬门禁
 
