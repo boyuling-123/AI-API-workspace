@@ -5,6 +5,7 @@ import type {
   GoldenDatasetCase,
   GoldenDatasetVersion,
   GoldenHumanLabel,
+  JudgeCalibrationRun,
 } from "@/types";
 import {
   cloneGoldenDatasetCases,
@@ -18,13 +19,17 @@ import {
   parseGoldenDatasetWorkbook,
   type GoldenDatasetImportResult,
 } from "@/services/goldenDatasetFile";
+import { JudgeCalibrationPanel } from "@/components/calibration/JudgeCalibrationPanel";
 
 const PREVIEW_LIMIT = 50;
 
 interface GoldenDatasetPanelProps {
   projectName: string;
   versions: GoldenDatasetVersion[];
+  judgeModels: { id: string; name: string }[];
+  calibrationRuns: JudgeCalibrationRun[];
   onSave: (version: GoldenDatasetVersion) => void;
+  onSaveCalibrationRun: (run: JudgeCalibrationRun) => void;
 }
 
 function labelText(label: GoldenHumanLabel): string {
@@ -41,7 +46,10 @@ function nextManualCaseId(cases: GoldenDatasetCase[]): string {
 export function GoldenDatasetPanel({
   projectName,
   versions,
+  judgeModels,
+  calibrationRuns,
   onSave,
+  onSaveCalibrationRun,
 }: GoldenDatasetPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const usableVersions = useMemo(
@@ -607,6 +615,12 @@ export function GoldenDatasetPanel({
           </aside>
         </div>
       </section>
+      <JudgeCalibrationPanel
+        versions={versions}
+        judgeModels={judgeModels}
+        runs={calibrationRuns}
+        onSaveRun={onSaveCalibrationRun}
+      />
     </div>
   );
 }
