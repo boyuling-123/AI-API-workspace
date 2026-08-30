@@ -26,4 +26,6 @@
 - Build：20 个路由通过生产构建。
 - Playwright / WCAG：全量 33 项通过。
 
+同一功能快照 `175885c` 已在独立 detached 工作树中通过全新 `npm ci`、完整 quality 和全量 33 项 Playwright；结束时 HEAD 未漂移且 Git 状态干净。
+
 所有自动化使用 Mock，不读取真实密钥，不调用真实或付费模型，不自动启动 AI 评价。

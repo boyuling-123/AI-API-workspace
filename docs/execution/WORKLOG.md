@@ -1016,3 +1016,14 @@
 - REPORT-005 已具备代码、异常边界、真实源码测试、Mock 用户路径与视觉证据，状态为“已实现”；待独立干净环境和 GitHub CI 后再升级“已验证”。
 
 下一步：提交 PR 07C 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+
+## 2026-08-30：PR 07C 独立干净环境复验
+
+- Case 洞察层、筛选 UI、精确 Excel、真实源码测试、Mock E2E、视觉证据与台账功能快照提交为 `175885c`，父提交为已合并 PR #37 的 `main@f7f59b0`。
+- 在 `/tmp/eval-platform-pr07c-175885c` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 321 文件 Secret Scan、零警告 lint、typecheck、162 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 使用 `CI=1` 启动该工作树专属服务，全量 33 项 Playwright 与 WCAG 全部通过；新增 Case 筛选及既有排行榜、复核、多 Judge、Evaluator 和跑批路径共同通过。
+- 全部门禁结束后 detached HEAD 仍为 `175885c` 且 `git status --short` 无输出；临时工作树随后安全移除。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级审计项；未执行破坏性 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 07C，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。
