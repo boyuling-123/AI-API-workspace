@@ -341,7 +341,8 @@
 - [x] 6 项重跑规划与服务边界单测覆盖首次任务、Judge/维度/Prompt 变化、定义复用、黄金集隔离和长度上限；客户端测试覆盖快照持久化。
 - [x] Mock E2E 覆盖 Evaluator v1→v2、确认前零新增调用、确认后精确重跑、两次历史、刷新持久化和 WCAG。
 - [x] 保存并人工检查 `docs/evidence/pr-06e/evaluator-rerun-comparison.png`；本地 quality 通过 286 文件密钥扫描、零 lint、typecheck、131 项单测、2 项压力测试和 20 路由构建；全量 26 项 Playwright 通过。
-- [ ] 提交功能快照并在独立干净工作树重复全部门禁，再自主创建 PR、等待 CI 和安全合并。
+- [x] 功能快照 `515aeb8` 在独立干净工作树全新安装 434 个包，quality 与 26 项 Playwright 全部通过，结束时 Git 零改动。
+- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
 
 ## 硬门禁
 
