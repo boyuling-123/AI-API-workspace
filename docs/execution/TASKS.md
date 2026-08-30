@@ -253,7 +253,7 @@
 - [x] 损坏版本、跨家族比较、最新版重复恢复和伪造来源均在领域层阻断。
 - [x] 真实源码单测覆盖结构化/文本 Diff、大 Prompt、异常边界和 v1→v3；Mock Playwright 覆盖 Diff、恢复、刷新持久化、旧版本不变、零 Judge 调用与 WCAG。
 - [x] 保存并人工检查 `docs/evidence/pr-05c/version-diff-restore.png`；本地 quality 通过 254 文件密钥扫描、零 lint、typecheck、101 项单测、2 项压力测试和 19 路由构建，全量 21 项 Playwright 通过。
-- [ ] 提交功能快照，并在独立干净工作树全新安装依赖后复验全部门禁。
+- [x] 功能快照 `41197b2` 在独立干净工作树全新安装 434 个包，quality 与 21 项 Playwright 全部通过，结束时 Git 零改动。
 - [ ] 推送分支、创建 PR，完成双轮 GitHub CI 与安全合并。
 
 ## 硬门禁
