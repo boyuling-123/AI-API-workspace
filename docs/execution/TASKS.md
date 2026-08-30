@@ -311,7 +311,8 @@
 - [x] 11 项新增真实源码测试覆盖完美/分歧/错误样本、空分母、入参门禁、人工真值隔离、脱敏、坏 Judge 输出和路由状态码。
 - [x] 本地 quality 通过 275 文件密钥扫描、零 lint、typecheck、123 项单测、2 项压力测试和 20 路由构建；全量 23 项 Playwright 通过。
 - [x] 功能快照 `c1f60cd` 在独立干净工作树全新安装 434 个包，quality 与 23 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
+- [x] 分支已推送并创建 [PR #28](https://github.com/boyuling-123/AI-API-workspace/pull/28)；首轮 workflow run `33294370480` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
 
 下一连续小 PR：PR 06D 调用预览与二次确认、受控并发、校准历史、指标卡和分歧样本下钻。
 

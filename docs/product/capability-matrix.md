@@ -53,7 +53,7 @@
 | JUDGE-001 | Judge 候选池记录厂商、模型、模态、上下文、成本和时延 | 部分实现 | `TargetConfig` 有名称、模态、状态，缺其余元数据 | 无 | 所有元数据可维护、筛选并进入评价快照 | Judge 校准 | 待关联 |
 | JUDGE-002 | 按文本、图片、代码等任务筛选 Judge | 部分实现 | `WorkspaceBody.tsx` 按文本/多模态筛选 | 无 | 各任务类型只能选择兼容 Judge，并解释禁用原因 | Judge 校准 | 待关联 |
 | JUDGE-003 | 建立人工标注黄金测试集 | 已验证 | PR #26 的 `goldenDataset.ts`、`goldenDatasetFile.ts` 与可选项目字段提供严格导入、不可变版本和完整性校验；PR #27 的 `GoldenDatasetPanel.tsx` 提供独立校准入口、字段映射、人工核对、锁定版本库与 IndexedDB 持久化 | `goldenDataset.test.ts` 8 项真实源码测试；`golden-dataset.spec.ts` 覆盖坏文件及旁路阻断、映射预览、v1/v2、旧标签不变、刷新持久化、零 API/Judge 调用和 WCAG；本地、独立干净工作树与 PR #27 workflow run `33293740909` 两道 CI 全部通过 | 黄金集可导入、版本化并锁定人工标签 | Judge 校准 | [#26](https://github.com/boyuling-123/AI-API-workspace/pull/26)，[#27](https://github.com/boyuling-123/AI-API-workspace/pull/27) |
-| JUDGE-004 | 计算 Judge 与人工判断的一致性、准确率和漏判 | 部分实现 | `judgeCalibrationService.ts` 与 `/api/judge-calibration` 提供不泄漏人工标签的单 Case 判定边界；`judgeCalibration.ts` 确定性计算准确率、Cohen’s κ、Bad Case 漏判率、误杀率和混淆矩阵；项目已预留可选校准运行记录 | `judgeCalibration.test.ts`、`judgeCalibrationService.test.ts`、`judgeCalibrationRoute.test.ts` 共 11 项真实源码测试覆盖指标分母、Prompt 隔离、脱敏、坏入参/输出与状态码；本地和独立干净工作树的 quality 与既有 23 项 Playwright 通过，待 PR 06D 用户路径 | 输出明确统计指标和样本下钻 | Judge 校准 | PR 06C（待创建） |
+| JUDGE-004 | 计算 Judge 与人工判断的一致性、准确率和漏判 | 部分实现 | `judgeCalibrationService.ts` 与 `/api/judge-calibration` 提供不泄漏人工标签的单 Case 判定边界；`judgeCalibration.ts` 确定性计算准确率、Cohen’s κ、Bad Case 漏判率、误杀率和混淆矩阵；项目已预留可选校准运行记录 | `judgeCalibration.test.ts`、`judgeCalibrationService.test.ts`、`judgeCalibrationRoute.test.ts` 共 11 项真实源码测试覆盖指标分母、Prompt 隔离、脱敏、坏入参/输出与状态码；本地、独立干净工作树与 PR #28 workflow run `33294370480` 两道 CI 全部通过，待 PR 06D 用户路径 | 输出明确统计指标和样本下钻 | Judge 校准 | [#28](https://github.com/boyuling-123/AI-API-workspace/pull/28) |
 | JUDGE-005 | 支持单 Judge、多 Judge 和分歧仲裁 | Demo | 当前仅支持单 Judge | 无 | 多 Judge 独立执行，分歧按可配置策略仲裁 | Judge 校准 | 待关联 |
 | JUDGE-006 | 高风险与高频分歧 Case 可人工复核 | 设计中 | 无 | 无 | 风险规则可解释，Case 可领取、复核和留痕 | 报告复核 | 待关联 |
 | JUDGE-007 | Judge、维度或 Prompt 变化后重跑黄金集 | 设计中 | 无 | 无 | 变更自动创建校准任务并保留前后结果 | Judge 校准 | 待关联 |
@@ -117,7 +117,7 @@
 - PROMPT-005 与 PROMPT-006 已在 PR #24 完成确定性结构/文本 Diff、影响范围和只追加恢复；代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33290243949` 两道 CI 全部通过，状态为“已验证”。
 - PROMPT-003 与 PROMPT-008 已在 PR #25 完成少量试评、逐条错误、零历史写入、调用确认和同一 Task 两轮独立重评；真实源码单测、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33292294441` 两道 CI 全部通过，状态为“已验证”。
 - JUDGE-003 已由 PR #26 建立黄金集领域基础，并由 PR #27 接入独立页面、人工确认、持久化用户路径与视觉证据；本地、独立干净环境和首轮 GitHub CI 全部门禁通过，状态为“已验证”。
-- JUDGE-004 已在 PR 06C 本地完成不泄漏人工标签的单 Case Judge 契约和确定性统计核心，状态为“部分实现”；PR 06D 再接入调用确认、历史持久化与样本下钻。
+- JUDGE-004 已在 PR #28（PR 06C）完成不泄漏人工标签的单 Case Judge 契约和确定性统计核心，并通过本地、独立干净环境与首轮 GitHub CI，状态为“部分实现”；PR 06D 再接入调用确认、历史持久化与样本下钻。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

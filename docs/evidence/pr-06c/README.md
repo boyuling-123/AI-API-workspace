@@ -7,6 +7,7 @@
 - `judgeCalibrationRoute.test.ts` 覆盖坏 JSON、缺字段零调用、合法单 Case 响应，以及 Judge 坏输出返回 500。
 - 本地 quality 通过 275 文件密钥扫描、零 lint、typecheck、123 项真实源码单测、2 项压力测试和 20 路由生产构建；全量既有 23 项 Playwright 通过。
 - 功能提交 `c1f60cd` 在独立 detached 工作树全新安装 434 个包后，再次通过 quality 与 23 项 Playwright，结束时 Git 零改动。
+- [PR #28](https://github.com/boyuling-123/AI-API-workspace/pull/28) 首轮 workflow run `33294370480` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 
 ## 安全与费用边界
 

@@ -674,3 +674,13 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 下一步：提交独立环境证据，推送分支并自主创建 PR 06C，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-30：PR 06C 创建与首轮 GitHub CI
+
+- 独立环境证据提交为 `11c5fa1`，分支 `codex/feat-judge-calibration-metrics` 已推送并自主创建 [PR #28](https://github.com/boyuling-123/AI-API-workspace/pull/28)。
+- 创建 PR 后确认基线为 `main@58aae60`、Head 为 `11c5fa1`，GitHub 判定可自动合并。
+- workflow run `33294370480` 的 `Lint, test, build, and secret scan` Job 全部通过，覆盖 275 文件密钥扫描、lint、typecheck、123 项真实源码单测、2 项压力测试与 20 路由生产构建。
+- 同一 run 的 `Playwright user paths and accessibility` Job 通过全部既有 23 项浏览器与 WCAG 路径；失败 Trace 上传因没有失败而按设计跳过。
+- JUDGE-004 服务核心已具备代码、异常路径、真实源码测试、独立干净环境与 GitHub CI Trace；因确认式运行和样本下钻尚在 PR 06D，状态继续保持“部分实现”。
+
+下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #28。
