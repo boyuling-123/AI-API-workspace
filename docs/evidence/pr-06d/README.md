@@ -12,6 +12,7 @@
 - E2E 检查所有请求均不含 `humanLabel` 或 `reviewerNote`，且被测模型/算法调用为 0。
 - 确认弹窗和完整校准区均执行 WCAG 严重与致命问题检查。
 - 本地 quality 通过 281 文件密钥扫描、零 lint、typecheck、125 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 25 项 Playwright 通过。
+- 功能提交 `fa2fd3a` 在独立 detached 工作树全新安装 434 个包后，再次通过 quality 与 25 项 Playwright，结束时 Git 零改动。
 
 ## 安全与费用边界
 

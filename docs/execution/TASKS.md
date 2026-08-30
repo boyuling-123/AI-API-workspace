@@ -325,7 +325,8 @@
 - [x] 2 项客户端真实源码单测覆盖白名单请求、部分失败和坏响应；2 项 Mock E2E 覆盖 3 Case 完整路径与 100 Case 高费用门禁。
 - [x] 保存并人工检查 `docs/evidence/pr-06d/judge-calibration-results.png`；确认弹窗与结果区 WCAG 严重/致命问题扫描通过。
 - [x] 本地 quality 通过 281 文件密钥扫描、零 lint、typecheck、125 项单测、2 项压力测试和 20 路由构建；全量 25 项 Playwright 通过。
-- [ ] 提交功能快照并在独立干净工作树复验全部门禁。
+- [x] 功能快照 `fa2fd3a` 在独立干净工作树全新安装 434 个包，quality 与 25 项 Playwright 全部通过，结束时 Git 零改动。
+- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
 
 ## 硬门禁
 

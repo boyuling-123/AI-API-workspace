@@ -699,3 +699,14 @@
 - 本地 `npm run quality` 通过 281 文件 Secret Scan、零 lint、typecheck、125 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 25 项 Playwright 全部通过。
 
 下一步：提交 PR 06D 功能快照，在独立干净工作树全新安装依赖并重复全部门禁。
+
+## 2026-08-30：PR 06D 独立干净环境复验
+
+- 确认式运行、持久化、结果下钻、客户端测试、Mock E2E、视觉证据与台账功能快照提交为 `fa2fd3a`，父提交为已合并的 `eba0264`。
+- 在 `/tmp/eval-platform-pr06d-fa2fd3a` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 281 文件 Secret Scan、零 lint、typecheck、125 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 干净环境 `npm run test:e2e` 通过全部 25 项 Playwright；校准路径使用 Mock，未读取真实密钥或调用真实/付费模型。
+- 全部门禁结束后 detached HEAD 仍为 `fa2fd3a` 且 `git status --short` 无输出，证明本 PR 不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 06D，等待 GitHub 核心质量与 Playwright 两道 CI。
