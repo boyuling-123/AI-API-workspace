@@ -358,7 +358,8 @@
 - [x] 6 项真实源码单测覆盖通过、阈值失败、跨家族、标准改写、指标篡改、重复 Case、历史、脱敏与重复 id。
 - [x] Mock E2E 以 20 Case 验证 v1 漏判率 10% 被阻断，v2 达标后确认发布、刷新持久化、Judge 调用严格为 40 且发布新增 0 次；Axe 严重/致命问题为 0。
 - [x] 保存并人工检查 `docs/evidence/pr-06f/evaluator-release-gate.png`；本地 Secret Scan、零警告 lint、typecheck、137 项单测、2 项压力测试、20 路由构建和全量 27 项 Playwright 已通过。
-- [ ] 提交功能快照，在独立干净工作树复验后推送、创建 PR，并等待两轮 GitHub CI 与最终合并审计。
+- [x] 功能快照 `7e81ea6` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
+- [ ] 推送分支并自主创建 PR，等待两轮 GitHub CI、远端漂移与审查审计后安全合并。
 
 ## 硬门禁
 
