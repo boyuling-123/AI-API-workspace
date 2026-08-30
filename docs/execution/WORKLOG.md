@@ -868,3 +868,57 @@
 - 首轮远端门禁没有调用真实或付费模型，也没有自动启动 AI 评价。
 
 下一步：让本次 CI 证据回写提交自身通过两道 GitHub CI，再执行远端漂移、Review/线程和可合并状态审计后安全合并 PR #34。
+## 2026-08-30：PR 06G 最终合并与 PR 06H 页面接入
+
+- PR #32 最终文档提交对应 workflow run `33297951993` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 再次获取远端后确认 `main` 保持预期基线，PR Head 与远端分支一致，PR 非草稿且可合并，无 Review 或未解决线程。
+- 以普通 fast-forward 推送到 `main`，未强推或改写历史；GitHub 确认 PR #32 为 Merged，合并 SHA 为 `1720250`。
+- 从合并提交创建短生命周期分支 `codex/feat-multi-judge-calibration-ui`，只补齐 JUDGE-005 页面闭环，不混入后端存储或其他业务专题。
+- 默认单 Judge 路径和既有文案保持兼容；多 Judge 模式要求显式选择 `2-5` 个模型，实时展示 `Case × Judge` 精确调用矩阵，选择不足时禁止启动。
+- 费用确认弹窗列出 Judge 集合、仲裁策略、精确调用公式和零次被测模型调用；取消不会请求，确认后才复用 PR 06G 核心执行。
+- 结果区新增逐 Judge 独立指标、Judge 内部分歧数和按 Case 展开的完整原始票，最终仲裁与单 Judge 历史继续使用同一持久化通道。
+- 新 Mock Playwright 以 `2 Case × 3 Judge = 6` 验证精确请求、真值隔离、取消零调用、持久化与刷新零新增请求；首次 Axe 验收发现宽表滚动区缺少键盘入口，最终改为无需横向滚动的紧凑指标卡后通过，未关闭规则。
+
+下一步：生成并人工检查 PR 06H 视觉证据，再执行完整本地门禁与独立干净环境复验。
+
+## 2026-08-30：PR 06H 本地完整验收
+
+- 视觉证据 `docs/evidence/pr-06h/multi-judge-calibration.png` 已人工检查；多 Judge 选择、策略、精确调用矩阵、最终指标、逐 Judge 指标与原始票在同一双栏工作台内可读。
+- 本地 `npm run quality` 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 全量 `npm run test:e2e` 通过 28 项 Playwright，新增场景同时覆盖配置区、费用确认弹窗和结果区 WCAG；既有批量、评价、版本、发布和重跑路径无回归。
+- 测试全部使用 Mock；确认前请求为零，确认后精确请求 6 次，刷新后不新增请求，未读取真实密钥或调用真实/付费模型。
+- JUDGE-005 当前具备完整代码、异常路径、真实源码测试、Mock 用户路径和视觉证据，状态升级为“已实现”；待独立干净环境与 GitHub CI 后才升级“已验证”。
+
+下一步：提交 PR 06H 功能快照，并在独立 detached 工作树全新安装依赖、重复 quality 与全量 Playwright。
+
+## 2026-08-30：PR 06H 独立干净环境复验
+
+- 多 Judge 工作台、Mock E2E、视觉证据与台账功能快照提交为 `3247632`，父提交为已合并的 `1720250`。
+- 在 `/tmp/eval-platform-pr06h-3247632` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 干净环境 `npm run test:e2e` 通过全部 28 项 Playwright；新增多 Judge 路径严格使用 Mock，未读取真实密钥或调用真实/付费模型。
+- 全部门禁结束后 detached HEAD 仍为 `3247632` 且 `git status --short` 无输出，证明本 PR 不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 06H，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-30：PR 06H 创建与首轮 GitHub CI
+
+- 独立环境证据提交为 `2833080`，分支已推送并自主创建 [PR #33](https://github.com/boyuling-123/AI-API-workspace/pull/33)。
+- PR 基线为 `main@1720250`、Head 为 `2833080`，包含 2 个提交与 9 个文件；GitHub 确认可自动合并。
+- workflow run `33298736070` 的 `Lint, test, build, and secret scan` 与 `Playwright user paths and accessibility` 两个 Job 全部成功。
+- JUDGE-005 已同时具备核心与页面代码、异常路径、真实源码测试、Mock 用户路径、独立干净环境、视觉证据和 GitHub CI Trace，状态升级为“已验证”。
+
+下一步：提交首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后，执行远端漂移、Review/线程与可合并状态审计，再安全合并 PR #33。
+
+## 2026-08-30：平台总览合并前发现并同步 PR 06H
+
+- PR #34 最终证据提交 `34ccc0c` 对应 workflow run `33298951938` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- 合并前审计发现远端 `main` 已从 `1720250` 前进到 `ff14ab5`；未覆盖远端、未强推，也未在 GitHub 标记不可合并时继续合并。
+- 漂移来源确认为已合并的 [PR #33](https://github.com/boyuling-123/AI-API-workspace/pull/33)：最终 workflow run `33298865195` 两道 CI 通过，JUDGE-005 已完成多 Judge 页面闭环并升级为“已验证”。
+- 使用普通 merge 将 `origin/main@ff14ab5` 合入平台总览分支；代码自动合并，4 份并行追加的台账文档人工保留双方事实。
+- 平台总览的 Judge 校准状态随真实代码升级为“已验证”，能力点更新为多 Judge 投票与分歧下钻；Agent 和 20GB 级后端化边界不变。
+- 同步后 `npm run quality` 通过 303 文件密钥扫描、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 使用 `CI=1` 启动本工作树专属服务后，全量 30 项 Playwright 与 WCAG 检查全部通过；PR 06H 新增路径和平台总览路径共同通过，无 API 或付费模型调用。
+
+下一步：提交同步结果并等待 PR #34 新 head 的两道 GitHub CI，再执行最终审计并安全合并。

@@ -3,7 +3,7 @@
 - 页面把当前平台规整为数据与跑批、模型接入、结果重跑、AI 评价、Judge 校准、Agent 外部召唤六条产品链路。
 - “跑批”继续作为默认首页与导航第一项；总览通过 `?tab=overview` 独立访问，不改变既有用户路径。
 - 项目资产卡和最近任务直接读取当前 `Project`，不会发起 API 请求或自动调用模型。
-- Agent/Skill 标为 `Demo`，多 Judge 页面闭环标为“部分实现”，20GB 级后端存储标为“设计中”，不夸大现状。
+- Agent/Skill 标为 `Demo`，多 Judge 页面闭环在 PR #33 合并后标为“已验证”，20GB 级后端存储标为“设计中”，不夸大现状。
 - Playwright 验证总览深链、能力状态、真实入口与零 API 调用；Axe 扫描 WCAG 2.0/2.1 A/AA 严重和致命问题。
 - 视觉证据 `platform-overview.png` 由 `CAPTURE_EVIDENCE=1` 的受控浏览器测试生成。
 - 本地 quality 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 29 项 Playwright 全部通过。
@@ -12,3 +12,5 @@
 - 功能快照 `04743ab` 在独立 detached 工作树全新安装 434 个包，并再次通过完整 quality 与 `CI=1` 的 29 项 Playwright；测试结束后 Git 零改动。
 - 干净环境第一次非 CI 运行误复用了端口 3100 上另一工作树的旧开发服务，出现旧版 6 标签和随后连接拒绝；强制 `CI=1` 启动本提交专属服务后全量通过，未把该基础设施失败隐藏或计作成功。
 - [PR #34](https://github.com/boyuling-123/AI-API-workspace/pull/34) 首轮 workflow run `33298811346` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- 合并前发现 `main` 已前进到 PR #33 的 `ff14ab5` 后，使用普通 merge 安全同步；总览随真实能力把多 Judge 页面闭环更新为“已验证”。
+- 同步后本地 quality 通过 303 文件 Secret Scan、零警告 lint、typecheck、146 单测、2 压测和 20 路由构建；`CI=1` 全量 30 项 Playwright 通过。

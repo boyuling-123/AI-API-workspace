@@ -59,7 +59,13 @@ test("organizes platform capabilities without changing the default run entry", a
   await expect(page.getByRole("heading", { name: "Agent 与外部召唤" })).toBeVisible();
   await expect(page.getByText("大数据后端化 · 设计中", { exact: true })).toBeVisible();
   await expect(page.getByText("Demo", { exact: true })).toBeVisible();
-  await expect(page.getByText("部分实现", { exact: true })).toBeVisible();
+  const calibrationCard = page.getByRole("article").filter({
+    has: page.getByRole("heading", { name: "黄金集与 Judge 校准" }),
+  });
+  await expect(calibrationCard.getByText("已验证", { exact: true })).toBeVisible();
+  await expect(
+    calibrationCard.getByText("多 Judge 投票与分歧下钻", { exact: true })
+  ).toBeVisible();
   expect(safePage.apiRequests).toEqual([]);
 
   if (process.env.CAPTURE_EVIDENCE === "1") {
