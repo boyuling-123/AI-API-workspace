@@ -196,8 +196,18 @@ export interface ExportResultsParams {
   dimensions?: EvalDimension[];
   /** M9 可选：逐条评价结果，追加维度分、加权分、否决结果与文字结论。 */
   evaluations?: ExportEvaluationData[];
+  /** Case 筛选导出时附加命中类型、分值摘要与可解释依据。 */
+  caseMetadata?: ExportCaseMetadata[];
   /** 文件名中部前缀，默认「结果」；板块⑤导出评价记录时传「AI评价」（v4.3）。 */
   fileNamePrefix?: string;
+}
+
+export interface ExportCaseMetadata {
+  inputId: string;
+  matchedSignals: string[];
+  lowestWeightedScore?: number;
+  scoreSpread?: number;
+  details: string[];
 }
 
 const STATUS_LABEL: Record<ResultItem["status"], string> = {
@@ -257,6 +267,7 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
     targetIds,
     dimensions,
     evaluations,
+    caseMetadata,
     fileNamePrefix,
   } = params;
   const dimensionList = dimensions ?? [];
@@ -305,9 +316,23 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
     );
   }
 
+  const hasCaseMetadata =
+    Array.isArray(caseMetadata) && caseMetadata.length > 0;
+  if (hasCaseMetadata) {
+    header.push(
+      ensureUniqueColumn("筛选命中", usedColumnNames),
+      ensureUniqueColumn("最低加权分", usedColumnNames),
+      ensureUniqueColumn("模型分差", usedColumnNames),
+      ensureUniqueColumn("筛选依据", usedColumnNames)
+    );
+  }
+
   const inputById = new Map(inputs.map((input) => [input.id, input]));
   const evaluationByInputId = new Map(
     (evaluations ?? []).map((evaluation) => [evaluation.inputId, evaluation])
+  );
+  const caseMetadataByInputId = new Map(
+    (caseMetadata ?? []).map((metadata) => [metadata.inputId, metadata])
   );
 
   const rows: (string | number)[][] = results.map((row, rowIndex) => {
@@ -362,6 +387,16 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
         );
       }
       line.push(evaluation?.summary ?? "", evaluation?.recommendation ?? "");
+    }
+
+    if (hasCaseMetadata) {
+      const metadata = caseMetadataByInputId.get(row.inputId);
+      line.push(
+        metadata?.matchedSignals.join("、") ?? "",
+        metadata?.lowestWeightedScore ?? "",
+        metadata?.scoreSpread ?? "",
+        metadata?.details.join("；") ?? ""
+      );
     }
 
     return line;

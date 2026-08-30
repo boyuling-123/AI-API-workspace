@@ -425,7 +425,7 @@
 - [x] 分支已推送并自主创建 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35)；首轮 workflow run `33299671151` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终证据提交 workflow run `33299834504` 两道 CI 通过；远端无漂移、Head 一致、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35)，合并 SHA 为 `2d6d6f8`。
 
-## 进行中：PR 07B 评价综合榜与动态维度重排
+## 已完成：PR 07B 评价综合榜与动态维度重排
 
 分支：`codex/feat-evaluation-leaderboard`
 
@@ -437,7 +437,21 @@
 - [x] 视觉证据 `docs/evidence/pr-07b/evaluation-leaderboard.png` 已人工检查；本地 quality 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项单测、2 项压力测试和 20 路由构建，全量 32 项 Playwright 通过。
 - [x] 功能快照 `95335f4` 在独立 detached 工作树全新安装 434 个依赖；quality 与 `CI=1` 全量 32 项 Playwright 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #37](https://github.com/boyuling-123/AI-API-workspace/pull/37)；首轮 workflow run `33300809061` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
+- [x] 最终文档提交对应 workflow run `33300962942` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #37](https://github.com/boyuling-123/AI-API-workspace/pull/37)，合并 SHA 为 `f7f59b0`。
+
+## 进行中：PR 07C 评价 Case 组合筛选与精确导出
+
+分支：`codex/feat-evaluation-case-filters`
+
+- [x] 固定四类可解释规则：低分默认 `< 6`、模型分歧默认分差 `>= 2`、高风险为一票否决或加权分 `<= 3`、失败为运行失败/中断/缺结果或评价分缺失。
+- [x] 旧评价优先读取历史加权分；只有缺少加权分且全部维度分完整合法时才按原权重确定性补算，缺失值不补零且不写回历史。
+- [x] 历史详情支持任一/全部组合、阈值调整、一键清除、命中计数、逐 Case 依据标签、零命中空态和明确的 0 次模型调用边界。
+- [x] “导出当前筛选”保留命中 Case 的完整输入、全部模型输出与原始评价，并追加命中类型、最低加权分、模型分差和具体依据；缺少来源结果时仍保留空结果行。
+- [x] 5 项真实源码单测覆盖四类信号隔离、任一/全部、阈值、旧记录与缺失维度、稳定导出及输入不变。
+- [x] Mock Playwright 以 5 Case 覆盖四类信号、联合命中、空态、清除、阈值、xlsx 回读、刷新零新增请求、390px 无溢出和 WCAG。
+- [x] 视觉证据已生成并人工检查；本地 quality 通过 321 文件密钥扫描、零警告 lint、typecheck、162 项单测、2 项压力测试和 20 路由构建，全量 33 项 Playwright/WCAG 通过。
+- [ ] 在独立 detached 工作树全新安装依赖并重复完整门禁，确认 Git 状态零改动。
+- [ ] 推送分支、自主创建 PR 07C，等待两道 GitHub CI 后审计并安全合并。
 
 ## 硬门禁
 

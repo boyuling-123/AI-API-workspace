@@ -14,6 +14,18 @@ import { ImageLightbox } from "@/components/result/ImageLightbox";
 import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
 import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 import { EvaluationLeaderboard } from "./EvaluationLeaderboard";
+import { EvaluationCaseFilterPanel } from "./EvaluationCaseFilterPanel";
+import {
+  DEFAULT_DISAGREEMENT_THRESHOLD,
+  DEFAULT_LOW_SCORE_THRESHOLD,
+  EVALUATION_CASE_SIGNAL_LABELS,
+  buildEvaluationCaseExportSelection,
+  buildEvaluationCaseInsights,
+  filterEvaluationCaseInsights,
+  type EvaluationCaseInsight,
+  type EvaluationCaseMatchMode,
+  type EvaluationCaseSignal,
+} from "@/lib/evaluationCaseFilter";
 
 interface EvalHistoryPanelProps {
   /** 唯一数据来源：Project.evaluations（v4.3 增量2）。 */
@@ -243,8 +255,10 @@ export function EvalHistoryPanel({
       {viewingRecord ? (
         viewingTask ? (
           <EvalDetailTable
+            key={viewingRecord.id}
             record={viewingRecord}
             task={viewingTask}
+            projectName={projectName}
             onImageClick={setLightboxSrc}
           />
         ) : (
@@ -283,6 +297,7 @@ function formatExpectedColumn(column?: string): string {
 interface EvalDetailTableProps {
   record: EvaluationRecord;
   task: Task;
+  projectName: string;
   onImageClick: (src: string) => void;
 }
 
@@ -290,7 +305,23 @@ interface EvalDetailTableProps {
  * 评价详情表格（v4.5 多维度）：每「输入×目标」一行，列：# | 模型/算法 | 入参 | 出参 |
  * 各维度评分（每维度一列，hover 看理由） | 加权分 | 策略结果 | 总体点评。
  */
-function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
+function EvalDetailTable({
+  record,
+  task,
+  projectName,
+  onImageClick,
+}: EvalDetailTableProps) {
+  const [selectedSignals, setSelectedSignals] = useState<
+    EvaluationCaseSignal[]
+  >([]);
+  const [matchMode, setMatchMode] =
+    useState<EvaluationCaseMatchMode>("any");
+  const [lowScoreThreshold, setLowScoreThreshold] = useState(
+    DEFAULT_LOW_SCORE_THRESHOLD
+  );
+  const [disagreementThreshold, setDisagreementThreshold] = useState(
+    DEFAULT_DISAGREEMENT_THRESHOLD
+  );
   const dimensions = record.dimensions ?? [];
   const detailsTargetId = `evaluation-case-details-${record.id}`;
 
@@ -343,9 +374,86 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
       targetName,
     }));
   }, [task.results]);
-
-  const evaluatedInputIds = record.results.map((item) => item.inputId);
+  const caseInsights = useMemo(
+    () =>
+      buildEvaluationCaseInsights(record, task, {
+        lowScore: lowScoreThreshold,
+        disagreement: disagreementThreshold,
+      }),
+    [record, task, lowScoreThreshold, disagreementThreshold]
+  );
+  const visibleInsights = useMemo(
+    () =>
+      filterEvaluationCaseInsights(caseInsights, {
+        signals: selectedSignals,
+        matchMode,
+      }),
+    [caseInsights, selectedSignals, matchMode]
+  );
+  const evaluationByInputId = useMemo(
+    () => new Map(record.results.map((item) => [item.inputId, item])),
+    [record.results]
+  );
+  const visibleEvaluations = visibleInsights.flatMap((insight) => {
+    const evaluation = evaluationByInputId.get(insight.inputId);
+    return evaluation ? [evaluation] : [];
+  });
+  const visibleInsightByInputId = useMemo(
+    () => new Map(visibleInsights.map((insight) => [insight.inputId, insight])),
+    [visibleInsights]
+  );
   const dimensionColSpan = dimensions.length + 3; // 维度列 + 加权分 + 策略结果 + 总体点评
+
+  const handleToggleSignal = (signal: EvaluationCaseSignal) => {
+    setSelectedSignals((current) =>
+      current.includes(signal)
+        ? current.filter((item) => item !== signal)
+        : [...current, signal]
+    );
+  };
+
+  const handleClearFilters = () => {
+    setSelectedSignals([]);
+    setMatchMode("any");
+    setLowScoreThreshold(DEFAULT_LOW_SCORE_THRESHOLD);
+    setDisagreementThreshold(DEFAULT_DISAGREEMENT_THRESHOLD);
+  };
+
+  const handleFilteredExport = () => {
+    const selection = buildEvaluationCaseExportSelection(
+      record,
+      task,
+      visibleInsights.map((insight) => insight.inputId)
+    );
+    const selectedSignalSet = new Set(selectedSignals);
+    exportResultsToExcel({
+      projectName,
+      inputs: selection.inputs,
+      results: selection.results,
+      targetIds: task.targetIds,
+      dimensions: record.dimensions,
+      evaluations: selection.evaluations,
+      caseMetadata: visibleInsights.map((insight) => {
+        const matchedSignals = insight.signals.filter(
+          (signal) =>
+            selectedSignalSet.size === 0 || selectedSignalSet.has(signal)
+        );
+        return {
+          inputId: insight.inputId,
+          matchedSignals: matchedSignals.map(
+            (signal) => EVALUATION_CASE_SIGNAL_LABELS[signal]
+          ),
+          lowestWeightedScore: insight.lowestScore ?? undefined,
+          scoreSpread: insight.scoreSpread ?? undefined,
+          details: matchedSignals.flatMap((signal) => insight.details[signal]),
+        };
+      }),
+      fileNamePrefix:
+        selectedSignals.length > 0
+          ? `AI评价_筛选${selection.evaluations.length}条`
+          : "AI评价_全部Case",
+    });
+  };
 
   return (
     <>
@@ -361,11 +469,40 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
       >
       <h2 className="text-base font-semibold">评价详情（按维度）</h2>
 
+      <EvaluationCaseFilterPanel
+        insights={caseInsights}
+        visibleCount={visibleInsights.length}
+        selectedSignals={selectedSignals}
+        matchMode={matchMode}
+        lowScoreThreshold={lowScoreThreshold}
+        disagreementThreshold={disagreementThreshold}
+        onToggleSignal={handleToggleSignal}
+        onMatchModeChange={setMatchMode}
+        onLowScoreThresholdChange={(value) =>
+          setLowScoreThreshold(clampFilterThreshold(value))
+        }
+        onDisagreementThresholdChange={(value) =>
+          setDisagreementThreshold(clampFilterThreshold(value))
+        }
+        onClear={handleClearFilters}
+        onExport={handleFilteredExport}
+      />
+
+      {visibleInsights.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-slate-300 bg-slate-50 px-4 py-10 text-center">
+          <p className="text-sm font-medium text-slate-700">
+            当前组合没有命中 Case
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            可以降低阈值、切换为“匹配任一条件”，或清除筛选恢复全部历史。
+          </p>
+        </div>
+      ) : (
       <div className="overflow-x-auto rounded-lg border border-gray-200">
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500">
             <tr>
-              <th className="w-16 px-3 py-2">#</th>
+              <th className="w-32 px-3 py-2">#</th>
               <th className="w-40 px-3 py-2">使用的模型 / 算法</th>
               <th className="px-3 py-2">输入（入参）</th>
               <th className="px-3 py-2">出参</th>
@@ -391,7 +528,8 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
             </tr>
           </thead>
           <tbody>
-            {evaluatedInputIds.map((inputId, rowIndex) => {
+            {visibleInsights.map((insight) => {
+              const inputId = insight.inputId;
               const input = inputById.get(inputId);
               const row = resultByInputId.get(inputId);
               const items = row?.items ?? [];
@@ -399,7 +537,7 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
                 return (
                   <tr key={inputId} className="border-t border-gray-100">
                     <td className="px-3 py-2.5 text-gray-500">
-                      第{rowIndex + 1}条
+                      <CaseIndexCell insight={insight} />
                     </td>
                     <td className="px-3 py-2.5 text-xs text-gray-400">—</td>
                     <td className="px-3 py-2.5">
@@ -432,7 +570,7 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
                         rowSpan={items.length}
                         className="border-r border-gray-100 px-3 py-2.5 font-medium text-gray-500"
                       >
-                        第{rowIndex + 1}条
+                        <CaseIndexCell insight={insight} />
                       </td>
                     ) : null}
                     <td className="px-3 py-2.5 text-gray-800">
@@ -505,18 +643,20 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
           </tbody>
         </table>
       </div>
+      )}
 
       {/* 各输入的总结 / 推荐 */}
       <div className="flex flex-col gap-2">
-        {record.results.map((item, index) => {
+        {visibleEvaluations.map((item) => {
           if (!item.summary && !item.recommendation) return null;
+          const insight = visibleInsightByInputId.get(item.inputId);
           return (
             <div
               key={item.inputId}
               className="rounded-md border border-gray-100 bg-gray-50/60 px-3 py-2 text-xs"
             >
               <span className="font-medium text-gray-600">
-                第{index + 1}条结论：
+                第{(insight?.sourceIndex ?? 0) + 1}条结论：
               </span>
               {item.summary && (
                 <span className="text-gray-700">{item.summary}</span>
@@ -533,6 +673,39 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
       </section>
     </>
   );
+}
+
+const CASE_SIGNAL_BADGE_CLASSES: Record<EvaluationCaseSignal, string> = {
+  low_score: "border-amber-200 bg-amber-50 text-amber-800",
+  disagreement: "border-sky-200 bg-sky-50 text-sky-800",
+  high_risk: "border-rose-200 bg-rose-50 text-rose-800",
+  failure: "border-slate-300 bg-slate-100 text-slate-700",
+};
+
+function CaseIndexCell({ insight }: { insight: EvaluationCaseInsight }) {
+  return (
+    <div className="flex min-w-24 flex-col gap-1.5">
+      <span>第{insight.sourceIndex + 1}条</span>
+      {insight.signals.length > 0 && (
+        <span className="flex flex-wrap gap-1">
+          {insight.signals.map((signal) => (
+            <span
+              key={signal}
+              title={insight.details[signal].join("；")}
+              className={`rounded border px-1.5 py-0.5 text-[10px] font-medium ${CASE_SIGNAL_BADGE_CLASSES[signal]}`}
+            >
+              {EVALUATION_CASE_SIGNAL_LABELS[signal]}
+            </span>
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function clampFilterThreshold(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.min(10, Math.max(0, Math.round(value * 10) / 10));
 }
 
 function InputCell({ input }: { input?: TaskInput }) {
