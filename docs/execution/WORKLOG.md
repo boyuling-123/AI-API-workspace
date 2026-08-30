@@ -846,3 +846,15 @@
 - 本地 `npm run quality` 通过 300 文件密钥扫描、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 29 项 Playwright 用户路径全部通过。
 
 下一步：提交功能快照，在独立干净环境全新安装依赖并重复全部门禁，再自主创建平台总览短 PR。
+
+## 2026-08-30：平台总览短 PR 独立干净环境复验
+
+- 平台总览、真实项目统计、导航、移动端工具栏、Mock E2E、视觉证据与文档功能快照提交为 `04743ab`，父提交为已合并的 `main@1720250`。
+- 在 `/tmp/eval-platform-overview-clean-04743ab` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由生产构建。
+- 第一次非 CI Playwright 误复用端口 3100 上另一工作树的旧开发服务，先读到旧版 6 标签，随后出现连接拒绝；该次运行明确记为失败，不计入门禁。
+- 改用 `CI=1` 禁止复用服务并由 Playwright 启动本提交专属开发服务后，全量 29 项用户路径与 WCAG 检查全部通过。
+- 测试结束后 detached HEAD 仍为 `04743ab` 且 `git status --short` 无输出；本 PR 不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交干净环境证据，推送分支并自主创建平台总览短 PR，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。

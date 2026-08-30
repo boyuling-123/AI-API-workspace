@@ -390,7 +390,8 @@
 - [x] 定向 Playwright 通过总览深链、七标签、真实状态、入口跳转、零 API 调用、390px 无溢出和 Axe WCAG，共 8 项。
 - [x] 保存并人工检查 `docs/evidence/pr-platform-overview/platform-overview.png`。
 - [x] 本地 quality 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；全量 29 项 Playwright 全部通过。
-- [ ] 完成全量 quality、Playwright 与独立干净环境复验后，自主创建并合并短 PR。
+- [x] 功能快照 `04743ab` 在独立 detached 工作树全新安装 434 个包，quality 与 `CI=1` 的 29 项 Playwright 全部通过，结束时 Git 零改动。
+- [ ] 推送分支、自主创建短 PR，等待两道 GitHub CI 后审计并安全合并。
 
 ## 硬门禁
 
