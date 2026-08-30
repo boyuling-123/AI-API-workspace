@@ -77,6 +77,8 @@ export interface Project {
   evaluations: EvaluationRecord[];
   /** 已保存的不可变 Evaluator 版本；旧项目可缺省。 */
   evaluatorVersions?: EvaluatorVersion[];
+  /** 人工标注黄金集的不可变版本；旧项目可缺省。 */
+  goldenDatasetVersions?: GoldenDatasetVersion[];
 }
 
 export interface Task {
@@ -343,6 +345,37 @@ export interface EvaluatorVersion {
   /** 完整执行定义指纹，用于识别页面草稿是否已修改。 */
   definitionFingerprint: string;
   /** 身份、版本元数据与执行定义的完整快照指纹。 */
+  integrityFingerprint: string;
+}
+
+export type GoldenHumanLabel = "pass" | "fail";
+
+/** Judge 校准使用的一条人工真值，不包含任何 Judge 运行结果。 */
+export interface GoldenDatasetCase {
+  caseId: string;
+  prompt: string;
+  candidateOutput: string;
+  expectedAnswer?: string;
+  humanLabel: GoldenHumanLabel;
+  humanScore?: number;
+  reviewerNote?: string;
+}
+
+/**
+ * 人工黄金集不可变快照。已发布版本只能读取；修改时必须追加新版本。
+ */
+export interface GoldenDatasetVersion {
+  id: string;
+  /** 同一黄金集家族的稳定 id。 */
+  datasetId: string;
+  version: number;
+  name: string;
+  createTime: number;
+  createdBy: string;
+  changeNote?: string;
+  sourceFileName?: string;
+  cases: GoldenDatasetCase[];
+  contentFingerprint: string;
   integrityFingerprint: string;
 }
 

@@ -257,7 +257,7 @@
 - [x] 分支已推送并创建 [PR #24](https://github.com/boyuling-123/AI-API-workspace/pull/24)；首轮 workflow run `33290243949` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33290477614` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #24 为 Merged，合并 SHA 为 `8623da4`。
 
-## 进行中：PR 05D 少量试评与复用输出重新评价
+## 已完成：PR 05D 少量试评与复用输出重新评价
 
 分支：`codex/feat-evaluator-trial-rerun`
 
@@ -271,7 +271,20 @@
 - [x] 本地 quality 通过 259 文件密钥扫描、零 lint、typecheck、104 项单测、2 项压力测试和 19 路由构建；全量 22 项 Playwright 通过。
 - [x] 功能快照 `a9ffa6e` 在独立干净工作树全新安装 434 个包，quality 与 22 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #25](https://github.com/boyuling-123/AI-API-workspace/pull/25)；首轮 workflow run `33292294441` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 推送首轮 CI 验收回写，完成第二轮 GitHub CI、远端漂移/审查检查与安全合并。
+- [x] 最终文档提交对应 workflow run `33292408679` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #25 为 Merged，合并 SHA 为 `ad430a3`。
+
+## 进行中：PR 06A 黄金集领域模型与严格导入边界
+
+分支：`codex/feat-judge-golden-dataset`
+
+- [x] 定义黄金 Case 与不可变 `GoldenDatasetVersion`，保持项目字段可选，不破坏当前 schema 的既有本地项目。
+- [x] 支持 Excel、CSV、JSON、JSONL 严格解析，返回字段映射、未使用列与逐行阻断问题，不猜测缺失字段。
+- [x] 黄金 Case 明确保存输入、候选输出、可选标准答案、人工 pass/fail 标签、可选分数和复核说明。
+- [x] v1 发布后快照不可变；追加 vN+1 时要求变更说明，旧版本保持不变并执行内容与元数据完整性校验。
+- [x] 8 项真实源码单测覆盖双语映射、真实 Excel、非法标签、重复 ID、越界分数、JSON 边界、版本追加、篡改和脱敏。
+- [ ] 在独立干净工作树复验，推送分支并完成 GitHub CI、PR 与安全合并。
+
+下一连续小 PR：PR 06B 独立 Judge 校准页、字段映射预览、人工核对、版本库、Mock E2E 与视觉证据。
 
 ## 硬门禁
 

@@ -574,3 +574,20 @@
 - PROMPT-003 与 PROMPT-008 已具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #25。
+
+## 2026-08-30：PR 05D 合并与 PR 06A 启动
+
+- PR #25 最终文档提交对应 workflow run `33292408679` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 确认远端 `main` 保持在预期基线 `8623da4`、PR 可合并且无 Review 或未解决线程后，以普通 fast-forward 安全合并；GitHub 确认 Merged，合并 SHA 为 `ad430a3`。
+- 本地 `main` 与 `origin/main` 同步到 `ad430a3`，随后创建短生命周期分支 `codex/feat-judge-golden-dataset`，本轮只领取 JUDGE-003。
+
+## 2026-08-30：PR 06A 黄金集领域模型与导入边界
+
+- 提交前审计发现完整黄金集切片达到约 1800 行，因此按短生命周期原则拆成两个连续 PR；本 PR 只保留可独立验收的领域、解析与真实源码测试。
+- 新增人工真值 Case，明确保存 Case ID、输入、候选输出、可选标准答案、pass/fail 标签、可选 0–10 分和复核说明。
+- 严格导入支持 Excel、CSV、JSON 与 JSONL，只接受明确数组或 `items/data` 容器；缺必填列、非法标签、重复 ID 和越界分数均进入结构化问题列表，不静默跳过或猜测。
+- 新增不可变 `GoldenDatasetVersion`：v1 发布后只能读取，追加 vN+1 必须存在完整家族并填写变更说明；旧快照不变，内容与元数据分别校验指纹。
+- `Project.goldenDatasetVersions` 保持可选并在新项目初始化为空数组，因此不提升 schema 版本、不清理用户当前 IndexedDB 项目。
+- `goldenDataset.test.ts` 共 8 项，直接覆盖双语字段、真实 Excel 工作簿、严格 JSON、非法数据、版本追加、深拷贝、篡改和敏感值脱敏。
+
+下一步：提交 PR 06A 精确功能快照，在独立干净工作树复验 quality 与既有 22 项 Playwright；管理页、E2E 与视觉证据保留给 PR 06B。
