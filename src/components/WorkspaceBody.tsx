@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CalibrationReviewEvent,
+  EvaluationReviewEvent,
   EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetVersion,
@@ -452,6 +453,23 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [updateProject]
   );
 
+  const handleSaveEvaluationReviewEvent = useCallback(
+    (event: EvaluationReviewEvent) => {
+      updateProject(
+        (current) => {
+          const existing = current.evaluationReviewEvents ?? [];
+          if (existing.some((item) => item.id === event.id)) return current;
+          return {
+            ...current,
+            evaluationReviewEvents: [...existing, event],
+          };
+        },
+        { immediate: true }
+      );
+    },
+    [updateProject]
+  );
+
   // v4.3 增量2：删除某条历史评价记录。
   const handleDeleteEvaluation = useCallback(
     (evaluationId: string) => {
@@ -796,10 +814,12 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           <EvalHistoryPanel
             evaluations={project.evaluations ?? []}
             evaluatorVersions={project.evaluatorVersions ?? []}
+            reviewEvents={project.evaluationReviewEvents ?? []}
             tasks={project.tasks}
             projectName={project.name}
             onDelete={handleDeleteEvaluation}
             onAddDimensions={handleAddEvaluationDimensions}
+            onSaveReview={handleSaveEvaluationReviewEvent}
           />
         </div>
       ) : (

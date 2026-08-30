@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type {
   EvaluationRecord,
+  EvaluationReviewEvent,
   EvaluatorVersion,
   ResultItem,
   Task,
@@ -15,6 +16,7 @@ import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
 import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 import { EvaluationLeaderboard } from "./EvaluationLeaderboard";
 import { EvaluationCaseFilterPanel } from "./EvaluationCaseFilterPanel";
+import { EvaluationHumanReviewPanel } from "./EvaluationHumanReviewPanel";
 import {
   DEFAULT_DISAGREEMENT_THRESHOLD,
   DEFAULT_LOW_SCORE_THRESHOLD,
@@ -26,16 +28,23 @@ import {
   type EvaluationCaseMatchMode,
   type EvaluationCaseSignal,
 } from "@/lib/evaluationCaseFilter";
+import {
+  buildLatestEvaluationReviewMap,
+  evaluationReviewKey,
+  isEvaluationReviewEventIntact,
+} from "@/lib/evaluationReview";
 
 interface EvalHistoryPanelProps {
   /** 唯一数据来源：Project.evaluations（v4.3 增量2）。 */
   evaluations: EvaluationRecord[];
   evaluatorVersions: EvaluatorVersion[];
+  reviewEvents: EvaluationReviewEvent[];
   /** 用于回查来源批次的入参/出参（按 sourceTaskId 关联）。 */
   tasks: Task[];
   projectName: string;
   onDelete: (evaluationId: string) => void;
   onAddDimensions: (record: EvaluationRecord, task: Task) => void;
+  onSaveReview: (event: EvaluationReviewEvent) => void;
 }
 
 const TEXT_TRUNCATE_LENGTH = 120;
@@ -47,10 +56,12 @@ const TEXT_TRUNCATE_LENGTH = 120;
 export function EvalHistoryPanel({
   evaluations,
   evaluatorVersions,
+  reviewEvents,
   tasks,
   projectName,
   onDelete,
   onAddDimensions,
+  onSaveReview,
 }: EvalHistoryPanelProps) {
   const [viewingId, setViewingId] = useState<string | null>(null);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
@@ -259,7 +270,9 @@ export function EvalHistoryPanel({
             record={viewingRecord}
             task={viewingTask}
             projectName={projectName}
+            reviewEvents={reviewEvents}
             onImageClick={setLightboxSrc}
+            onSaveReview={onSaveReview}
           />
         ) : (
           <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400">
@@ -298,18 +311,22 @@ interface EvalDetailTableProps {
   record: EvaluationRecord;
   task: Task;
   projectName: string;
+  reviewEvents: EvaluationReviewEvent[];
   onImageClick: (src: string) => void;
+  onSaveReview: (event: EvaluationReviewEvent) => void;
 }
 
 /**
  * 评价详情表格（v4.5 多维度）：每「输入×目标」一行，列：# | 模型/算法 | 入参 | 出参 |
- * 各维度评分（每维度一列，hover 看理由） | 加权分 | 策略结果 | 总体点评。
+ * 各维度评分（每维度一列，hover 看理由） | 加权分 | 策略结果 | 总体点评 | 人工复核。
  */
 function EvalDetailTable({
   record,
   task,
   projectName,
+  reviewEvents,
   onImageClick,
+  onSaveReview,
 }: EvalDetailTableProps) {
   const [selectedSignals, setSelectedSignals] = useState<
     EvaluationCaseSignal[]
@@ -322,6 +339,12 @@ function EvalDetailTable({
   const [disagreementThreshold, setDisagreementThreshold] = useState(
     DEFAULT_DISAGREEMENT_THRESHOLD
   );
+  const [reviewingTarget, setReviewingTarget] = useState<{
+    inputId: string;
+    targetId: string;
+    sourceIndex: number;
+  } | null>(null);
+  const [reviewMessage, setReviewMessage] = useState("");
   const dimensions = record.dimensions ?? [];
   const detailsTargetId = `evaluation-case-details-${record.id}`;
 
@@ -402,7 +425,20 @@ function EvalDetailTable({
     () => new Map(visibleInsights.map((insight) => [insight.inputId, insight])),
     [visibleInsights]
   );
-  const dimensionColSpan = dimensions.length + 3; // 维度列 + 加权分 + 策略结果 + 总体点评
+  const latestReviewByKey = useMemo(
+    () => buildLatestEvaluationReviewMap(reviewEvents, record.id),
+    [record.id, reviewEvents]
+  );
+  const invalidReviewCount = useMemo(
+    () =>
+      reviewEvents.filter(
+        (event) =>
+          event.evaluationId === record.id &&
+          !isEvaluationReviewEventIntact(event)
+      ).length,
+    [record.id, reviewEvents]
+  );
+  const dimensionColSpan = dimensions.length + 4; // 维度列 + 加权分 + 策略结果 + 总体点评 + 人工复核
 
   const handleToggleSignal = (signal: EvaluationCaseSignal) => {
     setSelectedSignals((current) =>
@@ -455,6 +491,14 @@ function EvalDetailTable({
     });
   };
 
+  const handleSaveReview = (event: EvaluationReviewEvent) => {
+    onSaveReview(event);
+    setReviewMessage(
+      `已保存 ${event.targetName} 的人工复核版本；AI 原始评分未被修改。`
+    );
+    setReviewingTarget(null);
+  };
+
   return (
     <>
       <EvaluationLeaderboard
@@ -467,7 +511,12 @@ function EvalDetailTable({
         id={detailsTargetId}
         className="flex scroll-mt-4 flex-col gap-3 rounded-lg border border-gray-200 bg-white p-5"
       >
-      <h2 className="text-base font-semibold">评价详情（按维度）</h2>
+      <div>
+        <h2 className="text-base font-semibold">评价详情（按维度）</h2>
+        <p className="mt-1 text-xs text-slate-500">
+          人工复核后，详情展示当前有效人工分并保留 AI 原分；排行榜继续使用 AI 原分。
+        </p>
+      </div>
 
       <EvaluationCaseFilterPanel
         insights={caseInsights}
@@ -525,6 +574,7 @@ function EvalDetailTable({
               <th className="whitespace-nowrap px-3 py-2">加权分</th>
               <th className="whitespace-nowrap px-3 py-2">策略结果</th>
               <th className="px-3 py-2">总体点评</th>
+              <th className="w-40 px-3 py-2">人工复核</th>
             </tr>
           </thead>
           <tbody>
@@ -554,6 +604,15 @@ function EvalDetailTable({
               }
               return items.map((item, itemIndex) => {
                 const lookup = scoreLookup.get(`${inputId}__${item.targetId}`);
+                const review = latestReviewByKey.get(
+                  evaluationReviewKey(record.id, inputId, item.targetId)
+                );
+                const humanScoreByName = new Map(
+                  (review?.humanDimensionScores ?? []).map((score) => [
+                    score.dimension,
+                    score.score,
+                  ])
+                );
                 const dimScoreByName = new Map(
                   (lookup?.dimensionScores ?? []).map((dim) => [
                     dim.dimension,
@@ -589,13 +648,29 @@ function EvalDetailTable({
                     </td>
                     {dimensions.map((dimension) => {
                       const cell = dimScoreByName.get(dimension.name);
+                      const humanScore = humanScoreByName.get(dimension.name);
                       return (
                         <td
                           key={dimension.name}
                           className="px-3 py-2.5"
                           title={cell?.comment || ""}
                         >
-                          {cell ? (
+                          {humanScore !== undefined ? (
+                            <span className="flex min-w-16 flex-col">
+                              <span
+                                aria-label={`人工有效分 ${humanScore.toFixed(1)}`}
+                                className="font-semibold text-teal-700"
+                              >
+                                {humanScore.toFixed(1)}
+                                <span className="ml-1 text-[10px] font-medium text-teal-600">
+                                  人工
+                                </span>
+                              </span>
+                              <span className="text-[10px] font-normal text-slate-400">
+                                AI {cell?.score.toFixed(1) ?? "—"}
+                              </span>
+                            </span>
+                          ) : cell ? (
                             <span className="font-semibold text-blue-600">
                               {cell.score.toFixed(1)}
                               {cell.comment && (
@@ -611,19 +686,41 @@ function EvalDetailTable({
                       );
                     })}
                     <td className="px-3 py-2.5 font-semibold text-slate-700">
-                      {lookup?.weightedScore === undefined
-                        ? "—"
-                        : lookup.weightedScore.toFixed(2)}
+                      {review ? (
+                        <span className="flex min-w-16 flex-col">
+                          <span
+                            aria-label={`人工有效加权分 ${review.humanWeightedScore.toFixed(2)}`}
+                            className="text-teal-700"
+                          >
+                            {review.humanWeightedScore.toFixed(2)}
+                          </span>
+                          <span className="text-[10px] font-normal text-slate-400">
+                            AI {lookup?.weightedScore?.toFixed(2) ?? "—"}
+                          </span>
+                        </span>
+                      ) : lookup?.weightedScore === undefined ? (
+                        "—"
+                      ) : (
+                        lookup.weightedScore.toFixed(2)
+                      )}
                     </td>
                     <td
                       className={`px-3 py-2.5 text-xs font-semibold ${
-                        lookup?.vetoed
+                        (review?.humanVetoed ?? lookup?.vetoed)
                           ? "text-red-700"
                           : "text-emerald-700"
                       }`}
-                      title={lookup?.vetoReasons?.join("；") ?? ""}
+                      title={
+                        review
+                          ? review.humanVetoReasons.join("；")
+                          : lookup?.vetoReasons?.join("；") ?? ""
+                      }
                     >
-                      {lookup?.vetoed === undefined
+                      {review
+                        ? review.humanVetoed
+                          ? "人工：已否决"
+                          : "人工：未否决"
+                        : lookup?.vetoed === undefined
                         ? "—"
                         : lookup.vetoed
                           ? "已否决"
@@ -636,6 +733,44 @@ function EvalDetailTable({
                         )}
                       </span>
                     </td>
+                    <td className="px-3 py-2.5">
+                      <div className="flex min-w-32 flex-col items-start gap-1.5">
+                        {review && (
+                          <>
+                            <span className="text-[10px] text-slate-500">
+                              最新：{review.actor}
+                            </span>
+                            {review.isBadCase && (
+                              <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">
+                                Bad Case
+                              </span>
+                            )}
+                            <span
+                              title={review.note}
+                              className="max-w-32 truncate text-[10px] text-slate-400"
+                            >
+                              {review.note}
+                            </span>
+                          </>
+                        )}
+                        <button
+                          type="button"
+                          disabled={!lookup}
+                          onClick={() => {
+                            setReviewMessage("");
+                            setReviewingTarget({
+                              inputId,
+                              targetId: item.targetId,
+                              sourceIndex: insight.sourceIndex,
+                            });
+                          }}
+                          aria-label={`人工复核 第${insight.sourceIndex + 1}条 ${item.targetName}`}
+                          className="rounded-md border border-teal-200 bg-teal-50 px-2 py-1 text-[11px] font-semibold text-teal-800 hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          {review ? "继续复核" : "人工复核"}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               });
@@ -643,6 +778,31 @@ function EvalDetailTable({
           </tbody>
         </table>
       </div>
+      )}
+
+      {invalidReviewCount > 0 && (
+        <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          已隔离 {invalidReviewCount} 条完整性校验失败的人工复核记录，未用于当前有效分。
+        </p>
+      )}
+
+      {reviewMessage && (
+        <p role="status" className="rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-xs text-teal-800">
+          {reviewMessage}
+        </p>
+      )}
+
+      {reviewingTarget && (
+        <EvaluationHumanReviewPanel
+          key={`${reviewingTarget.inputId}:${reviewingTarget.targetId}`}
+          record={record}
+          inputId={reviewingTarget.inputId}
+          targetId={reviewingTarget.targetId}
+          sourceIndex={reviewingTarget.sourceIndex}
+          events={reviewEvents}
+          onSave={handleSaveReview}
+          onClose={() => setReviewingTarget(null)}
+        />
       )}
 
       {/* 各输入的总结 / 推荐 */}

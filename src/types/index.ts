@@ -85,6 +85,8 @@ export interface Project {
   evaluatorReleases?: EvaluatorRelease[];
   /** 高风险校准 Case 的领取与人工复核事件；只追加，旧项目可缺省。 */
   calibrationReviewEvents?: CalibrationReviewEvent[];
+  /** 通用评价 Case 的人工改分、Bad Case 与意见事件；只追加，旧项目可缺省。 */
+  evaluationReviewEvents?: EvaluationReviewEvent[];
 }
 
 export interface Task {
@@ -653,6 +655,37 @@ export interface EvaluationRecord {
     summary: string;
     recommendation: string;
   }[];
+}
+
+export interface EvaluationReviewScore {
+  dimension: string;
+  score: number;
+}
+
+/**
+ * 通用评价的人工覆盖事件。原 EvaluationRecord 永不改写；同一目标再次复核时
+ * 追加事件并引用上一版，最新完整事件作为详情页当前有效值。
+ */
+export interface EvaluationReviewEvent {
+  id: string;
+  reviewKey: string;
+  evaluationId: string;
+  inputId: string;
+  targetId: string;
+  targetName: string;
+  actor: string;
+  createTime: number;
+  previousEventId?: string;
+  originalDimensionScores: EvaluationReviewScore[];
+  originalWeightedScore?: number;
+  originalVetoed?: boolean;
+  humanDimensionScores: EvaluationReviewScore[];
+  humanWeightedScore: number;
+  humanVetoed: boolean;
+  humanVetoReasons: string[];
+  isBadCase: boolean;
+  note: string;
+  integrityFingerprint: string;
 }
 
 export interface NormalizedLlmOutput {
