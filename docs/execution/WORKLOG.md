@@ -625,3 +625,14 @@
 - 视觉证据 `docs/evidence/pr-06b/golden-dataset-versions.png` 已按当前代码重新生成并人工检查，独立页面、版本状态与费用边界清晰。
 
 下一步：提交 PR 06B 功能快照，在独立干净工作树全新安装依赖并重复全部门禁，再自主推送、创建 PR 和完成 GitHub CI。
+
+## 2026-08-30：PR 06B 独立干净环境复验
+
+- 页面、用户路径、视觉证据和台账功能快照提交为 `23fdb21`，父提交为已合并的 `50cdc17`；原工作树提交后零改动。
+- 在 `/tmp/eval-platform-pr06b-23fdb21` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 267 文件 Secret Scan、零 lint、typecheck、112 项真实源码单测、2 项压力测试和 19 路由生产构建。
+- 干净环境 `npm run test:e2e` 通过全部 23 项 Playwright；黄金集路径使用 Mock 并精确断言没有 `/api/**` 请求，未调用真实或付费模型。
+- 全部门禁结束后 detached HEAD 仍为 `23fdb21` 且 `git status --short` 无输出，证明本 PR 不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 06B，等待 GitHub 核心质量与 Playwright 两道 CI。

@@ -296,7 +296,8 @@
 - [x] 页面明确显示本流程 0 次 Judge 调用，Mock E2E 拦截并断言全部 `/api/**` 调用为空。
 - [x] 保存并人工检查 `docs/evidence/pr-06b/golden-dataset-versions.png`；页面通过 WCAG 严重与致命问题扫描。
 - [x] 本地 quality 通过 267 文件密钥扫描、零 lint、typecheck、112 项单测、2 项压力测试和 19 路由构建；全量 23 项 Playwright 通过。
-- [ ] 提交功能快照，在独立干净工作树复验全部门禁，再自主创建 PR、通过 GitHub CI 并安全合并。
+- [x] 功能快照 `23fdb21` 在独立干净工作树全新安装 434 个包，quality 与 23 项 Playwright 全部通过，结束时 Git 零改动。
+- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
 
 ## 硬门禁
 
