@@ -12,6 +12,7 @@
 - 本地 quality 通过 248 文件密钥扫描、零 lint、typecheck、95 项真实源码单测、2 项压力测试和 19 路由构建；全量 20 项 Playwright 通过。
 - 功能提交 `34347aa` 在独立 detached 工作树通过全新 `npm ci`、完整 quality 与最终全量 20 项 Playwright，验收结束后 Git 零改动。
 - 独立环境第一次并行 E2E 的既有跑批恢复用例在冷编译时触发 30 秒总超时；该路径单 worker 复跑 9.2 秒通过，随后全量复跑 20/20 通过，失败 Trace 未被忽略。
+- [PR #23](https://github.com/boyuling-123/AI-API-workspace/pull/23) workflow run `33287622657` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 
 ## 安全边界
 

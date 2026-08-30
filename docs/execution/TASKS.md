@@ -239,7 +239,8 @@
 - [x] 保存并人工检查 `docs/evidence/pr-05b/evaluator-versions.png`；当前 95 项单测与全量 20 项 Playwright 通过。
 - [x] 本地 quality 通过 248 文件密钥扫描、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由构建；全量 20 项 Playwright 通过。
 - [x] 功能提交 `34347aa` 在独立干净工作树全新安装 434 个包，quality 与最终全量 20 项 Playwright 通过，结束时 Git 零改动。
-- [ ] 推送分支、创建 PR，完成双轮 GitHub CI 与安全合并。
+- [x] 推送分支并创建 [PR #23](https://github.com/boyuling-123/AI-API-workspace/pull/23)；workflow run `33287622657` 的核心质量与 Playwright 两个 Job 全部通过。
+- [ ] 最终文档提交自身两道 GitHub CI 通过后，确认远端 `main` 未漂移并安全合并。
 
 ## 硬门禁
 
