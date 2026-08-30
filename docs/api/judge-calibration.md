@@ -21,6 +21,11 @@
 - `item.expectedAnswer` 可选。
 - 人工 `humanLabel` 和 `reviewerNote` 不属于请求契约。即使调用方额外传入，服务端也会在构造 Judge Prompt 前丢弃。
 - Case 文本和判定标准进入 Prompt 前会执行敏感值脱敏。
+- `criteria` 最多 100,000 字符，可承载已确认的完整 Evaluator Prompt 与结构化维度；超限时在模型调用前返回 `400`。
+
+## Evaluator 变更重跑
+
+页面可把不可变 Evaluator 版本转换为 `criteria`，并在本地比较 Judge、维度、Prompt 和自定义标准是否变化。版本切换只生成重跑计划，不调用本接口；用户确认精确调用数后才逐 Case 请求。每次重跑会追加独立历史并关联基线，旧结果不会覆盖。
 
 ## 成功响应
 

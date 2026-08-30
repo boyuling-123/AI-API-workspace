@@ -11,8 +11,10 @@ vi.mock("@/services/llmClient", () => ({
 import {
   JudgeCalibrationValidationError,
   judgeGoldenCase,
+  parseJudgeCalibrationCriteria,
   parseJudgeCalibrationInput,
 } from "@/services/judgeCalibrationService";
+import { MAX_CALIBRATION_CRITERIA_LENGTH } from "@/lib/judgeCalibrationRerun";
 
 beforeEach(() => {
   mocks.chatWithModel.mockReset();
@@ -89,6 +91,18 @@ describe("Judge calibration service", () => {
         "严格判断"
       )
     ).rejects.toThrow("候选输出不能为空");
+    expect(mocks.chatWithModel).not.toHaveBeenCalled();
+  });
+
+  it("accepts a complete Evaluator definition but enforces the criteria limit", () => {
+    expect(
+      parseJudgeCalibrationCriteria("规".repeat(MAX_CALIBRATION_CRITERIA_LENGTH))
+    ).toHaveLength(MAX_CALIBRATION_CRITERIA_LENGTH);
+    expect(() =>
+      parseJudgeCalibrationCriteria(
+        "规".repeat(MAX_CALIBRATION_CRITERIA_LENGTH + 1)
+      )
+    ).toThrow(`不能超过 ${MAX_CALIBRATION_CRITERIA_LENGTH} 个字符`);
     expect(mocks.chatWithModel).not.toHaveBeenCalled();
   });
 

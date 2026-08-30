@@ -1,10 +1,10 @@
 import type { GoldenHumanLabel } from "@/types";
+import { MAX_CALIBRATION_CRITERIA_LENGTH } from "@/lib/judgeCalibrationRerun";
 import { redactSensitiveText } from "@/lib/redactSensitive";
 import { chatWithModel } from "@/services/llmClient";
 
 export const MAX_CALIBRATION_CASE_ID_LENGTH = 160;
 export const MAX_CALIBRATION_TEXT_LENGTH = 100_000;
-export const MAX_CALIBRATION_CRITERIA_LENGTH = 4_000;
 export const MAX_CALIBRATION_MODEL_ID_LENGTH = 160;
 
 export interface JudgeCalibrationInputItem {

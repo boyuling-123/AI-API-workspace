@@ -1,13 +1,22 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
+  EvaluatorVersion,
   GoldenDatasetVersion,
+  JudgeCalibrationChangeKind,
+  JudgeCalibrationCriteriaSource,
   JudgeCalibrationMetrics,
   JudgeCalibrationRun,
 } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
+import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 import { isGoldenDatasetVersionIntact } from "@/lib/goldenDataset";
+import {
+  buildEvaluatorCalibrationCriteria,
+  buildJudgeCalibrationRerunPlan,
+  JUDGE_CALIBRATION_CHANGE_LABELS,
+} from "@/lib/judgeCalibrationRerun";
 import { runJudgeCalibration } from "@/services/judgeCalibrationClient";
 
 interface JudgeModelOption {
@@ -17,6 +26,7 @@ interface JudgeModelOption {
 
 interface JudgeCalibrationPanelProps {
   versions: GoldenDatasetVersion[];
+  evaluatorVersions: EvaluatorVersion[];
   judgeModels: JudgeModelOption[];
   runs: JudgeCalibrationRun[];
   onSaveRun: (run: JudgeCalibrationRun) => void;
@@ -24,6 +34,7 @@ interface JudgeCalibrationPanelProps {
 
 const DEFAULT_CRITERIA =
   "候选输出必须满足事实正确、关键字段完整、格式合规且不存在明显业务风险，才判定为 pass。";
+const CUSTOM_EVALUATOR_VALUE = "__custom_criteria__";
 
 function formatPercent(value: number | null): string {
   if (value === null) return "不适用";
@@ -38,6 +49,106 @@ function runStatus(run: JudgeCalibrationRun): string {
   if (run.status === "done") return "完成";
   if (run.status === "partial") return "部分完成";
   return "失败";
+}
+
+function triggerText(run: JudgeCalibrationRun): string {
+  if (run.trigger === "configuration_change") return "配置变化重跑";
+  if (run.trigger === "manual_repeat") return "相同配置复跑";
+  return "首次校准";
+}
+
+function changeLabels(changeKinds: JudgeCalibrationChangeKind[]): string[] {
+  return changeKinds.map((kind) => JUDGE_CALIBRATION_CHANGE_LABELS[kind]);
+}
+
+function metricDelta(
+  current: number | null,
+  baseline: number | null,
+  digits = 1
+): string {
+  if (current === null || baseline === null) return "不适用";
+  const delta = (current - baseline) * 100;
+  const prefix = delta > 0 ? "+" : "";
+  return `${prefix}${delta.toFixed(digits)} pp`;
+}
+
+function CalibrationComparison({
+  baseline,
+  current,
+}: {
+  baseline: JudgeCalibrationRun;
+  current: JudgeCalibrationRun;
+}) {
+  const rows = [
+    {
+      label: "准确率",
+      before: formatPercent(baseline.metrics.accuracy),
+      after: formatPercent(current.metrics.accuracy),
+      delta: metricDelta(current.metrics.accuracy, baseline.metrics.accuracy),
+    },
+    {
+      label: "Cohen's κ",
+      before: formatKappa(baseline.metrics.cohenKappa),
+      after: formatKappa(current.metrics.cohenKappa),
+      delta:
+        current.metrics.cohenKappa === null ||
+        baseline.metrics.cohenKappa === null
+          ? "不适用"
+          : `${current.metrics.cohenKappa - baseline.metrics.cohenKappa >= 0 ? "+" : ""}${(
+              current.metrics.cohenKappa - baseline.metrics.cohenKappa
+            ).toFixed(3)}`,
+    },
+    {
+      label: "Bad Case 漏判率",
+      before: formatPercent(baseline.metrics.badCaseMissRate),
+      after: formatPercent(current.metrics.badCaseMissRate),
+      delta: metricDelta(
+        current.metrics.badCaseMissRate,
+        baseline.metrics.badCaseMissRate
+      ),
+    },
+  ];
+  return (
+    <section
+      aria-label="Judge 校准前后对比"
+      className="overflow-hidden rounded-xl border border-cyan-200 dark:border-cyan-500/30"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 bg-cyan-50 px-3 py-2 text-xs dark:bg-cyan-500/10">
+        <p className="font-semibold text-cyan-900 dark:text-cyan-100">
+          基线与本次结果
+        </p>
+        <p className="text-cyan-800 dark:text-cyan-200">
+          {changeLabels(current.changeKinds ?? []).join(" / ") || "相同配置"}
+        </p>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[420px] text-xs">
+          <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800">
+            <tr>
+              <th className="px-3 py-2 text-left">指标</th>
+              <th className="px-3 py-2 text-right">基线</th>
+              <th className="px-3 py-2 text-right">本次</th>
+              <th className="px-3 py-2 text-right">变化</th>
+            </tr>
+          </thead>
+          <tbody className="text-slate-700 dark:text-slate-200">
+            {rows.map((row) => (
+              <tr key={row.label} className="border-t border-slate-100 dark:border-slate-800">
+                <th className="px-3 py-2 text-left font-medium">{row.label}</th>
+                <td className="px-3 py-2 text-right">{row.before}</td>
+                <td className="px-3 py-2 text-right font-semibold">{row.after}</td>
+                <td className="px-3 py-2 text-right font-mono">{row.delta}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="border-t border-cyan-100 px-3 py-2 text-[11px] text-slate-500 dark:border-cyan-500/20 dark:text-slate-400">
+        基线：{baseline.evaluatorVersionName ?? "自定义标准"}
+        {baseline.evaluatorVersion ? ` v${baseline.evaluatorVersion}` : ""} · {formatDateTime(baseline.finishTime)}
+      </p>
+    </section>
+  );
 }
 
 function MetricsCards({ metrics }: { metrics: JudgeCalibrationMetrics }) {
@@ -63,6 +174,7 @@ function MetricsCards({ metrics }: { metrics: JudgeCalibrationMetrics }) {
 
 export function JudgeCalibrationPanel({
   versions,
+  evaluatorVersions,
   judgeModels,
   runs,
   onSaveRun,
@@ -78,6 +190,13 @@ export function JudgeCalibrationPanel({
     () => [...runs].sort((left, right) => right.finishTime - left.finishTime),
     [runs]
   );
+  const usableEvaluatorVersions = useMemo(
+    () =>
+      evaluatorVersions
+        .filter(isEvaluatorVersionIntact)
+        .sort((left, right) => left.createTime - right.createTime),
+    [evaluatorVersions]
+  );
   const [datasetVersionId, setDatasetVersionId] = useState("");
   const selectedVersion =
     usableVersions.find((item) => item.id === datasetVersionId) ??
@@ -85,7 +204,16 @@ export function JudgeCalibrationPanel({
   const [judgeModelId, setJudgeModelId] = useState("");
   const selectedJudge =
     judgeModels.find((item) => item.id === judgeModelId) ?? judgeModels[0];
+  const [evaluatorVersionId, setEvaluatorVersionId] = useState("");
+  const selectedEvaluator =
+    evaluatorVersionId === CUSTOM_EVALUATOR_VALUE
+      ? undefined
+      : usableEvaluatorVersions.find(
+          (item) => item.id === evaluatorVersionId
+        ) ?? usableEvaluatorVersions.at(-1);
   const [criteria, setCriteria] = useState(DEFAULT_CRITERIA);
+  const [criteriaSource, setCriteriaSource] =
+    useState<JudgeCalibrationCriteriaSource>("custom");
   const [concurrency, setConcurrency] = useState(3);
   const [confirming, setConfirming] = useState(false);
   const [largeRunConfirmation, setLargeRunConfirmation] = useState("");
@@ -94,8 +222,42 @@ export function JudgeCalibrationPanel({
   const [selectedRunId, setSelectedRunId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (!selectedEvaluator) return;
+    try {
+      setCriteria(buildEvaluatorCalibrationCriteria(selectedEvaluator));
+      setCriteriaSource("evaluator");
+      setError("");
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Evaluator 校准标准生成失败"
+      );
+    }
+  }, [selectedEvaluator]);
   const selectedRun =
     sortedRuns.find((item) => item.id === selectedRunId) ?? sortedRuns[0];
+  const rerunPlan = useMemo(
+    () =>
+      buildJudgeCalibrationRerunPlan({
+        datasetVersionId: selectedVersion?.id ?? "",
+        judgeModelId: selectedJudge?.id ?? "",
+        criteria,
+        criteriaSource,
+        evaluatorVersion: selectedEvaluator,
+        runs,
+      }),
+    [
+      criteria,
+      criteriaSource,
+      runs,
+      selectedEvaluator,
+      selectedJudge?.id,
+      selectedVersion?.id,
+    ]
+  );
+  const comparisonBaseline = selectedRun?.baselineRunId
+    ? runs.find((run) => run.id === selectedRun.baselineRunId)
+    : undefined;
   const callCount = selectedVersion?.cases.length ?? 0;
   const requiresTypedConfirmation = callCount >= 100;
   const canConfirm =
@@ -106,6 +268,35 @@ export function JudgeCalibrationPanel({
           item.status === "error" || item.humanLabel !== item.judgeLabel
       )
     : [];
+  const rerunChangeLabels = changeLabels(rerunPlan.changeKinds);
+  const actionLabel =
+    rerunPlan.trigger === "configuration_change"
+      ? "预览并启动重跑"
+      : rerunPlan.trigger === "manual_repeat"
+        ? "预览并再次校准"
+        : "预览并启动校准";
+
+  function selectEvaluatorVersion(value: string) {
+    setEvaluatorVersionId(value);
+    if (value === CUSTOM_EVALUATOR_VALUE) {
+      setCriteria(DEFAULT_CRITERIA);
+      setCriteriaSource("custom");
+      setError("");
+    }
+  }
+
+  function syncEvaluatorCriteria() {
+    if (!selectedEvaluator) return;
+    try {
+      setCriteria(buildEvaluatorCalibrationCriteria(selectedEvaluator));
+      setCriteriaSource("evaluator");
+      setError("");
+    } catch (caught) {
+      setError(
+        caught instanceof Error ? caught.message : "Evaluator 校准标准生成失败"
+      );
+    }
+  }
 
   function openConfirmation() {
     if (!selectedVersion) {
@@ -138,14 +329,15 @@ export function JudgeCalibrationPanel({
         judgeModelId: selectedJudge.id,
         judgeModelName: selectedJudge.name,
         criteria,
+        criteriaSource,
+        evaluatorVersion: selectedEvaluator,
+        rerunPlan,
         concurrency,
         onProgress: (completed, total) => setProgress({ completed, total }),
       });
       onSaveRun(run);
       setSelectedRunId(run.id);
-      setMessage(
-        `校准完成：成功 ${run.metrics.completedCases} 条，失败 ${run.metrics.errorCases} 条。`
-      );
+      setMessage(`${run.trigger === "configuration_change" ? "重跑" : "校准"}完成：成功 ${run.metrics.completedCases} 条，失败 ${run.metrics.errorCases} 条。`);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "校准运行失败");
     } finally {
@@ -211,17 +403,58 @@ export function JudgeCalibrationPanel({
                 ))}
               </select>
             </label>
+            <label className="text-xs font-medium text-slate-600 dark:text-slate-300 sm:col-span-2">
+              Evaluator 版本
+              <select
+                aria-label="校准 Evaluator 版本"
+                value={selectedEvaluator?.id ?? CUSTOM_EVALUATOR_VALUE}
+                onChange={(event) => selectEvaluatorVersion(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+              >
+                <option value={CUSTOM_EVALUATOR_VALUE}>自定义判定标准（不绑定版本）</option>
+                {usableEvaluatorVersions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.name} v{version.version} · {version.createdBy}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-          <label className="mt-3 block text-xs font-medium text-slate-600 dark:text-slate-300">
-            校准判定标准
+          <div className="mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="judge-calibration-criteria" className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                校准判定标准
+              </label>
+              <div className="flex items-center gap-2 text-[11px]">
+                <span className="rounded-full bg-slate-200 px-2 py-0.5 text-slate-700 dark:bg-slate-700 dark:text-slate-200">
+                  {criteriaSource === "evaluator" ? "已同步 Evaluator" : "自定义"}
+                </span>
+                {selectedEvaluator && criteriaSource === "custom" && (
+                  <button
+                    type="button"
+                    onClick={syncEvaluatorCriteria}
+                    className="font-semibold text-cyan-700 underline-offset-2 hover:underline dark:text-cyan-300"
+                  >
+                    重新同步版本定义
+                  </button>
+                )}
+              </div>
+            </div>
             <textarea
+              id="judge-calibration-criteria"
               aria-label="校准判定标准"
               value={criteria}
-              onChange={(event) => setCriteria(event.target.value)}
-              rows={4}
+              onChange={(event) => {
+                setCriteria(event.target.value);
+                setCriteriaSource("custom");
+              }}
+              rows={6}
               className="mt-1 w-full resize-y rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm leading-6 text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
             />
-          </label>
+            <p className="mt-1 text-right text-[11px] text-slate-500">
+              {criteria.length.toLocaleString()} 字符
+            </p>
+          </div>
           <label className="mt-3 block text-xs font-medium text-slate-600 dark:text-slate-300">
             Judge 并发
             <select
@@ -234,7 +467,32 @@ export function JudgeCalibrationPanel({
             </select>
           </label>
 
-          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          <div aria-label="Judge 校准重跑计划" className={`mt-4 rounded-xl border p-3 text-xs leading-5 ${rerunPlan.trigger === "configuration_change" ? "border-cyan-200 bg-cyan-50 text-cyan-900 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-100" : rerunPlan.trigger === "manual_repeat" ? "border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100" : "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100"}`}>
+            <p className="font-semibold">
+              {rerunPlan.trigger === "configuration_change"
+                ? "已自动生成配置变化重跑任务"
+                : rerunPlan.trigger === "manual_repeat"
+                  ? "相同执行配置已有校准结果"
+                  : "首次校准任务"}
+            </p>
+            {rerunPlan.trigger === "configuration_change" && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {rerunChangeLabels.map((label) => (
+                  <span key={label} className="rounded-full border border-current/20 px-2 py-0.5 font-medium">
+                    {label} 已变化
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-1 opacity-80">
+              {rerunPlan.trigger === "configuration_change"
+                ? "确认后追加新运行并关联基线，旧结果不会覆盖。"
+                : rerunPlan.trigger === "manual_repeat"
+                  ? "平台不会自动调用；如需观察 Judge 波动，可主动确认再次运行。"
+                  : "尚无同黄金集基线，确认后建立首个可追溯结果。"}
+            </p>
+          </div>
+          <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
             启动前会再次展示调用数。失败 Case 会单独保留，绝不会静默跳过或写成通过。
           </div>
           {message && <p className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-xs text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">{message}</p>}
@@ -253,7 +511,7 @@ export function JudgeCalibrationPanel({
             disabled={running || !selectedVersion || !selectedJudge}
             className="mt-4 w-full rounded-lg bg-cyan-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-cyan-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            {running ? `校准中 ${progress.completed}/${progress.total}` : "预览并启动校准"}
+            {running ? `校准中 ${progress.completed}/${progress.total}` : actionLabel}
           </button>
         </section>
 
@@ -274,7 +532,8 @@ export function JudgeCalibrationPanel({
                 {sortedRuns.length === 0 && <option value="">暂无历史</option>}
                 {sortedRuns.map((run) => (
                   <option key={run.id} value={run.id}>
-                    {run.goldenDatasetName} v{run.goldenDatasetVersion} · {formatDateTime(run.finishTime)}
+                    {run.goldenDatasetName} v{run.goldenDatasetVersion}
+                    {run.evaluatorVersionName ? ` · ${run.evaluatorVersionName} v${run.evaluatorVersion}` : ""} · {formatDateTime(run.finishTime)}
                   </option>
                 ))}
               </select>
@@ -286,9 +545,21 @@ export function JudgeCalibrationPanel({
               <div className="flex flex-wrap gap-2 text-[11px] text-slate-600 dark:text-slate-300">
                 <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{selectedRun.judgeModelName}</span>
                 <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{runStatus(selectedRun)}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{triggerText(selectedRun)}</span>
+                {selectedRun.evaluatorVersionName && (
+                  <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">
+                    {selectedRun.evaluatorVersionName} v{selectedRun.evaluatorVersion}
+                  </span>
+                )}
                 <span className="rounded-full bg-slate-100 px-2 py-1 dark:bg-slate-800">{selectedRun.metrics.totalCases} 次调用</span>
               </div>
               <MetricsCards metrics={selectedRun.metrics} />
+              {comparisonBaseline && (
+                <CalibrationComparison
+                  baseline={comparisonBaseline}
+                  current={selectedRun}
+                />
+              )}
 
               <div className="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
                 <table aria-label="Judge 校准混淆矩阵" className="w-full text-center text-xs">
@@ -330,14 +601,30 @@ export function JudgeCalibrationPanel({
 
       {confirming && selectedVersion && selectedJudge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-label="确认启动 Judge 校准">
-          <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900">
             <p className="font-mono text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">Cost confirmation</p>
             <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">确认启动 Judge 校准</h3>
             <div className="mt-4 grid grid-cols-2 gap-3">
               <div className="rounded-xl bg-cyan-50 p-3 dark:bg-cyan-500/10"><p className="text-xs text-cyan-700 dark:text-cyan-300">Judge 调用</p><p className="mt-1 text-xl font-bold text-cyan-800 dark:text-cyan-200">{callCount} 次</p></div>
               <div className="rounded-xl bg-emerald-50 p-3 dark:bg-emerald-500/10"><p className="text-xs text-emerald-700 dark:text-emerald-300">被测模型调用</p><p className="mt-1 text-xl font-bold text-emerald-800 dark:text-emerald-200">0 次</p></div>
             </div>
-            <dl className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300"><div className="flex justify-between gap-3"><dt>黄金集</dt><dd className="text-right font-medium">{selectedVersion.name} v{selectedVersion.version}</dd></div><div className="flex justify-between gap-3"><dt>Judge</dt><dd className="text-right font-medium">{selectedJudge.name}</dd></div><div className="flex justify-between gap-3"><dt>并发</dt><dd className="font-medium">{concurrency}</dd></div></dl>
+            <dl className="mt-4 space-y-2 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex justify-between gap-3"><dt>任务类型</dt><dd className="text-right font-medium">{rerunPlan.trigger === "configuration_change" ? "配置变化重跑" : rerunPlan.trigger === "manual_repeat" ? "相同配置复跑" : "首次校准"}</dd></div>
+              <div className="flex justify-between gap-3"><dt>黄金集</dt><dd className="text-right font-medium">{selectedVersion.name} v{selectedVersion.version}</dd></div>
+              <div className="flex justify-between gap-3"><dt>Evaluator</dt><dd className="text-right font-medium">{selectedEvaluator ? `${selectedEvaluator.name} v${selectedEvaluator.version}` : "自定义标准"}</dd></div>
+              <div className="flex justify-between gap-3"><dt>Judge</dt><dd className="text-right font-medium">{selectedJudge.name}</dd></div>
+              <div className="flex justify-between gap-3"><dt>并发</dt><dd className="font-medium">{concurrency}</dd></div>
+            </dl>
+            {rerunPlan.trigger === "configuration_change" && (
+              <div className="mt-3 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-900 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-100">
+                <p className="font-semibold">自动关联基线并保留前后结果</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {rerunChangeLabels.map((label) => (
+                    <span key={label} className="rounded-full bg-white/70 px-2 py-0.5 dark:bg-slate-900/40">{label} 已变化</span>
+                  ))}
+                </div>
+              </div>
+            )}
             <p className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">确认后会立即产生 Judge 模型调用费用。人工标签不会发送给 Judge。</p>
             {requiresTypedConfirmation && (
               <label className="mt-3 block text-xs font-medium text-red-700 dark:text-red-300">本次不少于 100 次调用，请输入 {callCount} 继续<input aria-label="大批量校准调用数确认" value={largeRunConfirmation} onChange={(event) => setLargeRunConfirmation(event.target.value)} className="mt-1 w-full rounded-lg border border-red-300 px-3 py-2 text-sm text-slate-900 dark:border-red-500/40 dark:bg-slate-950 dark:text-white" /></label>

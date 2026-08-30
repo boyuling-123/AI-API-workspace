@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type {
+  EvaluatorVersion,
   GoldenDatasetCase,
   GoldenDatasetVersion,
   GoldenHumanLabel,
@@ -26,6 +27,7 @@ const PREVIEW_LIMIT = 50;
 interface GoldenDatasetPanelProps {
   projectName: string;
   versions: GoldenDatasetVersion[];
+  evaluatorVersions: EvaluatorVersion[];
   judgeModels: { id: string; name: string }[];
   calibrationRuns: JudgeCalibrationRun[];
   onSave: (version: GoldenDatasetVersion) => void;
@@ -46,6 +48,7 @@ function nextManualCaseId(cases: GoldenDatasetCase[]): string {
 export function GoldenDatasetPanel({
   projectName,
   versions,
+  evaluatorVersions,
   judgeModels,
   calibrationRuns,
   onSave,
@@ -617,6 +620,7 @@ export function GoldenDatasetPanel({
       </section>
       <JudgeCalibrationPanel
         versions={versions}
+        evaluatorVersions={evaluatorVersions}
         judgeModels={judgeModels}
         runs={calibrationRuns}
         onSaveRun={onSaveCalibrationRun}

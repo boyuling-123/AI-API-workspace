@@ -719,3 +719,18 @@
 - JUDGE-004 已同时具备真实源码、异常路径、Mock 用户路径、独立干净环境、视觉证据和 GitHub CI Trace，状态升级为“已验证”。
 
 下一步：提交首轮 CI 验收回写，等待该提交自身两道 CI 通过后，执行远端漂移、Review/线程与可合并状态审计，再安全合并 PR #29。
+
+## 2026-08-30：PR 06D 合并与 PR 06E 本地实现
+
+- PR #29 最终文档提交对应 workflow run `33295201533` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 确认远端 `main` 保持在预期基线 `eba0264`、PR 可合并且无 Review 或未解决线程后，以普通 fast-forward 安全合并；GitHub 确认 Merged，合并 SHA 为 `1af2a69`。
+- 从同一提交创建短生命周期分支 `codex/feat-judge-calibration-rerun`，只承接 JUDGE-007 的版本绑定、变更规划和前后对比；发布阻断继续留给 JUDGE-008。
+- 校准运行新增向后兼容的任务 id、触发类型、基线 id、变更类别和 Evaluator 执行快照；旧项目无需 schema 迁移。
+- 纯函数规划器优先查找同黄金集、同 Judge、同执行定义的已有结果；只有 Judge、维度、Prompt、Evaluator 或自定义标准真实变化时才生成配置变化重跑计划。
+- Evaluator 版本会确定性转换为实际 Judge 判定标准；非执行元数据不会触发重跑，完整标准最长 100,000 字符且超限在模型调用前拒绝。
+- 页面在确认前只显示重跑来源、精确调用数和变化类别，不发请求；确认后追加独立历史并用基线 id 展示准确率、κ 和漏判率差异。
+- 新增 Mock E2E 真实创建 Evaluator v1/v2，以 v1 建立 0% 基线、切换 Prompt 后保持零新增调用，再确认精确 1 次重跑得到 100% 并在刷新后保留两次历史。
+- 视觉证据 `docs/evidence/pr-06e/evaluator-rerun-comparison.png` 已人工检查，版本、触发来源、指标变化和历史选择层级清晰。
+- 本地 `npm run quality` 通过 286 文件 Secret Scan、零 lint、typecheck、131 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 26 项 Playwright 全部通过。
+
+下一步：提交 PR 06E 功能快照，在独立干净工作树全新安装依赖并重复全部门禁。

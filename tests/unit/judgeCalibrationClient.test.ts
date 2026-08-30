@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { runJudgeCalibration } from "@/services/judgeCalibrationClient";
 import { createGoldenDatasetVersion } from "@/lib/goldenDataset";
+import { createEvaluatorVersion } from "@/lib/evaluatorVersion";
+import { createDefinitionBasedRubric } from "@/lib/evaluationRubric";
+import {
+  buildEvaluatorCalibrationCriteria,
+  buildJudgeCalibrationRerunPlan,
+} from "@/lib/judgeCalibrationRerun";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -34,11 +40,24 @@ describe("Judge calibration client", () => {
     );
     const progress: string[] = [];
 
+    const evaluator = evaluatorVersion();
+    const criteria = buildEvaluatorCalibrationCriteria(evaluator);
+    const rerunPlan = buildJudgeCalibrationRerunPlan({
+      datasetVersionId: "gold-version-1",
+      judgeModelId: "judge-model",
+      criteria,
+      criteriaSource: "evaluator",
+      evaluatorVersion: evaluator,
+      runs: [],
+    });
     const run = await runJudgeCalibration({
       datasetVersion: dataset(),
       judgeModelId: "judge-model",
       judgeModelName: "Judge A",
-      criteria: "严格判断",
+      criteria,
+      criteriaSource: "evaluator",
+      evaluatorVersion: evaluator,
+      rerunPlan,
       concurrency: 2,
       onProgress: (completed, total) => progress.push(`${completed}/${total}`),
     });
@@ -62,6 +81,14 @@ describe("Judge calibration client", () => {
       accuracy: 1,
     });
     expect(progress).toHaveLength(2);
+    expect(run).toMatchObject({
+      trigger: "initial",
+      evaluatorVersionId: "evaluator-v1",
+      evaluatorVersion: 1,
+      criteriaSource: "evaluator",
+      changeKinds: [],
+    });
+    expect(run.calibrationTaskId).toBeTruthy();
   });
 
   it("rejects malformed success payloads as Case errors", async () => {
@@ -109,5 +136,25 @@ function dataset() {
         humanLabel: "fail",
       },
     ],
+  });
+}
+
+function evaluatorVersion() {
+  return createEvaluatorVersion({
+    existingVersions: [],
+    id: "evaluator-v1",
+    name: "客服评价器",
+    createdBy: "Lu",
+    applicableTaskId: "task-a",
+    evalModelId: "judge-model",
+    userRequirement: "判断客服回复能否上线",
+    dimensions: [
+      {
+        ...createDefinitionBasedRubric("答案正确性", "回复必须符合事实"),
+        weight: 100,
+      },
+    ],
+    evalPrompt: "逐项核对后判分",
+    evaluationMode: "comparison",
   });
 }

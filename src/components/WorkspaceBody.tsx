@@ -757,6 +757,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           <GoldenDatasetPanel
             projectName={project.name}
             versions={project.goldenDatasetVersions ?? []}
+            evaluatorVersions={project.evaluatorVersions ?? []}
             judgeModels={judgeModels}
             calibrationRuns={project.judgeCalibrationRuns ?? []}
             onSave={handleSaveGoldenDatasetVersion}

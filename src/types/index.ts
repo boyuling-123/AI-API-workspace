@@ -416,6 +416,20 @@ export interface JudgeCalibrationMetrics {
   confusion: JudgeCalibrationConfusionMatrix;
 }
 
+export type JudgeCalibrationTrigger =
+  | "initial"
+  | "configuration_change"
+  | "manual_repeat";
+
+export type JudgeCalibrationChangeKind =
+  | "judge"
+  | "dimensions"
+  | "prompt"
+  | "criteria"
+  | "evaluator";
+
+export type JudgeCalibrationCriteriaSource = "evaluator" | "custom";
+
 /** 一次校准只保存 Judge 判定与人工标签快照，不复制黄金集全文。 */
 export interface JudgeCalibrationRun {
   id: string;
@@ -430,6 +444,23 @@ export interface JudgeCalibrationRun {
   status: "done" | "partial" | "error";
   results: JudgeCalibrationCaseResult[];
   metrics: JudgeCalibrationMetrics;
+  /** 每次确认运行都会创建一个独立任务 id；旧记录可缺省。 */
+  calibrationTaskId?: string;
+  /** 首次校准、配置变化重跑或相同配置手动复跑。 */
+  trigger?: JudgeCalibrationTrigger;
+  /** 配置变化时关联的不可变基线运行。 */
+  baselineRunId?: string;
+  /** 只保存变更类别，不复制 Prompt 或人工备注。 */
+  changeKinds?: JudgeCalibrationChangeKind[];
+  criteriaSource?: JudgeCalibrationCriteriaSource;
+  /** 本次校准绑定的不可变 Evaluator 快照；旧记录可缺省。 */
+  evaluatorVersionId?: string;
+  evaluatorId?: string;
+  evaluatorVersionName?: string;
+  evaluatorVersion?: number;
+  evaluatorDefinitionFingerprint?: string;
+  evaluatorPolicyFingerprint?: string;
+  evaluatorPromptFingerprint?: string;
 }
 
 /**

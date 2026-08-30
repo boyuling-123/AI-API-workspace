@@ -314,7 +314,7 @@
 - [x] 分支已推送并创建 [PR #28](https://github.com/boyuling-123/AI-API-workspace/pull/28)；首轮 workflow run `33294370480` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33294485493` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #28 为 Merged，合并 SHA 为 `eba0264`。
 
-## 进行中：PR 06D 确认式校准运行与分歧下钻
+## 已完成：PR 06D 确认式校准运行与分歧下钻
 
 分支：`codex/feat-judge-calibration-workspace`
 
@@ -327,7 +327,21 @@
 - [x] 本地 quality 通过 281 文件密钥扫描、零 lint、typecheck、125 项单测、2 项压力测试和 20 路由构建；全量 25 项 Playwright 通过。
 - [x] 功能快照 `fa2fd3a` 在独立干净工作树全新安装 434 个包，quality 与 25 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #29](https://github.com/boyuling-123/AI-API-workspace/pull/29)；首轮 workflow run `33295087238` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33295201533` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #29 为 Merged，合并 SHA 为 `1af2a69`。
+
+## 进行中：PR 06E Evaluator 变化后重跑黄金集
+
+分支：`codex/feat-judge-calibration-rerun`
+
+- [x] 每次校准保存独立任务 id、触发类型、基线运行、变更类别和不可变 Evaluator 执行快照，旧项目字段可缺省且无需 IndexedDB 迁移。
+- [x] 自动识别 Judge、评价维度、Prompt、Evaluator 与自定义判定标准变化；同执行定义已有结果时优先提示复用，不自动付费重跑。
+- [x] 版本切换只生成本地重跑计划；二次确认后才精确逐 Case 调用，结果追加保存并关联基线，旧结果不覆盖。
+- [x] 结果区展示触发来源、Evaluator 版本和准确率、Cohen’s κ、Bad Case 漏判率的前后差异。
+- [x] 校准标准可承载最多 100,000 字符的完整 Evaluator 定义，超限在模型调用前拒绝。
+- [x] 6 项重跑规划与服务边界单测覆盖首次任务、Judge/维度/Prompt 变化、定义复用、黄金集隔离和长度上限；客户端测试覆盖快照持久化。
+- [x] Mock E2E 覆盖 Evaluator v1→v2、确认前零新增调用、确认后精确重跑、两次历史、刷新持久化和 WCAG。
+- [x] 保存并人工检查 `docs/evidence/pr-06e/evaluator-rerun-comparison.png`；本地 quality 通过 286 文件密钥扫描、零 lint、typecheck、131 项单测、2 项压力测试和 20 路由构建；全量 26 项 Playwright 通过。
+- [ ] 提交功能快照并在独立干净工作树重复全部门禁，再自主创建 PR、等待 CI 和安全合并。
 
 ## 硬门禁
 

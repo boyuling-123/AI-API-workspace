@@ -1,10 +1,17 @@
 import type {
+  EvaluatorVersion,
   GoldenDatasetCase,
   GoldenDatasetVersion,
   JudgeCalibrationCaseResult,
+  JudgeCalibrationCriteriaSource,
   JudgeCalibrationRun,
 } from "@/types";
 import { calculateJudgeCalibrationMetrics } from "@/lib/judgeCalibration";
+import {
+  buildEvaluatorPromptFingerprint,
+  MAX_CALIBRATION_CRITERIA_LENGTH,
+  type JudgeCalibrationRerunPlan,
+} from "@/lib/judgeCalibrationRerun";
 import { generateId } from "@/lib/id";
 import { redactSensitiveText } from "@/lib/redactSensitive";
 import { runWithPool } from "@/lib/taskRunner";
@@ -15,6 +22,9 @@ export interface RunJudgeCalibrationParams {
   judgeModelId: string;
   judgeModelName: string;
   criteria: string;
+  criteriaSource?: JudgeCalibrationCriteriaSource;
+  evaluatorVersion?: EvaluatorVersion;
+  rerunPlan?: JudgeCalibrationRerunPlan;
   concurrency: number;
   signal?: AbortSignal;
   onProgress?: (completed: number, total: number) => void;
@@ -79,6 +89,13 @@ export async function runJudgeCalibration(
     signal,
     onProgress,
   } = params;
+  const normalizedCriteria = redactSensitiveText(criteria.trim());
+  if (!normalizedCriteria) throw new Error("校准判定标准不能为空");
+  if (normalizedCriteria.length > MAX_CALIBRATION_CRITERIA_LENGTH) {
+    throw new Error(
+      `校准判定标准不能超过 ${MAX_CALIBRATION_CRITERIA_LENGTH} 个字符`
+    );
+  }
   const startedAt = Date.now();
   let completed = 0;
   const outcomes = await runWithPool<
@@ -94,7 +111,7 @@ export async function runJudgeCalibration(
         const judgment = await callJudgeCalibration(
           item,
           judgeModelId,
-          criteria,
+          normalizedCriteria,
           runSignal
         );
         result = {
@@ -148,9 +165,31 @@ export async function runJudgeCalibration(
     goldenDatasetVersion: datasetVersion.version,
     judgeModelId,
     judgeModelName: redactSensitiveText(judgeModelName).slice(0, 160),
-    criteria: redactSensitiveText(criteria.trim()).slice(0, 4_000),
+    criteria: normalizedCriteria,
     status,
     results,
     metrics,
+    calibrationTaskId: generateId(),
+    trigger: params.rerunPlan?.trigger ?? "initial",
+    baselineRunId: params.rerunPlan?.baselineRun?.id,
+    changeKinds: params.rerunPlan?.changeKinds
+      ? [...params.rerunPlan.changeKinds]
+      : [],
+    criteriaSource: params.criteriaSource ?? "custom",
+    ...(params.evaluatorVersion
+      ? {
+          evaluatorVersionId: params.evaluatorVersion.id,
+          evaluatorId: params.evaluatorVersion.evaluatorId,
+          evaluatorVersionName: params.evaluatorVersion.name,
+          evaluatorVersion: params.evaluatorVersion.version,
+          evaluatorDefinitionFingerprint:
+            params.evaluatorVersion.definitionFingerprint,
+          evaluatorPolicyFingerprint:
+            params.evaluatorVersion.policyFingerprint,
+          evaluatorPromptFingerprint: buildEvaluatorPromptFingerprint(
+            params.evaluatorVersion
+          ),
+        }
+      : {}),
   };
 }
