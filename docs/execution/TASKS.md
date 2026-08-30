@@ -326,7 +326,8 @@
 - [x] 保存并人工检查 `docs/evidence/pr-06d/judge-calibration-results.png`；确认弹窗与结果区 WCAG 严重/致命问题扫描通过。
 - [x] 本地 quality 通过 281 文件密钥扫描、零 lint、typecheck、125 项单测、2 项压力测试和 20 路由构建；全量 25 项 Playwright 通过。
 - [x] 功能快照 `fa2fd3a` 在独立干净工作树全新安装 434 个包，quality 与 25 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
+- [x] 分支已推送并创建 [PR #29](https://github.com/boyuling-123/AI-API-workspace/pull/29)；首轮 workflow run `33295087238` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
 
 ## 硬门禁
 
