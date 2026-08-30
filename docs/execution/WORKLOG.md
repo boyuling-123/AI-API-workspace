@@ -500,3 +500,18 @@
 - DIM-010、PROMPT-002 与 PROMPT-004 已具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #23。
+
+## 2026-08-30：PR 05B 合并与 PR 05C 本地实现
+
+- PR #23 最终文档提交对应 workflow run `33287776223` 的核心质量与 Playwright 两个 Job 全部通过；确认无远端漂移、Review 或审查线程后，以普通 fast-forward 合并，GitHub 确认 Merged SHA 为 `64b891b`。
+- 本地 `main` 与 `origin/main` 同步到 `64b891b`，创建短生命周期分支 `codex/feat-evaluator-version-diff`，只领取 PROMPT-005 与 PROMPT-006。
+- 新增 `evaluatorVersionDiff.ts`，同家族完整版本可确定性比较裁判、目标、模式、标准答案、任务、Rubric/策略和逐行 Prompt，并输出五类影响范围。
+- 逐行 Diff 在矩阵规模超过阈值时降级为共同前后缀替换，仍保留精确新增/删除行计数，避免大 Prompt 二次复杂度卡死页面。
+- 新增深色差异面板，支持选择基线版本、查看结构字段和 Prompt 上下文；变化行之外内容按上下文折叠，不把 5 万字 Prompt 全量铺开。
+- 恢复入口只对非最新版历史快照开放，复用不可变创建函数追加 `vN+1`；记录作者、当前任务和恢复来源，既有版本与评价历史不修改。
+- 单测首次发现伪造来源对象可携带旧完整性指纹，恢复入口已补充来源对象自身校验；专项 5 项 Diff/恢复单测与既有 5 项版本单测全部通过。
+- 新增 Mock Playwright 路径，4.8 秒完成 v1/v2 Diff、v1→v3、旧版回看、刷新持久化和 WCAG，并验证 `/api/evaluate` 零调用。
+- 组件级视觉证据 `docs/evidence/pr-05c/version-diff-restore.png` 已人工检查，恢复元数据、v1→v3、执行定义一致、结构/Prompt Diff 和最新版边界完整可见，无裁切或遮挡。
+- 本地 `npm run quality` 通过 254 文件 Secret Scan、零 lint、typecheck、101 项单测、2 项压力测试和 19 路由生产构建；全量 21 项 Playwright 再次通过。
+
+下一步：提交功能与本地证据，在独立干净工作树全新安装依赖后复验全部门禁。

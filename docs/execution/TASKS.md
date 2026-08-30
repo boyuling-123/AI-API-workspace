@@ -225,7 +225,7 @@
 - [x] 推送分支并创建 [PR #22](https://github.com/boyuling-123/AI-API-workspace/pull/22)；workflow run `33246361526` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33246545137` 两道 GitHub CI 通过；确认远端 `main` 未漂移后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #22 为 Merged，合并 SHA 为 `f0fedce`。
 
-## 进行中：PR 05B 不可变 Evaluator 与 Prompt 版本
+## 已完成：PR 05B 不可变 Evaluator 与 Prompt 版本
 
 分支：`codex/feat-evaluator-versions`
 
@@ -240,7 +240,21 @@
 - [x] 本地 quality 通过 248 文件密钥扫描、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由构建；全量 20 项 Playwright 通过。
 - [x] 功能提交 `34347aa` 在独立干净工作树全新安装 434 个包，quality 与最终全量 20 项 Playwright 通过，结束时 Git 零改动。
 - [x] 推送分支并创建 [PR #23](https://github.com/boyuling-123/AI-API-workspace/pull/23)；workflow run `33287622657` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终文档提交自身两道 GitHub CI 通过后，确认远端 `main` 未漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33287776223` 两道 GitHub CI 通过；确认远端 `main` 未漂移后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #23 为 Merged，合并 SHA 为 `64b891b`。
+
+## 进行中：PR 05C Evaluator 版本 Diff 与安全恢复
+
+分支：`codex/feat-evaluator-version-diff`
+
+- [x] 同一 Evaluator 家族支持选择基线版本，展示裁判、目标、评价模式、标准答案、适用任务与 Rubric/策略的结构化差异。
+- [x] Prompt 提供逐行新增、删除与上下文 Diff；大文本超过计算阈值时使用有界前后缀算法，避免浏览器卡死。
+- [x] Diff 输出影响范围，明确提示裁判指令、评分口径、裁判模型、标准答案覆盖和适用任务是否变化。
+- [x] 非最新版历史快照可恢复为 `vN+1`；来源与中间版本保持不变，新版本记录作者、当前任务和恢复说明。
+- [x] 损坏版本、跨家族比较、最新版重复恢复和伪造来源均在领域层阻断。
+- [x] 真实源码单测覆盖结构化/文本 Diff、大 Prompt、异常边界和 v1→v3；Mock Playwright 覆盖 Diff、恢复、刷新持久化、旧版本不变、零 Judge 调用与 WCAG。
+- [x] 保存并人工检查 `docs/evidence/pr-05c/version-diff-restore.png`；本地 quality 通过 254 文件密钥扫描、零 lint、typecheck、101 项单测、2 项压力测试和 19 路由构建，全量 21 项 Playwright 通过。
+- [ ] 提交功能快照，并在独立干净工作树全新安装依赖后复验全部门禁。
+- [ ] 推送分支、创建 PR，完成双轮 GitHub CI 与安全合并。
 
 ## 硬门禁
 

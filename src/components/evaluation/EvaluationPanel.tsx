@@ -11,6 +11,7 @@ import type {
 import type { UseEvaluationResult } from "@/hooks/useEvaluation";
 import type { EvaluateResultPerInput } from "@/services/evaluateService";
 import { EvaluationResults } from "./EvaluationResults";
+import { EvaluatorVersionDiffPanel } from "./EvaluatorVersionDiffPanel";
 import {
   AUTO_EXPECTED_ANSWER_KEY,
   collectExtraFieldKeys,
@@ -70,6 +71,7 @@ import {
   MAX_EVALUATOR_CHANGE_NOTE_LENGTH,
   MAX_EVALUATOR_NAME_LENGTH,
 } from "@/lib/evaluatorVersion";
+import { restoreEvaluatorVersion } from "@/lib/evaluatorVersionDiff";
 import { formatDateTime } from "@/lib/datetime";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
@@ -246,6 +248,8 @@ export function EvaluationPanel({
     useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [activeEvaluatorVersionId, setActiveEvaluatorVersionId] =
+    useState("");
+  const [compareEvaluatorVersionId, setCompareEvaluatorVersionId] =
     useState("");
   const [evaluatorName, setEvaluatorName] = useState("");
   const [evaluatorAuthor, setEvaluatorAuthor] = useState("本地用户");
@@ -862,15 +866,19 @@ export function EvaluationPanel({
         currentEvaluatorDefinitionFingerprint
   );
   const activeEvaluatorFamilyVersions = activeEvaluatorVersion
-    ? evaluatorVersions.filter(
+    ? usableEvaluatorVersions.filter(
         (version) => version.evaluatorId === activeEvaluatorVersion.evaluatorId
       )
     : [];
+  const latestEvaluatorVersion = activeEvaluatorFamilyVersions.reduce<
+    EvaluatorVersion | undefined
+  >(
+    (latest, version) =>
+      !latest || version.version > latest.version ? version : latest,
+    undefined
+  );
   const nextEvaluatorVersion =
-    activeEvaluatorFamilyVersions.reduce(
-      (max, version) => Math.max(max, version.version),
-      0
-    ) + 1;
+    (latestEvaluatorVersion?.version ?? 0) + 1;
   const usesHumanFeedback = selectedGenerationSamples.some(
     (sample) => sample.humanFeedback
   );
@@ -919,10 +927,55 @@ export function EvaluationPanel({
     Boolean(evaluatorAuthor.trim()) &&
     !evaluatorVersionBound;
 
+  const defaultComparisonVersionId = (version: EvaluatorVersion): string => {
+    const family = usableEvaluatorVersions
+      .filter(
+        (candidate) =>
+          candidate.evaluatorId === version.evaluatorId &&
+          candidate.id !== version.id
+      )
+      .sort((left, right) => right.version - left.version);
+    return (
+      family.find((candidate) => candidate.version < version.version)?.id ??
+      family[0]?.id ??
+      ""
+    );
+  };
+
+  const applyEvaluatorVersion = (
+    version: EvaluatorVersion,
+    comparisonVersionId?: string
+  ) => {
+    const draft = cloneEvaluatorVersionDraft(version);
+    setEnabled(true);
+    setJudgeModelId(draft.evalModelId);
+    setScenario(draft.userRequirement);
+    setCandidates(
+      draft.dimensions.map((dimension) => ({
+        ...dimension,
+        selected: true,
+      }))
+    );
+    setEvalPrompt(draft.evalPrompt);
+    setEvaluationMode(draft.evaluationMode);
+    setExpectedAnswerKey(
+      draft.expectedAnswerColumn ?? AUTO_EXPECTED_ANSWER_KEY
+    );
+    setConfirmedPolicyFingerprint(version.policyFingerprint);
+    setActiveEvaluatorVersionId(version.id);
+    setCompareEvaluatorVersionId(
+      comparisonVersionId ?? defaultComparisonVersionId(version)
+    );
+    setEvaluatorName(version.name);
+    setEvaluatorAuthor(version.createdBy);
+    setEvaluatorChangeNote("");
+  };
+
   const handleEvaluatorVersionSelection = (versionId: string) => {
     setEvaluatorVersionError("");
     if (!versionId) {
       setActiveEvaluatorVersionId("");
+      setCompareEvaluatorVersionId("");
       setEvaluatorName("");
       setEvaluatorChangeNote("");
       return;
@@ -935,26 +988,7 @@ export function EvaluationPanel({
       return;
     }
     try {
-      const draft = cloneEvaluatorVersionDraft(version);
-      setEnabled(true);
-      setJudgeModelId(draft.evalModelId);
-      setScenario(draft.userRequirement);
-      setCandidates(
-        draft.dimensions.map((dimension) => ({
-          ...dimension,
-          selected: true,
-        }))
-      );
-      setEvalPrompt(draft.evalPrompt);
-      setEvaluationMode(draft.evaluationMode);
-      setExpectedAnswerKey(
-        draft.expectedAnswerColumn ?? AUTO_EXPECTED_ANSWER_KEY
-      );
-      setConfirmedPolicyFingerprint(version.policyFingerprint);
-      setActiveEvaluatorVersionId(version.id);
-      setEvaluatorName(version.name);
-      setEvaluatorAuthor(version.createdBy);
-      setEvaluatorChangeNote("");
+      applyEvaluatorVersion(version);
     } catch (versionError) {
       setEvaluatorVersionError(
         versionError instanceof Error
@@ -977,25 +1011,35 @@ export function EvaluationPanel({
         applicableTaskId: sourceTaskId,
       });
       onSaveEvaluatorVersion(version);
-      setScenario(version.userRequirement);
-      setCandidates(
-        version.dimensions.map((dimension) => ({
-          ...dimension,
-          selected: true,
-        }))
-      );
-      setEvalPrompt(version.evalPrompt);
-      setConfirmedPolicyFingerprint(version.policyFingerprint);
-      setActiveEvaluatorVersionId(version.id);
-      setEvaluatorName(version.name);
-      setEvaluatorAuthor(version.createdBy);
-      setEvaluatorChangeNote("");
+      applyEvaluatorVersion(version, activeEvaluatorVersion?.id);
       setEvaluatorVersionError("");
     } catch (versionError) {
       setEvaluatorVersionError(
         versionError instanceof Error
           ? versionError.message
           : "Evaluator 版本保存失败"
+      );
+    }
+  };
+
+  const handleRestoreEvaluatorVersion = () => {
+    if (!activeEvaluatorVersion || !evaluatorAuthor.trim() || isRunning) return;
+    try {
+      const restoredVersion = restoreEvaluatorVersion({
+        sourceVersion: activeEvaluatorVersion,
+        existingVersions: evaluatorVersions,
+        createdBy: evaluatorAuthor,
+        changeNote: evaluatorChangeNote,
+        applicableTaskId: sourceTaskId,
+      });
+      onSaveEvaluatorVersion(restoredVersion);
+      applyEvaluatorVersion(restoredVersion, activeEvaluatorVersion.id);
+      setEvaluatorVersionError("");
+    } catch (versionError) {
+      setEvaluatorVersionError(
+        versionError instanceof Error
+          ? versionError.message
+          : "Evaluator 历史版本恢复失败"
       );
     }
   };
@@ -2068,6 +2112,19 @@ export function EvaluationPanel({
                 )}
               </dl>
             )}
+
+            {activeEvaluatorVersion &&
+              activeEvaluatorFamilyVersions.length > 1 && (
+                <EvaluatorVersionDiffPanel
+                  activeVersion={activeEvaluatorVersion}
+                  familyVersions={activeEvaluatorFamilyVersions}
+                  compareVersionId={compareEvaluatorVersionId}
+                  nextVersion={nextEvaluatorVersion}
+                  restoreDisabled={!evaluatorAuthor.trim() || isRunning}
+                  onCompareVersionChange={setCompareEvaluatorVersionId}
+                  onRestore={handleRestoreEvaluatorVersion}
+                />
+              )}
 
             {evaluatorVersions.length > usableEvaluatorVersions.length && (
               <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
