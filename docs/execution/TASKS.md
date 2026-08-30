@@ -374,7 +374,8 @@
 - [x] 真实源码测试覆盖精确请求数、全局并发、非法策略、重复 Judge、失败隔离、真值隔离、旧单 Judge 兼容和多类证据篡改。
 - [x] 本地 quality 通过 297 文件密钥扫描、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；既有 27 项 Playwright 全部通过。
 - [x] 功能快照 `7d7ba98` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR 06G，等待两轮 GitHub CI 后执行远端漂移、Review/线程和可合并状态审计，再安全合并。
+- [x] 分支已推送并自主创建 [PR #32](https://github.com/boyuling-123/AI-API-workspace/pull/32)；首轮 workflow run `33297825582` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次 CI 验收回写提交自身的两道 GitHub CI 通过，再执行远端漂移、Review/线程与可合并状态审计并安全合并。
 - [ ] 页面多 Judge 选择、精确费用确认、逐 Judge 指标与分歧下钻拆到后续短 PR；完成前 JUDGE-005 保持“部分实现”。
 
 ## 硬门禁

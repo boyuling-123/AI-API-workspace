@@ -823,3 +823,12 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 下一步：提交独立环境证据，推送分支并自主创建 PR 06G，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-30：PR 06G 创建与首轮 GitHub CI
+
+- 独立环境证据提交为 `f3db823`，分支已推送并自主创建 [PR #32](https://github.com/boyuling-123/AI-API-workspace/pull/32)。
+- PR 基线为 `main@a2d5f0f`，Head 为 `f3db823`，只包含 JUDGE-005 多 Judge 核心、发布集成、真实源码测试和对应文档，共 15 个文件。
+- workflow run `33297825582` 的 `Lint, test, build, and secret scan` 与 `Playwright user paths and accessibility` 两个 Job 全部成功。
+- JUDGE-005 核心已具备代码、异常路径、真实源码测试、独立干净环境和 GitHub CI Trace；因页面选择、费用确认和分歧下钻尚未接入，继续保持“部分实现”，不提前升级。
+
+下一步：提交首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后，执行远端漂移、Review/线程与可合并状态审计，再安全合并 PR #32。
