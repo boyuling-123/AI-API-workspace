@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type {
   EvalDimension,
   EvaluationMode,
+  EvaluatorVersion,
   ResultRow,
   TaskInput,
 } from "@/types";
@@ -60,6 +61,16 @@ import {
   buildEvaluatorPolicyFingerprint,
   distributeEvenEvaluatorWeights,
 } from "@/lib/evaluatorPolicy";
+import {
+  buildEvaluatorDefinitionFingerprint,
+  cloneEvaluatorVersionDraft,
+  createEvaluatorVersion,
+  isEvaluatorVersionIntact,
+  MAX_EVALUATOR_AUTHOR_LENGTH,
+  MAX_EVALUATOR_CHANGE_NOTE_LENGTH,
+  MAX_EVALUATOR_NAME_LENGTH,
+} from "@/lib/evaluatorVersion";
+import { formatDateTime } from "@/lib/datetime";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
 interface CandidateDimension extends EvalDimension {
@@ -125,6 +136,7 @@ export interface EvaluationCompletePayload {
   evalPrompt: string;
   evaluationMode: EvaluationMode;
   expectedAnswerColumn?: string;
+  evaluatorVersionId?: string;
   scope: "all" | "selected";
   selectedInputIds?: string[];
   evaluationKind: "full" | "new_dimensions";
@@ -150,12 +162,18 @@ interface EvaluationPanelProps {
   hasImage: boolean;
   /** 运行并发。 */
   concurrency: number;
+  /** 当前评价来源批次，用于版本适用任务追溯。 */
+  sourceTaskId: string;
   /** 由上层提供的评价状态。 */
   evaluation: UseEvaluationResult;
   /** 可用作裁判的模型列表（从 apiConfigs 中筛选 llm 类型传入）。 */
   judgeModels: JudgeModel[];
+  /** 项目内所有不可变 Evaluator 版本。 */
+  evaluatorVersions: EvaluatorVersion[];
   /** 从历史评价发起时，仅评价新维度并复用来源批次输出。 */
   newDimensionContext?: NewDimensionEvaluationContext;
+  /** 只追加新版本，不允许覆盖既有版本。 */
+  onSaveEvaluatorVersion: (version: EvaluatorVersion) => void;
   /** v4.3：一次评价跑完（非取消）后回调，上层据此生成 EvaluationRecord 存入 Project.evaluations。 */
   onEvaluationComplete?: (payload: EvaluationCompletePayload) => void;
 }
@@ -187,9 +205,12 @@ export function EvaluationPanel({
   results,
   hasImage,
   concurrency,
+  sourceTaskId,
   evaluation,
   judgeModels,
+  evaluatorVersions,
   newDimensionContext,
+  onSaveEvaluatorVersion,
   onEvaluationComplete,
 }: EvaluationPanelProps) {
   const [enabled, setEnabled] = useState(Boolean(newDimensionContext));
@@ -224,6 +245,12 @@ export function EvaluationPanel({
   const [confirmedPolicyFingerprint, setConfirmedPolicyFingerprint] =
     useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [activeEvaluatorVersionId, setActiveEvaluatorVersionId] =
+    useState("");
+  const [evaluatorName, setEvaluatorName] = useState("");
+  const [evaluatorAuthor, setEvaluatorAuthor] = useState("本地用户");
+  const [evaluatorChangeNote, setEvaluatorChangeNote] = useState("");
+  const [evaluatorVersionError, setEvaluatorVersionError] = useState("");
   const [sampleStrategy, setSampleStrategy] =
     useState<DimensionSampleStrategy>("coverage");
   const [sampleCount, setSampleCount] = useState(3);
@@ -241,6 +268,16 @@ export function EvaluationPanel({
   const multimodalModels = useMemo(
     () => judgeModels.filter((model) => model.supportsImage),
     [judgeModels]
+  );
+  const usableEvaluatorVersions = useMemo(
+    () =>
+      evaluatorVersions
+        .filter(isEvaluatorVersionIntact)
+        .sort(
+          (left, right) =>
+            right.createTime - left.createTime || right.version - left.version
+        ),
+    [evaluatorVersions]
   );
   const judgeDisabled =
     judgeModels.length === 0 || (hasImage && multimodalModels.length === 0);
@@ -628,6 +665,9 @@ export function EvaluationPanel({
         evaluationMode,
         expectedAnswerColumn:
           evaluationMode === "reference" ? expectedAnswerKey : undefined,
+        evaluatorVersionId: evaluatorVersionBound
+          ? activeEvaluatorVersion?.id
+          : undefined,
         scope: scopeMode,
         selectedInputIds:
           scopeMode === "selected" ? [...effectiveScopeIds] : undefined,
@@ -788,6 +828,49 @@ export function EvaluationPanel({
   const policyConfirmed =
     Boolean(currentPolicyFingerprint) &&
     currentPolicyFingerprint === confirmedPolicyFingerprint;
+  const currentEvaluatorDraft = {
+    evalModelId: judgeModelId,
+    userRequirement: scenario,
+    dimensions: validDimensions,
+    evalPrompt,
+    evaluationMode,
+    expectedAnswerColumn:
+      evaluationMode === "reference" ? expectedAnswerKey : undefined,
+  };
+  let currentEvaluatorDefinitionFingerprint = "";
+  if (
+    policyConfirmed &&
+    judgeReady &&
+    evalPrompt.trim() &&
+    scenario.trim() &&
+    validDimensions.length > 0
+  ) {
+    try {
+      currentEvaluatorDefinitionFingerprint =
+        buildEvaluatorDefinitionFingerprint(currentEvaluatorDraft);
+    } catch {
+      currentEvaluatorDefinitionFingerprint = "";
+    }
+  }
+  const activeEvaluatorVersion = usableEvaluatorVersions.find(
+    (version) => version.id === activeEvaluatorVersionId
+  );
+  const evaluatorVersionBound = Boolean(
+    activeEvaluatorVersion &&
+      currentEvaluatorDefinitionFingerprint &&
+      activeEvaluatorVersion.definitionFingerprint ===
+        currentEvaluatorDefinitionFingerprint
+  );
+  const activeEvaluatorFamilyVersions = activeEvaluatorVersion
+    ? evaluatorVersions.filter(
+        (version) => version.evaluatorId === activeEvaluatorVersion.evaluatorId
+      )
+    : [];
+  const nextEvaluatorVersion =
+    activeEvaluatorFamilyVersions.reduce(
+      (max, version) => Math.max(max, version.version),
+      0
+    ) + 1;
   const usesHumanFeedback = selectedGenerationSamples.some(
     (sample) => sample.humanFeedback
   );
@@ -830,6 +913,92 @@ export function EvaluationPanel({
     effectiveScopeIds.length > 0 &&
     !isRunning &&
     (!newDimensionContext || status !== "done");
+  const canSaveEvaluatorVersion =
+    Boolean(currentEvaluatorDefinitionFingerprint) &&
+    Boolean(evaluatorName.trim()) &&
+    Boolean(evaluatorAuthor.trim()) &&
+    !evaluatorVersionBound;
+
+  const handleEvaluatorVersionSelection = (versionId: string) => {
+    setEvaluatorVersionError("");
+    if (!versionId) {
+      setActiveEvaluatorVersionId("");
+      setEvaluatorName("");
+      setEvaluatorChangeNote("");
+      return;
+    }
+    const version = usableEvaluatorVersions.find(
+      (item) => item.id === versionId
+    );
+    if (!version) {
+      setEvaluatorVersionError("Evaluator 版本不存在或完整性校验失败");
+      return;
+    }
+    try {
+      const draft = cloneEvaluatorVersionDraft(version);
+      setEnabled(true);
+      setJudgeModelId(draft.evalModelId);
+      setScenario(draft.userRequirement);
+      setCandidates(
+        draft.dimensions.map((dimension) => ({
+          ...dimension,
+          selected: true,
+        }))
+      );
+      setEvalPrompt(draft.evalPrompt);
+      setEvaluationMode(draft.evaluationMode);
+      setExpectedAnswerKey(
+        draft.expectedAnswerColumn ?? AUTO_EXPECTED_ANSWER_KEY
+      );
+      setConfirmedPolicyFingerprint(version.policyFingerprint);
+      setActiveEvaluatorVersionId(version.id);
+      setEvaluatorName(version.name);
+      setEvaluatorAuthor(version.createdBy);
+      setEvaluatorChangeNote("");
+    } catch (versionError) {
+      setEvaluatorVersionError(
+        versionError instanceof Error
+          ? versionError.message
+          : "Evaluator 版本加载失败"
+      );
+    }
+  };
+
+  const handleSaveEvaluatorVersion = () => {
+    if (!canSaveEvaluatorVersion) return;
+    try {
+      const version = createEvaluatorVersion({
+        ...currentEvaluatorDraft,
+        existingVersions: evaluatorVersions,
+        evaluatorId: activeEvaluatorVersion?.evaluatorId,
+        name: evaluatorName,
+        createdBy: evaluatorAuthor,
+        changeNote: evaluatorChangeNote,
+        applicableTaskId: sourceTaskId,
+      });
+      onSaveEvaluatorVersion(version);
+      setScenario(version.userRequirement);
+      setCandidates(
+        version.dimensions.map((dimension) => ({
+          ...dimension,
+          selected: true,
+        }))
+      );
+      setEvalPrompt(version.evalPrompt);
+      setConfirmedPolicyFingerprint(version.policyFingerprint);
+      setActiveEvaluatorVersionId(version.id);
+      setEvaluatorName(version.name);
+      setEvaluatorAuthor(version.createdBy);
+      setEvaluatorChangeNote("");
+      setEvaluatorVersionError("");
+    } catch (versionError) {
+      setEvaluatorVersionError(
+        versionError instanceof Error
+          ? versionError.message
+          : "Evaluator 版本保存失败"
+      );
+    }
+  };
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-gray-200 bg-white p-5">
@@ -1744,7 +1913,7 @@ export function EvaluationPanel({
                 type="button"
                 onClick={handleGenerate}
                 disabled={!canGenerate}
-                className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1 text-xs text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md border border-blue-300 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-800 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isGenerating ? "AI 生成中…" : "按维度自动生成评价 Prompt"}
               </button>
@@ -1759,6 +1928,158 @@ export function EvaluationPanel({
               className="w-full resize-y rounded-md border border-gray-300 px-3 py-2 font-mono text-xs disabled:bg-gray-100"
             />
           </div>
+
+          <section
+            aria-label="Evaluator 版本管理"
+            className="flex flex-col gap-3 rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-cyan-50 p-4"
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-indigo-950">
+                  Evaluator 版本
+                </h3>
+                <p className="mt-1 text-xs leading-5 text-indigo-800">
+                  保存的是裁判、完整评价策略与 Prompt 快照。手动修改只形成草稿，旧版本永不覆盖；保存版本不会自动启动评价。
+                </p>
+              </div>
+              <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-sm">
+                已保存 {usableEvaluatorVersions.length} 个版本
+              </span>
+            </div>
+
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              加载已保存版本
+              <select
+                aria-label="加载 Evaluator 版本"
+                value={activeEvaluatorVersionId}
+                onChange={(event) =>
+                  handleEvaluatorVersionSelection(event.target.value)
+                }
+                disabled={isRunning}
+                className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm disabled:bg-slate-100"
+              >
+                <option value="">当前草稿（另存为新 Evaluator）</option>
+                {usableEvaluatorVersions.map((version) => (
+                  <option key={version.id} value={version.id}>
+                    {version.name} v{version.version} · {version.createdBy} · {formatDateTime(version.createTime)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                Evaluator 名称
+                <input
+                  aria-label="Evaluator 名称"
+                  value={evaluatorName}
+                  onChange={(event) => setEvaluatorName(event.target.value)}
+                  maxLength={MAX_EVALUATOR_NAME_LENGTH}
+                  disabled={isRunning}
+                  placeholder="例如：客服上线质量评价器"
+                  className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm disabled:bg-slate-100"
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+                修改人
+                <input
+                  aria-label="Evaluator 修改人"
+                  value={evaluatorAuthor}
+                  onChange={(event) => setEvaluatorAuthor(event.target.value)}
+                  maxLength={MAX_EVALUATOR_AUTHOR_LENGTH}
+                  disabled={isRunning}
+                  className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm disabled:bg-slate-100"
+                />
+              </label>
+            </div>
+
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-700">
+              变更说明（可选）
+              <input
+                aria-label="Evaluator 变更说明"
+                value={evaluatorChangeNote}
+                onChange={(event) => setEvaluatorChangeNote(event.target.value)}
+                maxLength={MAX_EVALUATOR_CHANGE_NOTE_LENGTH}
+                disabled={isRunning}
+                placeholder="例如：补充人工检查步骤并收紧一票否决阈值"
+                className="rounded-md border border-indigo-200 bg-white px-3 py-2 text-sm disabled:bg-slate-100"
+              />
+            </label>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleSaveEvaluatorVersion}
+                disabled={!canSaveEvaluatorVersion || isRunning}
+                className="rounded-md bg-indigo-700 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:bg-indigo-200 disabled:text-indigo-800"
+              >
+                {evaluatorVersionBound
+                  ? "当前版本已保存"
+                  : activeEvaluatorVersion
+                    ? `保存为新版本 v${nextEvaluatorVersion}`
+                    : "保存为 Evaluator v1"}
+              </button>
+              <span
+                className={`text-xs font-medium ${
+                  evaluatorVersionBound
+                    ? "text-emerald-700"
+                    : activeEvaluatorVersion
+                      ? "text-amber-700"
+                      : "text-slate-600"
+                }`}
+              >
+                {evaluatorVersionBound && activeEvaluatorVersion
+                  ? `已绑定不可变版本：${activeEvaluatorVersion.name} v${activeEvaluatorVersion.version}`
+                  : activeEvaluatorVersion
+                    ? `草稿已修改，旧版 v${activeEvaluatorVersion.version} 保持不变`
+                    : currentEvaluatorDefinitionFingerprint
+                      ? "当前草稿尚未保存；评价历史将显示未绑定版本"
+                      : "请先确认评价策略并填写 Prompt"}
+              </span>
+            </div>
+
+            {activeEvaluatorVersion && (
+              <dl className="grid gap-2 rounded-lg border border-white bg-white/80 p-3 text-xs text-slate-600 sm:grid-cols-3">
+                <div>
+                  <dt className="text-slate-400">版本</dt>
+                  <dd className="mt-1 font-semibold text-slate-800">
+                    {activeEvaluatorVersion.name} v{activeEvaluatorVersion.version}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">修改人与时间</dt>
+                  <dd className="mt-1 font-semibold text-slate-800">
+                    {activeEvaluatorVersion.createdBy} · {formatDateTime(activeEvaluatorVersion.createTime)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-slate-400">适用任务</dt>
+                  <dd className="mt-1 font-mono text-[11px] font-semibold text-slate-800" title={activeEvaluatorVersion.applicableTaskId}>
+                    {activeEvaluatorVersion.applicableTaskId.slice(0, 18)}
+                  </dd>
+                </div>
+                {activeEvaluatorVersion.changeNote && (
+                  <div className="sm:col-span-3">
+                    <dt className="text-slate-400">变更说明</dt>
+                    <dd className="mt-1 text-slate-800">
+                      {activeEvaluatorVersion.changeNote}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            )}
+
+            {evaluatorVersions.length > usableEvaluatorVersions.length && (
+              <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                有 {evaluatorVersions.length - usableEvaluatorVersions.length} 个版本未通过完整性校验，已禁止加载。
+              </p>
+            )}
+            {evaluatorVersionError && (
+              <p role="alert" className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                {evaluatorVersionError}
+              </p>
+            )}
+          </section>
 
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium text-gray-700">
@@ -1840,7 +2161,7 @@ export function EvaluationPanel({
               type="button"
               onClick={handleEvaluate}
               disabled={!canEvaluate}
-              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRunning
                 ? "评价进行中…"

@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { Project, Task, TargetConfig, TaskRerun } from "@/types";
+import type {
+  EvaluatorVersion,
+  Project,
+  Task,
+  TargetConfig,
+  TaskRerun,
+} from "@/types";
 import type { EvaluationRecord } from "@/types";
 import { useInputDraft } from "@/hooks/useInputDraft";
 import { useTargetSelection } from "@/hooks/useTargetSelection";
@@ -321,6 +327,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
         status: "done",
         evaluationMode: payload.evaluationMode,
         expectedAnswerColumn: payload.expectedAnswerColumn,
+        evaluatorVersionId: payload.evaluatorVersionId,
         results: payload.results.map((item) => ({
           inputId: item.inputId,
           scores: item.scores.map((score) => ({
@@ -343,6 +350,23 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       }));
     },
     [evaluatingTask, updateProject]
+  );
+
+  const handleSaveEvaluatorVersion = useCallback(
+    (version: EvaluatorVersion) => {
+      updateProject(
+        (current) => {
+          const existing = current.evaluatorVersions ?? [];
+          if (existing.some((item) => item.id === version.id)) return current;
+          return {
+            ...current,
+            evaluatorVersions: [...existing, version],
+          };
+        },
+        { immediate: true }
+      );
+    },
+    [updateProject]
   );
 
   // v4.3 增量2：删除某条历史评价记录。
@@ -629,9 +653,12 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                     results={evaluatingTask.results}
                     hasImage={evaluatingImageState.hasImage}
                     concurrency={RUNTIME_CONFIG.defaultConcurrency}
+                    sourceTaskId={evaluatingTask.id}
                     evaluation={evaluation}
                     judgeModels={judgeModels}
+                    evaluatorVersions={project.evaluatorVersions ?? []}
                     newDimensionContext={newDimensionContext ?? undefined}
+                    onSaveEvaluatorVersion={handleSaveEvaluatorVersion}
                     onEvaluationComplete={handleEvaluationComplete}
                   />
                 </div>
@@ -658,6 +685,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           {/* ⑤ AI 评价结果与历史（v4.3 增量2）：历史仓库，可随便进；只从 Project.evaluations 读 */}
           <EvalHistoryPanel
             evaluations={project.evaluations ?? []}
+            evaluatorVersions={project.evaluatorVersions ?? []}
             tasks={project.tasks}
             projectName={project.name}
             onDelete={handleDeleteEvaluation}

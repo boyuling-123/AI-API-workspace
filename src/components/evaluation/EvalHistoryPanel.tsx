@@ -1,15 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import type { EvaluationRecord, ResultItem, Task, TaskInput } from "@/types";
+import type {
+  EvaluationRecord,
+  EvaluatorVersion,
+  ResultItem,
+  Task,
+  TaskInput,
+} from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 import { exportResultsToExcel } from "@/services/excel";
 import { ImageLightbox } from "@/components/result/ImageLightbox";
 import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
+import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 
 interface EvalHistoryPanelProps {
   /** 唯一数据来源：Project.evaluations（v4.3 增量2）。 */
   evaluations: EvaluationRecord[];
+  evaluatorVersions: EvaluatorVersion[];
   /** 用于回查来源批次的入参/出参（按 sourceTaskId 关联）。 */
   tasks: Task[];
   projectName: string;
@@ -25,6 +33,7 @@ const TEXT_TRUNCATE_LENGTH = 120;
  */
 export function EvalHistoryPanel({
   evaluations,
+  evaluatorVersions,
   tasks,
   projectName,
   onDelete,
@@ -45,6 +54,24 @@ export function EvalHistoryPanel({
   const evaluationById = useMemo(
     () => new Map(evaluations.map((record) => [record.id, record])),
     [evaluations]
+  );
+  const evaluatorVersionById = useMemo(
+    () =>
+      new Map(
+        evaluatorVersions
+          .filter(isEvaluatorVersionIntact)
+          .map((version) => [version.id, version])
+      ),
+    [evaluatorVersions]
+  );
+  const corruptEvaluatorVersionIds = useMemo(
+    () =>
+      new Set(
+        evaluatorVersions
+          .filter((version) => !isEvaluatorVersionIntact(version))
+          .map((version) => version.id)
+      ),
+    [evaluatorVersions]
   );
 
   const viewingRecord = viewingId
@@ -109,6 +136,9 @@ export function EvalHistoryPanel({
               const sourceEvaluation = record.sourceEvaluationId
                 ? evaluationById.get(record.sourceEvaluationId)
                 : null;
+              const evaluatorVersion = record.evaluatorVersionId
+                ? evaluatorVersionById.get(record.evaluatorVersionId)
+                : null;
               const isViewing = record.id === viewingId;
               return (
                 <li
@@ -128,6 +158,25 @@ export function EvalHistoryPanel({
                   </span>
                   <span className="text-xs text-gray-500">
                     裁判：{resolveModelName(record, task)}
+                  </span>
+                  <span
+                    className={`rounded px-1.5 py-0.5 text-xs ${
+                      evaluatorVersion
+                        ? "bg-indigo-50 text-indigo-700"
+                        : "bg-slate-100 text-slate-500"
+                    }`}
+                    title={record.evaluatorVersionId}
+                  >
+                    Evaluator：
+                    {evaluatorVersion
+                      ? `${evaluatorVersion.name} v${evaluatorVersion.version}`
+                      : record.evaluatorVersionId
+                        ? corruptEvaluatorVersionIds.has(
+                            record.evaluatorVersionId
+                          )
+                          ? "版本损坏"
+                          : "版本已删除"
+                        : "未绑定版本"}
                   </span>
                   <span className="rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
                     {record.evaluationMode === "reference"

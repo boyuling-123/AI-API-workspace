@@ -463,3 +463,18 @@
 - DIM-009 与 PROMPT-001 已具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #22。
+
+## 2026-08-29：PR 05A 合并与 PR 05B 本地实现
+
+- PR #22 最终文档提交对应 workflow run `33246545137` 的核心质量与 Playwright 两个 Job 全部通过。
+- 确认 PR 头提交、审查线程、Review、工作树和远端 `main` 均无漂移后，以普通 `git push origin HEAD:main` 完成非强推 fast-forward；GitHub 已确认 Merged，合并 SHA 为 `f0fedce`。
+- 本地 `main` 同步到 `f0fedce`，创建短生命周期分支 `codex/feat-evaluator-versions`，只领取 DIM-010、PROMPT-002 与 PROMPT-004。
+- 新增项目级 `EvaluatorVersion` 和纯函数版本域：同一家族递增版本、完整定义深拷贝、定义指纹与完整性指纹、损坏版本拒绝加载。
+- AI 评价页可保存 v1、手动修改 Prompt 后追加 v2、加载任意版本；保存与加载均不调用 Judge，评价历史通过 `evaluatorVersionId` 显示实际绑定版本。
+- 版本记录修改人、时间、变更说明与适用跑批任务；新字段保持可选，不升级 Schema，不清理现有 IndexedDB 项目。
+- 版本入库前复用统一脱敏器；回归测试发现并修复 `[REDACTED]` 二次脱敏多出括号的幂等问题。
+- `evaluatorVersion.test.ts` 和脱敏回归使单测增至 95 项；新增 `evaluator-versioning.spec.ts` 覆盖 v1/v2、旧版不变、刷新持久化、显式 Mock 评价、历史绑定和 WCAG，全量 Playwright 增至 20 项并全部通过。
+- 视觉证据 `docs/evidence/pr-05b/evaluator-versions.png` 已人工检查，版本、修改人、时间、适用任务和变更说明同屏清晰，无布局遮挡。
+- 本地 `npm run quality` 通过 248 文件 Secret Scan、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由生产构建；修改后的全量 20 项 Playwright 再次通过。
+
+下一步：提交功能快照，并在独立干净工作树全新安装依赖后复验全部门禁。

@@ -75,6 +75,8 @@ export interface Project {
    * ④ 评价完成后追加一条 EvaluationRecord，⑤ 从此列表读取。同一 Task 可被多次评价、独立留存不覆盖。
    */
   evaluations: EvaluationRecord[];
+  /** 已保存的不可变 Evaluator 版本；旧项目可缺省。 */
+  evaluatorVersions?: EvaluatorVersion[];
 }
 
 export interface Task {
@@ -317,6 +319,34 @@ export interface EvalDimensionScoreLevel {
 }
 
 /**
+ * 可复用的不可变 Evaluator 版本。每次修改都追加新版本，不覆盖历史快照。
+ */
+export interface EvaluatorVersion {
+  id: string;
+  /** 同一 Evaluator 家族的稳定 id。 */
+  evaluatorId: string;
+  version: number;
+  name: string;
+  createTime: number;
+  createdBy: string;
+  changeNote?: string;
+  /** 创建该版本时绑定的跑批任务，用于追溯适用数据。 */
+  applicableTaskId: string;
+  evalModelId: string;
+  userRequirement: string;
+  dimensions: EvalDimension[];
+  evalPrompt: string;
+  evaluationMode: EvaluationMode;
+  expectedAnswerColumn?: string;
+  /** 维度与策略快照指纹。 */
+  policyFingerprint: string;
+  /** 完整执行定义指纹，用于识别页面草稿是否已修改。 */
+  definitionFingerprint: string;
+  /** 身份、版本元数据与执行定义的完整快照指纹。 */
+  integrityFingerprint: string;
+}
+
+/**
  * 内置预设维度集（v4.5，config/dimensionPresets.ts）：按场景预置一组常用维度，可一键选用后再增删改。
  */
 export interface DimensionPreset {
@@ -374,6 +404,8 @@ export interface EvaluationRecord {
   evaluationMode?: EvaluationMode;
   /** 标准答案模式下使用的 extraFields 列名；auto 表示自动识别。 */
   expectedAnswerColumn?: string;
+  /** 本次评价实际绑定的不可变 Evaluator 版本；旧记录或未保存草稿可缺省。 */
+  evaluatorVersionId?: string;
   results: {
     inputId: string;
     /** 各目标的独立维度评分与平台策略结果。 */

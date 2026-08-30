@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { redactSensitiveText } from "../../src/lib/redactSensitive";
 
 describe("redactSensitiveText", () => {
+  it("is idempotent for already redacted assignments", () => {
+    const once = redactSensitiveText("api_key=live-secret-value");
+    expect(once).toBe("api_key=[REDACTED]");
+    expect(redactSensitiveText(once)).toBe(once);
+  });
+
   it("redacts a known secret everywhere without changing surrounding text", () => {
     const secret = "short-but-known";
     const result = redactSensitiveText(

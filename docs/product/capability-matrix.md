@@ -41,11 +41,11 @@
 | DIM-007 | 维度字段标准化、同义合并、重复与冲突检测 | 部分实现 | `newDimensionEvaluation.ts` 按大小写与连续空白归一化并覆盖评价血缘去重；尚无同义和反向冲突检测 | `newDimensionEvaluation.test.ts` 覆盖归一化重复与血缘汇总；PR #17 CI 通过 | 同义、重复、反向冲突均能检测并给出处理建议 | 维度 Skill | [#17](https://github.com/boyuling-123/AI-API-workspace/pull/17) |
 | DIM-008 | 校验维度定义、评分分级、证据和可执行条件 | 已验证 | `evaluationRubric.ts` 定义统一 Schema、规范化和边界；`EvaluationPanel.tsx` 提供逐字段编辑与门禁；Prompt 和 Judge API 在模型调用前复验 | `evaluationRubric.test.ts`、`rubricRouteBoundary.test.ts`、`rubricPromptServices.test.ts`、`newDimensionEvaluation.test.ts` 与 `structured-rubrics.spec.ts` 覆盖完整/缺失/重复/脱敏/旧记录/路由零调用/WCAG；本地、独立干净工作树与 PR #21 两道 CI 全部通过 | 缺任一 Rubric 字段时不能生成 Judge Prompt 或执行新评价；旧历史仍可读取 | Evaluator 生命周期 | [#21](https://github.com/boyuling-123/AI-API-workspace/pull/21) |
 | DIM-009 | 用户增删改确认维度并设置权重和一票否决 | 已验证 | `evaluatorPolicy.ts` 统一校验百分比与阈值并确定性计算策略结果；`EvaluationPanel.tsx` 支持编辑、平均分配、策略指纹确认及修改后失效；结果、历史与 Excel 保存加权分和否决原因 | `evaluatorPolicy.test.ts` 覆盖精确分配、边界、指纹、加权和否决；`rubricRouteBoundary.test.ts` 覆盖非法策略零模型调用；`evaluator-policy.spec.ts` 覆盖真实用户确认、失效、精确请求、历史结果与 WCAG；本地、独立干净工作树与 PR #22 workflow run `33246361526` 两道 CI 全部通过 | 权重校验通过、否决规则可配置、最终需人工确认 | Evaluator 生命周期 | [#22](https://github.com/boyuling-123/AI-API-workspace/pull/22) |
-| DIM-010 | 将维度保存为版本化 Evaluator 并生成 Judge Prompt | 设计中 | 无 Evaluator 实体 | 无 | 可保存、查询和复用不可变 Evaluator 版本 | Evaluator 生命周期 | 待关联 |
+| DIM-010 | 将维度保存为版本化 Evaluator 并生成 Judge Prompt | 已实现 | `EvaluatorVersion` 项目实体；`evaluatorVersion.ts` 负责追加版本、双指纹、深拷贝与完整性校验；`EvaluationPanel.tsx` 支持保存、查询和加载版本 | `evaluatorVersion.test.ts` 覆盖 v1/v2、旧版不变、草稿识别、非法家族、篡改与脱敏；`evaluator-versioning.spec.ts` 覆盖保存、切换、刷新持久化和版本绑定；本地 95 项单测与 20 项 E2E 通过，GitHub CI 待完成 | 可保存、查询和复用不可变 Evaluator 版本 | Evaluator 生命周期 | PR 05B 待关联 |
 | PROMPT-001 | 按维度、评分标准、证据和权重生成 Judge Prompt | 已验证 | `evalPromptService.ts` 与 `evaluateService.ts` 将完整 Rubric、权重和否决阈值写入 Prompt；Judge 只给独立维度分，`evaluatorPolicy.ts` 负责确定性汇总 | `rubricPromptServices.test.ts` 验证 Prompt 字段和策略计算；`rubricRouteBoundary.test.ts` 验证服务端门禁；`evaluator-policy.spec.ts` 验证确认后精确 Prompt/Judge 请求；本地、独立干净工作树与 PR #22 workflow run `33246361526` 两道 CI 全部通过 | Prompt 完整包含 Rubric、证据要求、权重和输出 Schema | Evaluator 生命周期 | [#22](https://github.com/boyuling-123/AI-API-workspace/pull/22) |
-| PROMPT-002 | 支持用户手动修改 Judge Prompt | 已实现 | `EvaluationPanel.tsx` 的 Prompt 编辑区 | 待补：Playwright 编辑测试 | 修改内容可保存且不会被意外覆盖 | Evaluator 生命周期 | 待关联 |
+| PROMPT-002 | 支持用户手动修改 Judge Prompt | 已实现 | `EvaluationPanel.tsx` 的 Prompt 编辑区与版本草稿状态；`evaluatorVersion.ts` 只追加新版本 | `evaluator-versioning.spec.ts` 手动修改 v1 Prompt、保存 v2、切回 v1 验证内容未覆盖，并在刷新后再次加载；GitHub CI 待完成 | 修改内容可保存且不会被意外覆盖 | Evaluator 生命周期 | PR 05B 待关联 |
 | PROMPT-003 | 使用少量样本试跑并预览评分 | Demo | 可通过选中范围发起评价，无专用试跑版本 | 无 | 专用试跑不写正式记录，展示评分与解析错误 | Evaluator 生命周期 | 待关联 |
-| PROMPT-004 | 保存 Prompt 版本、修改人、时间和适用任务 | 部分实现 | `EvaluationRecord` 保存 Prompt、时间和来源任务 | 无 | 版本号、修改人、变更说明和适用范围全部持久化 | Evaluator 生命周期 | 待关联 |
+| PROMPT-004 | 保存 Prompt 版本、修改人、时间和适用任务 | 已实现 | `EvaluatorVersion` 保存家族/版本、修改人、时间、变更说明、适用任务和完整 Prompt；`EvaluationRecord.evaluatorVersionId` 绑定实际版本；历史列表展示版本 | `evaluatorVersion.test.ts` 验证版本递增和元数据不可变；`evaluator-versioning.spec.ts` 验证 IndexedDB 刷新持久化及评价历史绑定 v2；GitHub CI 待完成 | 版本号、修改人、变更说明和适用范围全部持久化 | Evaluator 生命周期 | PR 05B 待关联 |
 | PROMPT-005 | 新旧 Prompt 版本 Diff | 设计中 | 无 | 无 | 支持结构化与文本 Diff，并标识影响范围 | Evaluator 生命周期 | 待关联 |
 | PROMPT-006 | 恢复历史 Prompt 版本 | 设计中 | 无 | 无 | 可从历史版本创建新版本且不篡改旧记录 | Evaluator 生命周期 | 待关联 |
 | PROMPT-007 | Prompt 或维度变化后重新校准 Judge | 设计中 | 无校准流程 | 无 | 变更触发黄金集校准，失败时阻止发布 | Judge 校准 | 待关联 |
@@ -113,6 +113,7 @@
 - DIM-004 已通过 PR #19 补齐标准答案、硬规则和 Bad Case，并在 PR #20 补齐人工评分与偏好排序；双层脱敏、异常阻断、Mock 精确请求、视觉验收、本地、独立干净环境与 GitHub CI 全部门禁均通过，状态为“已验证”。
 - DIM-005 与 DIM-008 已完成结构化 Simple Rubrics、严格 Schema、页面编辑和服务端零调用门禁；真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 PR #21 两道 CI 全部通过，状态为“已验证”。
 - DIM-009 与 PROMPT-001 已在 PR #22 完成权重、一票否决、策略确认、Prompt 透传与平台确定性汇总；真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33246361526` 两道 CI 全部通过，状态为“已验证”。
+- DIM-010、PROMPT-002 与 PROMPT-004 已在 PR 05B 本地完成不可变 Evaluator/Prompt 版本、元数据、刷新持久化和评价历史绑定；GitHub CI 与最终 Trace 完成前保持“已实现”。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

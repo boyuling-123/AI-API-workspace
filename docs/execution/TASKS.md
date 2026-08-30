@@ -208,7 +208,7 @@
 - [x] 推送分支并创建 [PR #21](https://github.com/boyuling-123/AI-API-workspace/pull/21)；workflow run `33243678962` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33243860373` 两道 CI 通过；以非强推 fast-forward 安全合并，GitHub 已确认 PR #21 为 Merged，合并 SHA 为 `6da447b`。
 
-## 进行中：PR 05A 评价权重与一票否决策略
+## 已完成：PR 05A 评价权重与一票否决策略
 
 分支：`codex/feat-evaluator-policy`
 
@@ -223,7 +223,22 @@
 - [x] 本地 `quality` 通过 243 文件密钥扫描、零 lint、typecheck、89 项单测、2 项压力测试和 19 路由构建；全量 19 项 Playwright 通过。
 - [x] 功能提交 `270ae10` 在独立干净工作树全新安装 434 个包，quality 与 19 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 推送分支并创建 [PR #22](https://github.com/boyuling-123/AI-API-workspace/pull/22)；workflow run `33246361526` 的核心质量与 Playwright 两个 Job 全部通过。
-- [ ] 最终文档提交自身两道 GitHub CI 通过后，确认远端 `main` 未漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33246545137` 两道 GitHub CI 通过；确认远端 `main` 未漂移后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #22 为 Merged，合并 SHA 为 `f0fedce`。
+
+## 进行中：PR 05B 不可变 Evaluator 与 Prompt 版本
+
+分支：`codex/feat-evaluator-versions`
+
+- [x] 新增项目级不可变 Evaluator 版本实体，保存稳定家族 id、递增版本号、裁判、完整策略、Prompt 与标准答案模式。
+- [x] 保存修改人、创建时间、变更说明和适用跑批任务；评价历史可追溯实际绑定版本。
+- [x] 页面支持保存 v1、手动修改 Prompt 后追加 v2、加载任意历史版本，旧版本不覆盖。
+- [x] 定义指纹识别未保存草稿；完整性指纹覆盖版本身份、元数据和执行定义，篡改版本禁止加载。
+- [x] 新版本字段保持向后兼容，不提升项目 Schema 版本，不删除旧 IndexedDB 项目。
+- [x] 版本入库前统一脱敏，并修复脱敏占位符重复处理不幂等的问题。
+- [x] 真实源码单测覆盖追加、深拷贝、修改识别、非法家族、篡改和脱敏；Mock Playwright 覆盖 v1/v2、刷新持久化、显式评价和 WCAG。
+- [x] 保存并人工检查 `docs/evidence/pr-05b/evaluator-versions.png`；当前 95 项单测与全量 20 项 Playwright 通过。
+- [x] 本地 quality 通过 248 文件密钥扫描、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由构建；全量 20 项 Playwright 通过。
+- [ ] 完成独立干净工作树复验、提交、推送、双轮 GitHub CI 与安全合并。
 
 ## 硬门禁
 

@@ -14,7 +14,7 @@ const TOKEN_PATTERNS = [
 ];
 
 const SENSITIVE_ASSIGNMENT =
-  /((?:["']?)[A-Za-z0-9_.-]*(?:api[_-]?key|apikey|access[_-]?token|authorization|auth[_-]?token|token|secret|password|passwd|pwd)(?:["']?)\s*[:=]\s*)(["']?)(?:Bearer\s+)?([^"',\s;}\]]+)\2/gi;
+  /((?:["']?)[A-Za-z0-9_.-]*(?:api[_-]?key|apikey|access[_-]?token|authorization|auth[_-]?token|token|secret|password|passwd|pwd)(?:["']?)\s*[:=]\s*)(["']?)(?:Bearer\s+)?([^"',\s;}]+)\2/gi;
 
 /** Removes known credentials and common token forms before text leaves a server boundary. */
 export function redactSensitiveText(
@@ -36,7 +36,8 @@ export function redactSensitiveText(
 
   redacted = redacted.replace(
     SENSITIVE_ASSIGNMENT,
-    (_match, prefix: string, quote: string) => `${prefix}${quote}${REDACTION}${quote}`
+    (_match, prefix: string, quote: string, secret: string) =>
+      `${prefix}${quote}${secret === REDACTION ? secret : REDACTION}${quote}`
   );
 
   for (const pattern of TOKEN_PATTERNS) {
