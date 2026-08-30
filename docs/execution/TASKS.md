@@ -362,7 +362,7 @@
 - [x] 分支已推送并创建 [PR #31](https://github.com/boyuling-123/AI-API-workspace/pull/31)；首轮 workflow run `33297002754` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33297159622` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程且 PR 可合并后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #31 为 Merged，合并 SHA 为 `a2d5f0f`。
 
-## 进行中：PR 06G 多 Judge 校准与确定性仲裁核心
+## 已完成：PR 06G 多 Judge 校准与确定性仲裁核心
 
 分支：`codex/feat-multi-judge-calibration`
 
@@ -375,8 +375,20 @@
 - [x] 本地 quality 通过 297 文件密钥扫描、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；既有 27 项 Playwright 全部通过。
 - [x] 功能快照 `7d7ba98` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #32](https://github.com/boyuling-123/AI-API-workspace/pull/32)；首轮 workflow run `33297825582` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次 CI 验收回写提交自身的两道 GitHub CI 通过，再执行远端漂移、Review/线程与可合并状态审计并安全合并。
-- [ ] 页面多 Judge 选择、精确费用确认、逐 Judge 指标与分歧下钻拆到后续短 PR；完成前 JUDGE-005 保持“部分实现”。
+- [x] 最终文档提交对应 workflow run `33297951993` 两道 CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #32](https://github.com/boyuling-123/AI-API-workspace/pull/32)，合并 SHA 为 `1720250`。
+- [x] 页面多 Judge 选择、精确费用确认、逐 Judge 指标与分歧下钻按计划拆到 PR 06H，PR 06G 不扩大业务范围。
+
+## 进行中：PR 06H 多 Judge 校准工作台
+
+分支：`codex/feat-multi-judge-calibration-ui`
+
+- [x] 保留默认单 Judge 路径，新增显式单/多 Judge 模式；多 Judge 必须手动选择 `2-5` 个模型，未满足时禁止启动。
+- [x] 实时展示 `Case × Judge` 精确调用矩阵，确认弹窗再次列出 Judge 集合、仲裁策略、精确调用公式和零次被测模型调用。
+- [x] 页面接入 PR 06G 的全局并发运行核心，支持多数票平票保守 `fail` 与全票通过策略，失败票不参与残缺仲裁。
+- [x] 结果区展示最终指标、逐 Judge 独立指标、内部分歧数，并可按 Case 展开每个 Judge 的原始标签、理由、置信度或错误。
+- [x] 新增 Mock Playwright 覆盖 `2 Case × 3 Judge = 6`、取消零调用、精确请求矩阵、真值隔离、持久化和刷新零新增请求；既有单 Judge 3 项回归通过。
+- [x] 视觉证据已生成并人工检查；本地 300 文件 Secret Scan、零警告 lint、typecheck、146 单测、2 压测、20 路由构建和全量 28 项 Playwright 通过，JUDGE-005 升级为“已实现”。
+- [ ] 在独立干净工作树复验全部门禁，再自主创建、验收和合并 PR 06H；GitHub CI 通过后把 JUDGE-005 升级为“已验证”。
 
 ## 硬门禁
 
