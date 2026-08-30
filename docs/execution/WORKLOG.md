@@ -935,3 +935,15 @@
 - 本地 `quality` 通过 305 文件 Secret Scan、零警告 lint、typecheck、152 项真实源码单测、2 项压力测试和 20 路由生产构建；视觉证据 `docs/evidence/pr-07a/calibration-review-queue.png` 已人工检查。
 
 下一步：提交 PR 07A 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+
+## 2026-08-30：PR 07A 同步平台总览基线并独立复验
+
+- 首次功能提交 `088f839` 完成独立环境复验后，合并前审计发现远端 `main` 已由平台总览工作前进 4 个提交至 `9798b53`；未覆盖远端、未强推，也未继续使用过期基线创建 PR。
+- 原提交完整保留在本地 `codex/feat-calibration-review-queue-pre-sync`，从最新 `origin/main` 新建同名交付分支并重放功能；业务代码自动合并，三份并行追加的台账文档人工保留双方事实，ADR 编号顺延为 018。
+- 最新功能快照为 `4c03e5e`，其父提交是 `origin/main@9798b53`；平台总览、移动端工具栏和 PR 07A 人工复核能力同时存在。
+- 在 `/tmp/eval-platform-pr07a-4c03e5e` 以 detached HEAD 检出精确提交并全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 309 文件 Secret Scan、零警告 lint、typecheck、152 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 使用 `CI=1` 禁止复用其他工作树服务后，全量 31 项 Playwright 与 WCAG 全部通过；平台总览、单/多 Judge、校准复核和原有跑批/评价路径共同通过。
+- 全部门禁结束后 detached HEAD 仍为 `4c03e5e` 且 `git status --short` 无输出；锁文件仍有既有 6 个 high 级审计项，未执行破坏性 `npm audit fix --force`。
+
+下一步：提交同步与独立环境证据，推送分支并自主创建 PR 07A，等待 GitHub 两道 CI。
