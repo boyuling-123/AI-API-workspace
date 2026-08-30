@@ -11,6 +11,7 @@
 - E2E 精确断言被测模型只在首次跑批调用 3 次；后续试评和两轮正式评价只调用 `/api/evaluate`，被测模型调用总数不再增加。
 - 确认弹窗通过 WCAG 2A/2AA/2.1A/2.1AA 严重与致命问题检查。
 - 功能提交 `a9ffa6e` 在独立 detached 工作树全新安装 434 个包后，重复通过 quality 与 22 项 Playwright，结束时 Git 零改动。
+- [PR #25](https://github.com/boyuling-123/AI-API-workspace/pull/25) 首轮 workflow run `33292294441` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 
 ## 安全边界
 

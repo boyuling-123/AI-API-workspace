@@ -270,7 +270,8 @@
 - [x] 保存并人工检查 `docs/evidence/pr-05d/evaluation-trial-confirm.png`；确认弹窗通过 WCAG 严重与致命问题扫描。
 - [x] 本地 quality 通过 259 文件密钥扫描、零 lint、typecheck、104 项单测、2 项压力测试和 19 路由构建；全量 22 项 Playwright 通过。
 - [x] 功能快照 `a9ffa6e` 在独立干净工作树全新安装 434 个包，quality 与 22 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支、创建 PR，等待两道 GitHub CI 后完成最终验收与安全合并。
+- [x] 分支已推送并创建 [PR #25](https://github.com/boyuling-123/AI-API-workspace/pull/25)；首轮 workflow run `33292294441` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 推送首轮 CI 验收回写，完成第二轮 GitHub CI、远端漂移/审查检查与安全合并。
 
 ## 硬门禁
 
