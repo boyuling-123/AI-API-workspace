@@ -81,6 +81,8 @@ export interface Project {
   goldenDatasetVersions?: GoldenDatasetVersion[];
   /** Judge 对黄金集的校准运行记录；旧项目可缺省。 */
   judgeCalibrationRuns?: JudgeCalibrationRun[];
+  /** 通过校准门禁后追加的 Evaluator Active 发布记录；旧项目可缺省。 */
+  evaluatorReleases?: EvaluatorRelease[];
 }
 
 export interface Task {
@@ -461,6 +463,36 @@ export interface JudgeCalibrationRun {
   evaluatorDefinitionFingerprint?: string;
   evaluatorPolicyFingerprint?: string;
   evaluatorPromptFingerprint?: string;
+}
+
+export interface EvaluatorCalibrationGateThresholds {
+  minCompletedCases: number;
+  minAccuracy: number;
+  minCohenKappa: number;
+  maxBadCaseMissRate: number;
+  requireZeroErrors: boolean;
+}
+
+/** Active 发布事件只追加；同一家族最后一个完整事件即当前 Active。 */
+export interface EvaluatorRelease {
+  id: string;
+  releaseTime: number;
+  releasedBy: string;
+  evaluatorId: string;
+  evaluatorVersionId: string;
+  evaluatorVersionName: string;
+  evaluatorVersion: number;
+  evaluatorDefinitionFingerprint: string;
+  calibrationRunId: string;
+  goldenDatasetVersionId: string;
+  goldenDatasetName: string;
+  goldenDatasetVersion: number;
+  judgeModelId: string;
+  judgeModelName: string;
+  thresholds: EvaluatorCalibrationGateThresholds;
+  calibrationMetrics: JudgeCalibrationMetrics;
+  previousReleaseId?: string;
+  integrityFingerprint: string;
 }
 
 /**

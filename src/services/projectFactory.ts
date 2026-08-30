@@ -17,5 +17,6 @@ export function createEmptyProject(name = "未命名项目"): Project {
     evaluatorVersions: [],
     goldenDatasetVersions: [],
     judgeCalibrationRuns: [],
+    evaluatorReleases: [],
   };
 }

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type {
+  EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetVersion,
   JudgeCalibrationChangeKind,
@@ -18,6 +19,7 @@ import {
   JUDGE_CALIBRATION_CHANGE_LABELS,
 } from "@/lib/judgeCalibrationRerun";
 import { runJudgeCalibration } from "@/services/judgeCalibrationClient";
+import { EvaluatorReleaseGate } from "@/components/calibration/EvaluatorReleaseGate";
 
 interface JudgeModelOption {
   id: string;
@@ -29,7 +31,9 @@ interface JudgeCalibrationPanelProps {
   evaluatorVersions: EvaluatorVersion[];
   judgeModels: JudgeModelOption[];
   runs: JudgeCalibrationRun[];
+  releases: EvaluatorRelease[];
   onSaveRun: (run: JudgeCalibrationRun) => void;
+  onSaveRelease: (release: EvaluatorRelease) => void;
 }
 
 const DEFAULT_CRITERIA =
@@ -177,7 +181,9 @@ export function JudgeCalibrationPanel({
   evaluatorVersions,
   judgeModels,
   runs,
+  releases,
   onSaveRun,
+  onSaveRelease,
 }: JudgeCalibrationPanelProps) {
   const usableVersions = useMemo(
     () =>
@@ -598,6 +604,13 @@ export function JudgeCalibrationPanel({
           )}
         </section>
       </div>
+
+      <EvaluatorReleaseGate
+        selectedRun={selectedRun}
+        evaluatorVersions={usableEvaluatorVersions}
+        releases={releases}
+        onSaveRelease={onSaveRelease}
+      />
 
       {confirming && selectedVersion && selectedJudge && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 p-4" role="dialog" aria-modal="true" aria-label="确认启动 Judge 校准">

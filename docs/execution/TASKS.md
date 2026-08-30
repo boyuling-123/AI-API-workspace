@@ -329,7 +329,7 @@
 - [x] 分支已推送并创建 [PR #29](https://github.com/boyuling-123/AI-API-workspace/pull/29)；首轮 workflow run `33295087238` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33295201533` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #29 为 Merged，合并 SHA 为 `1af2a69`。
 
-## 进行中：PR 06E Evaluator 变化后重跑黄金集
+## 已完成：PR 06E Evaluator 变化后重跑黄金集
 
 分支：`codex/feat-judge-calibration-rerun`
 
@@ -343,7 +343,22 @@
 - [x] 保存并人工检查 `docs/evidence/pr-06e/evaluator-rerun-comparison.png`；本地 quality 通过 286 文件密钥扫描、零 lint、typecheck、131 项单测、2 项压力测试和 20 路由构建；全量 26 项 Playwright 通过。
 - [x] 功能快照 `515aeb8` 在独立干净工作树全新安装 434 个包，quality 与 26 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #30](https://github.com/boyuling-123/AI-API-workspace/pull/30)；首轮 workflow run `33296085052` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33296208642` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #30 为 Merged，合并 SHA 为 `1b6d01e`。
+
+## 进行中：PR 06F Evaluator Active 发布门禁
+
+分支：`codex/feat-evaluator-calibration-gate`
+
+- [x] 新增项目级只追加 `EvaluatorRelease`，保存发布人、Evaluator/黄金集/Judge 引用、固定阈值、复算指标、前一发布记录与完整性指纹。
+- [x] 固定门禁要求同一 Evaluator 家族、完整执行定义和逐字同步的判定标准；跨家族或自定义/改写标准不能旁路发布。
+- [x] 逐 Case 结果必须 Case ID 唯一且成功/失败结构完整；已存指标必须与逐 Case 结果确定性复算一致。
+- [x] 正式阈值固定为至少 20 个成功 Case、准确率不低于 90%、Cohen's κ 不低于 0.8、Bad Case 漏判率不高于 5% 且零调用错误。
+- [x] 失败时禁用 Active 发布；全部通过后仍要求发布人和二次确认，发布本身明确为 0 次模型调用且不会自动评价。
+- [x] 页面展示逐项实际值与要求、当前 Active 和只追加发布历史；完整记录随项目刷新持久化，损坏记录不参与 Active 选择。
+- [x] 6 项真实源码单测覆盖通过、阈值失败、跨家族、标准改写、指标篡改、重复 Case、历史、脱敏与重复 id。
+- [x] Mock E2E 以 20 Case 验证 v1 漏判率 10% 被阻断，v2 达标后确认发布、刷新持久化、Judge 调用严格为 40 且发布新增 0 次；Axe 严重/致命问题为 0。
+- [x] 保存并人工检查 `docs/evidence/pr-06f/evaluator-release-gate.png`；本地 Secret Scan、零警告 lint、typecheck、137 项单测、2 项压力测试、20 路由构建和全量 27 项 Playwright 已通过。
+- [ ] 提交功能快照，在独立干净工作树复验后推送、创建 PR，并等待两轮 GitHub CI 与最终合并审计。
 
 ## 硬门禁
 

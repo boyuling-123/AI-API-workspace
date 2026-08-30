@@ -48,7 +48,7 @@
 | PROMPT-004 | 保存 Prompt 版本、修改人、时间和适用任务 | 已验证 | `EvaluatorVersion` 保存家族/版本、修改人、时间、变更说明、适用任务和完整 Prompt；`EvaluationRecord.evaluatorVersionId` 绑定实际版本；历史列表展示版本 | `evaluatorVersion.test.ts` 验证版本递增和元数据不可变；`evaluator-versioning.spec.ts` 验证 IndexedDB 刷新持久化及评价历史绑定 v2；本地、独立干净工作树与 PR #23 workflow run `33287622657` 两道 CI 全部通过 | 版本号、修改人、变更说明和适用范围全部持久化 | Evaluator 生命周期 | [#23](https://github.com/boyuling-123/AI-API-workspace/pull/23) |
 | PROMPT-005 | 新旧 Prompt 版本 Diff | 已验证 | `evaluatorVersionDiff.ts` 确定性输出结构字段、Rubric、逐行 Prompt 与影响范围；`EvaluatorVersionDiffPanel.tsx` 提供基线选择、上下文 Diff 和大文本折叠 | `evaluatorVersionDiff.test.ts` 覆盖结构化/逐行/大 Prompt/跨家族/篡改；`evaluator-version-diff-restore.spec.ts` 覆盖真实页面 Diff 与 WCAG；本地、独立干净工作树与 PR #24 workflow run `33290243949` 两道 CI 全部通过 | 支持结构化与文本 Diff，并标识影响范围 | Evaluator 生命周期 | [#24](https://github.com/boyuling-123/AI-API-workspace/pull/24) |
 | PROMPT-006 | 恢复历史 Prompt 版本 | 已验证 | `restoreEvaluatorVersion` 复用不可变创建入口追加 `vN+1`；页面只允许恢复非最新版并展示不会覆盖旧版本或调用 Judge | `evaluatorVersionDiff.test.ts` 验证 v1→v3、旧快照不变、最新版/缺失/篡改阻断；Mock E2E 验证刷新持久化、v1/v2 可回看和 Judge 零调用；本地、独立干净工作树与 PR #24 workflow run `33290243949` 两道 CI 全部通过 | 可从历史版本创建新版本且不篡改旧记录 | Evaluator 生命周期 | [#24](https://github.com/boyuling-123/AI-API-workspace/pull/24) |
-| PROMPT-007 | Prompt 或维度变化后重新校准 Judge | 部分实现 | `judgeCalibrationRerun.ts` 对不可变 Evaluator 版本执行定义做确定性变更检测；`JudgeCalibrationPanel.tsx` 自动生成确认式重跑计划并关联基线 | `judgeCalibrationRerun.test.ts` 覆盖 Prompt/维度变化与同定义复用；`judge-calibration-rerun.spec.ts` 覆盖 v1→v2、零自动调用和前后结果保留；本地、独立干净工作树与 workflow run `33296085052` 两道 CI 全部通过 | 变更触发黄金集校准，失败时阻止发布；本 PR 未实现发布阻断 | Judge 校准 | [#30](https://github.com/boyuling-123/AI-API-workspace/pull/30) |
+| PROMPT-007 | Prompt 或维度变化后重新校准 Judge | 已实现 | `judgeCalibrationRerun.ts` 对不可变 Evaluator 版本执行定义做确定性变更检测；`JudgeCalibrationPanel.tsx` 自动生成确认式重跑计划并关联基线；`evaluatorRelease.ts` 与 `EvaluatorReleaseGate.tsx` 在失败时阻断 Active 发布 | 重跑规划与发布门禁真实源码单测；`judge-calibration-rerun.spec.ts` 和 `evaluator-release-gate.spec.ts` 覆盖 v1→v2、失败阻断、通过后发布、刷新持久化与零发布调用；本地 137 项单测、2 项压力测试和 27 项 Playwright 通过，待独立环境与 GitHub CI | 变更触发黄金集校准，失败时无法成为 Active，达标后仍需发布人和二次确认 | Judge 校准 | [#30](https://github.com/boyuling-123/AI-API-workspace/pull/30)；PR 06F 待创建 |
 | PROMPT-008 | 复用模型输出，仅重新执行评价 | 已验证 | `HistoryPanel.tsx` 明示复用输出入口；`evaluationExecutionPlan.ts` 固定被测目标调用为 0；`WorkspaceBody.tsx` 与 `EvaluationPanel.tsx` 复用同一 Task 输出并为每轮正式评价追加独立记录 | `evaluation-trial-rerun.spec.ts` 验证首次跑批后两轮正式评价只调用 `/api/evaluate`、被测模型调用数不增加，并形成 2 条独立历史；本地、独立干净工作树与 PR #25 workflow run `33292294441` 两道 CI 全部通过 | 同一 Task 可生成多条独立评价记录且不再次调用被测模型 | Evaluator 生命周期 | [#25](https://github.com/boyuling-123/AI-API-workspace/pull/25) |
 | JUDGE-001 | Judge 候选池记录厂商、模型、模态、上下文、成本和时延 | 部分实现 | `TargetConfig` 有名称、模态、状态，缺其余元数据 | 无 | 所有元数据可维护、筛选并进入评价快照 | Judge 校准 | 待关联 |
 | JUDGE-002 | 按文本、图片、代码等任务筛选 Judge | 部分实现 | `WorkspaceBody.tsx` 按文本/多模态筛选 | 无 | 各任务类型只能选择兼容 Judge，并解释禁用原因 | Judge 校准 | 待关联 |
@@ -57,7 +57,7 @@
 | JUDGE-005 | 支持单 Judge、多 Judge 和分歧仲裁 | Demo | 当前仅支持单 Judge | 无 | 多 Judge 独立执行，分歧按可配置策略仲裁 | Judge 校准 | 待关联 |
 | JUDGE-006 | 高风险与高频分歧 Case 可人工复核 | 设计中 | 无 | 无 | 风险规则可解释，Case 可领取、复核和留痕 | 报告复核 | 待关联 |
 | JUDGE-007 | Judge、维度或 Prompt 变化后重跑黄金集 | 已验证 | `JudgeCalibrationRun` 保存任务/基线/变更/Evaluator 快照；`judgeCalibrationRerun.ts` 自动规划首次、变化重跑和同配置复用；页面二次确认后追加历史并展示指标差异 | 6 项规划与服务边界单测、客户端快照测试及 `judge-calibration-rerun.spec.ts` 覆盖 v1→v2、精确调用、历史持久化、WCAG；本地、独立干净工作树与 workflow run `33296085052` 两道 CI 全部通过 | 变更自动创建校准任务并保留前后结果 | Judge 校准 | [#30](https://github.com/boyuling-123/AI-API-workspace/pull/30) |
-| JUDGE-008 | 校准失败时禁止发布 Evaluator | 设计中 | 无发布门禁 | 无 | 未达到阈值的版本无法成为 Active | Judge 校准 | 待关联 |
+| JUDGE-008 | 校准失败时禁止发布 Evaluator | 已实现 | `evaluatorRelease.ts` 固定同家族、完整定义、结果/指标一致性、20 样本、准确率、κ、漏判率与零错误门禁；`EvaluatorReleaseGate.tsx` 提供二次确认、Active 和只追加历史 | `evaluatorRelease.test.ts` 6 项覆盖通过、阈值失败、跨家族、标准改写、指标篡改、重复 Case、历史与脱敏；`evaluator-release-gate.spec.ts` 覆盖 10% 漏判阻断、v2 达标发布、刷新持久化、0 次发布调用和 WCAG；待独立环境与 GitHub CI | 未达到固定阈值、证据不完整或指标无法复算的版本无法成为 Active；发布后可追溯且旧记录不覆盖 | Judge 校准 | PR 06F 待创建 |
 | POOL-001 | 建立模型、算法、Judge 统一资源池 | 部分实现 | `TargetConfig` 统一模型/算法，Judge 复用 Target | 无 | 资源角色、版本和能力均由统一实体表达 | 资源池 | 待关联 |
 | POOL-002 | 记录文本、图片、文生图、编辑、视频和业务算法能力 | 部分实现 | `ContentKind` 仅 text/multimodal/image | 无 | 能力枚举覆盖需求并支持扩展 | 资源池 | 待关联 |
 | POOL-003 | 记录输入输出模态和参数范围 | 部分实现 | `contentKind`；`inputParams` | 无 | 输入输出 Schema、范围和默认值均可校验 | 资源池 | 待关联 |
@@ -119,7 +119,8 @@
 - JUDGE-003 已由 PR #26 建立黄金集领域基础，并由 PR #27 接入独立页面、人工确认、持久化用户路径与视觉证据；本地、独立干净环境和首轮 GitHub CI 全部门禁通过，状态为“已验证”。
 - JUDGE-004 已在 PR #28（PR 06C）完成不泄漏人工标签的单 Case Judge 契约和确定性统计核心，并通过本地、独立干净环境与首轮 GitHub CI，状态为“部分实现”；PR 06D 再接入调用确认、历史持久化与样本下钻。
 - JUDGE-004 已由 PR #28 完成隔离人工真值的服务与指标核心，并由 PR #29 完成确认式运行、100 Case 高费用门禁、历史持久化和分歧下钻；本地、独立干净环境、视觉证据与 workflow run `33295087238` 两道 CI 全部通过，状态为“已验证”。
-- JUDGE-007 已在 PR #30 完成 Evaluator 绑定、变更重跑计划、同定义复用、基线关联和前后指标对比；本地、独立干净环境、视觉证据与 workflow run `33296085052` 两道 CI 全部通过，状态为“已验证”。PROMPT-007 因发布阻断尚未实现，保持“部分实现”。
+- JUDGE-007 已在 PR #30 完成 Evaluator 绑定、变更重跑计划、同定义复用、基线关联和前后指标对比；最终文档 workflow run `33296208642` 两道 CI 通过并已合并，状态为“已验证”。
+- JUDGE-008 与 PROMPT-007 已在 PR 06F 本地完成固定发布阈值、同家族与完整定义绑定、逐 Case/指标复算、失败阻断、二次确认和 Active 历史；137 项单测、2 项压力测试、27 项 Playwright、WCAG 与视觉检查通过，独立干净环境和 GitHub CI 完成前保持“已实现”。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
+  EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetVersion,
   JudgeCalibrationRun,
@@ -413,6 +414,23 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [updateProject]
   );
 
+  const handleSaveEvaluatorRelease = useCallback(
+    (release: EvaluatorRelease) => {
+      updateProject(
+        (current) => {
+          const existing = current.evaluatorReleases ?? [];
+          if (existing.some((item) => item.id === release.id)) return current;
+          return {
+            ...current,
+            evaluatorReleases: [...existing, release],
+          };
+        },
+        { immediate: true }
+      );
+    },
+    [updateProject]
+  );
+
   // v4.3 增量2：删除某条历史评价记录。
   const handleDeleteEvaluation = useCallback(
     (evaluationId: string) => {
@@ -760,8 +778,10 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             evaluatorVersions={project.evaluatorVersions ?? []}
             judgeModels={judgeModels}
             calibrationRuns={project.judgeCalibrationRuns ?? []}
+            evaluatorReleases={project.evaluatorReleases ?? []}
             onSave={handleSaveGoldenDatasetVersion}
             onSaveCalibrationRun={handleSaveJudgeCalibrationRun}
+            onSaveEvaluatorRelease={handleSaveEvaluatorRelease}
           />
         </div>
       )}
