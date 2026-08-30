@@ -6,6 +6,7 @@
 - 导入测试覆盖双语字段映射、真实 Excel 工作簿、严格 JSON 容器、非法标签、重复 Case ID 和越界分数。
 - 版本测试覆盖 v1 深拷贝、v2 追加、旧版不变、变更说明门禁、缺失家族、篡改检测和敏感值脱敏。
 - 功能提交 `3e0582a` 在独立 detached 工作树全新安装 434 个包后，通过 quality 与既有 22 项 Playwright，结束时 Git 零改动。
+- [PR #26](https://github.com/boyuling-123/AI-API-workspace/pull/26) 首轮 workflow run `33293157412` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 
 ## 安全边界
 

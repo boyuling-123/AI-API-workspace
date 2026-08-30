@@ -52,7 +52,7 @@
 | PROMPT-008 | 复用模型输出，仅重新执行评价 | 已验证 | `HistoryPanel.tsx` 明示复用输出入口；`evaluationExecutionPlan.ts` 固定被测目标调用为 0；`WorkspaceBody.tsx` 与 `EvaluationPanel.tsx` 复用同一 Task 输出并为每轮正式评价追加独立记录 | `evaluation-trial-rerun.spec.ts` 验证首次跑批后两轮正式评价只调用 `/api/evaluate`、被测模型调用数不增加，并形成 2 条独立历史；本地、独立干净工作树与 PR #25 workflow run `33292294441` 两道 CI 全部通过 | 同一 Task 可生成多条独立评价记录且不再次调用被测模型 | Evaluator 生命周期 | [#25](https://github.com/boyuling-123/AI-API-workspace/pull/25) |
 | JUDGE-001 | Judge 候选池记录厂商、模型、模态、上下文、成本和时延 | 部分实现 | `TargetConfig` 有名称、模态、状态，缺其余元数据 | 无 | 所有元数据可维护、筛选并进入评价快照 | Judge 校准 | 待关联 |
 | JUDGE-002 | 按文本、图片、代码等任务筛选 Judge | 部分实现 | `WorkspaceBody.tsx` 按文本/多模态筛选 | 无 | 各任务类型只能选择兼容 Judge，并解释禁用原因 | Judge 校准 | 待关联 |
-| JUDGE-003 | 建立人工标注黄金测试集 | 部分实现 | `goldenDataset.ts` 定义人工真值、不可变版本与完整性校验；`goldenDatasetFile.ts` 严格解析 Excel/CSV/JSON/JSONL 并输出映射和逐行问题；`Project.goldenDatasetVersions` 提供向后兼容的本地持久化字段 | `goldenDataset.test.ts` 8 项真实源码测试覆盖双语映射、真实 Excel、非法值、严格 JSON、版本追加、旧版不变、篡改与脱敏；功能提交 `3e0582a` 在独立干净环境通过 quality 与既有 22 项 Playwright；待 PR 06B 用户路径 | 黄金集可导入、版本化并锁定人工标签 | Judge 校准 | PR 06A（待创建） |
+| JUDGE-003 | 建立人工标注黄金测试集 | 部分实现 | `goldenDataset.ts` 定义人工真值、不可变版本与完整性校验；`goldenDatasetFile.ts` 严格解析 Excel/CSV/JSON/JSONL 并输出映射和逐行问题；`Project.goldenDatasetVersions` 提供向后兼容的本地持久化字段 | `goldenDataset.test.ts` 8 项真实源码测试覆盖双语映射、真实 Excel、非法值、严格 JSON、版本追加、旧版不变、篡改与脱敏；功能提交 `3e0582a` 在独立干净环境通过 quality 与既有 22 项 Playwright；PR #26 workflow run `33293157412` 两道 CI 通过；待 PR 06B 用户路径 | 黄金集可导入、版本化并锁定人工标签 | Judge 校准 | [#26](https://github.com/boyuling-123/AI-API-workspace/pull/26) |
 | JUDGE-004 | 计算 Judge 与人工判断的一致性、准确率和漏判 | 设计中 | 无 | 无 | 输出明确统计指标和样本下钻 | Judge 校准 | 待关联 |
 | JUDGE-005 | 支持单 Judge、多 Judge 和分歧仲裁 | Demo | 当前仅支持单 Judge | 无 | 多 Judge 独立执行，分歧按可配置策略仲裁 | Judge 校准 | 待关联 |
 | JUDGE-006 | 高风险与高频分歧 Case 可人工复核 | 设计中 | 无 | 无 | 风险规则可解释，Case 可领取、复核和留痕 | 报告复核 | 待关联 |
@@ -116,7 +116,7 @@
 - DIM-010、PROMPT-002 与 PROMPT-004 已在 PR #23 完成不可变 Evaluator/Prompt 版本、元数据、刷新持久化和评价历史绑定；本地、独立干净工作树、视觉证据与 workflow run `33287622657` 两道 CI 全部通过，状态为“已验证”。
 - PROMPT-005 与 PROMPT-006 已在 PR #24 完成确定性结构/文本 Diff、影响范围和只追加恢复；代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33290243949` 两道 CI 全部通过，状态为“已验证”。
 - PROMPT-003 与 PROMPT-008 已在 PR #25 完成少量试评、逐条错误、零历史写入、调用确认和同一 Task 两轮独立重评；真实源码单测、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33292294441` 两道 CI 全部通过，状态为“已验证”。
-- JUDGE-003 已在 PR 06A 完成黄金集领域模型、严格导入结果、不可变版本和 8 项真实源码测试，状态为“部分实现”；PR 06B 再接入独立页面、人工确认、持久化用户路径与视觉证据。
+- JUDGE-003 已在 PR #26（PR 06A）完成黄金集领域模型、严格导入结果、不可变版本和 8 项真实源码测试，并通过独立干净环境与首轮 GitHub CI，状态为“部分实现”；PR 06B 再接入独立页面、人工确认、持久化用户路径与视觉证据。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

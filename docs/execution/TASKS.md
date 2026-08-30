@@ -283,7 +283,8 @@
 - [x] v1 发布后快照不可变；追加 vN+1 时要求变更说明，旧版本保持不变并执行内容与元数据完整性校验。
 - [x] 8 项真实源码单测覆盖双语映射、真实 Excel、非法标签、重复 ID、越界分数、JSON 边界、版本追加、篡改和脱敏。
 - [x] 功能快照 `3e0582a` 在独立干净工作树全新安装 434 个包，quality 与既有 22 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并完成 GitHub CI、PR 与安全合并。
+- [x] 分支已推送并创建 [PR #26](https://github.com/boyuling-123/AI-API-workspace/pull/26)；首轮 workflow run `33293157412` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
 
 下一连续小 PR：PR 06B 独立 Judge 校准页、字段映射预览、人工核对、版本库、Mock E2E 与视觉证据。
 
