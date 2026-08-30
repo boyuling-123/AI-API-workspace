@@ -646,3 +646,20 @@
 - JUDGE-003 已同时具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #27。
+
+## 2026-08-30：PR 06B 合并与 PR 06C 启动
+
+- PR #27 最终文档提交对应 workflow run `33293861344` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 确认远端 `main` 保持在预期基线 `50cdc17`、PR 可合并且无 Review 或未解决线程后，以普通 fast-forward 安全合并；GitHub 确认 Merged，合并 SHA 为 `58aae60`。
+- 本地从同一提交创建短生命周期分支 `codex/feat-judge-calibration-metrics`，JUDGE-004 按服务核心与页面用户路径拆成 PR 06C/06D。
+
+## 2026-08-30：PR 06C 校准契约与指标核心
+
+- 新增单 Case `/api/judge-calibration` 与严格二分类 Judge Prompt，只接收 Case ID、输入、候选输出、可选标准答案、Judge ID 和判定标准。
+- 路由在调用模型前白名单重建输入；额外传入的 `humanLabel`、`reviewerNote` 或其他人工真值字段会被丢弃，避免标签泄漏造成虚假高一致性。
+- Judge 输出严格校验 pass/fail、0-1 置信度与非空理由；用户请求错误返回 400，Judge 坏 JSON、坏标签或越界置信度返回 500。
+- 新增确定性指标模块：准确率、Cohen’s κ、Bad Case 漏判率、误杀率和混淆矩阵；失败 Case 不进入指标分母，无有效分母时返回 null。
+- 3 个新增测试文件共 11 项测试，直接覆盖指标、服务和 route；Prompt 隔离测试证明人工标签与复核说明不会发送给 Judge，敏感值发送前会脱敏。
+- 本地最终 `npm run quality` 通过 275 文件 Secret Scan、零 lint、typecheck、123 项真实源码单测、2 项压力测试和 20 路由生产构建；全量既有 23 项 Playwright 全部通过。
+
+下一步：提交 PR 06C 功能快照并在独立干净工作树全新安装依赖，重复全部门禁。

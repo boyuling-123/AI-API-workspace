@@ -286,7 +286,7 @@
 - [x] 分支已推送并创建 [PR #26](https://github.com/boyuling-123/AI-API-workspace/pull/26)；首轮 workflow run `33293157412` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33293293787` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #26 为 Merged，合并 SHA 为 `50cdc17`。
 
-## 进行中：PR 06B 人工黄金集管理页与用户路径
+## 已完成：PR 06B 人工黄金集管理页与用户路径
 
 分支：`codex/feat-judge-golden-dataset-ui`
 
@@ -298,7 +298,21 @@
 - [x] 本地 quality 通过 267 文件密钥扫描、零 lint、typecheck、112 项单测、2 项压力测试和 19 路由构建；全量 23 项 Playwright 通过。
 - [x] 功能快照 `23fdb21` 在独立干净工作树全新安装 434 个包，quality 与 23 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #27](https://github.com/boyuling-123/AI-API-workspace/pull/27)；首轮 workflow run `33293740909` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33293861344` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #27 为 Merged，合并 SHA 为 `58aae60`。
+
+## 进行中：PR 06C Judge 校准契约与确定性指标
+
+分支：`codex/feat-judge-calibration-metrics`
+
+- [x] 新增单 Case `/api/judge-calibration`，严格校验 Case、Judge 和判定标准，模型坏 JSON/标签/置信度按服务端错误返回。
+- [x] API 白名单重建 Judge 输入，调用方多传的人工标签和复核说明不会进入 Prompt；发送前继续执行敏感值脱敏。
+- [x] Judge 严格返回 pass/fail、0-1 置信度与理由；本 PR 不新增自动批量触发或真实模型测试。
+- [x] 以人工标签为真值确定性计算准确率、Cohen’s κ、Bad Case 漏判率、误杀率和 2x2 混淆矩阵；无分母时返回 null，不伪造 0%。
+- [x] 11 项新增真实源码测试覆盖完美/分歧/错误样本、空分母、入参门禁、人工真值隔离、脱敏、坏 Judge 输出和路由状态码。
+- [x] 本地 quality 通过 275 文件密钥扫描、零 lint、typecheck、123 项单测、2 项压力测试和 20 路由构建；全量 23 项 Playwright 通过。
+- [ ] 提交功能快照并在独立干净工作树复验全部门禁。
+
+下一连续小 PR：PR 06D 调用预览与二次确认、受控并发、校准历史、指标卡和分歧样本下钻。
 
 ## 硬门禁
 

@@ -79,6 +79,8 @@ export interface Project {
   evaluatorVersions?: EvaluatorVersion[];
   /** 人工标注黄金集的不可变版本；旧项目可缺省。 */
   goldenDatasetVersions?: GoldenDatasetVersion[];
+  /** Judge 对黄金集的校准运行记录；旧项目可缺省。 */
+  judgeCalibrationRuns?: JudgeCalibrationRun[];
 }
 
 export interface Task {
@@ -377,6 +379,57 @@ export interface GoldenDatasetVersion {
   cases: GoldenDatasetCase[];
   contentFingerprint: string;
   integrityFingerprint: string;
+}
+
+export type JudgeCalibrationCaseStatus = "success" | "error";
+
+/** 单个黄金 Case 的 Judge 判定；人工标签只用于平台本地对比。 */
+export interface JudgeCalibrationCaseResult {
+  caseId: string;
+  humanLabel: GoldenHumanLabel;
+  status: JudgeCalibrationCaseStatus;
+  judgeLabel?: GoldenHumanLabel;
+  confidence?: number;
+  reason?: string;
+  error?: string;
+}
+
+export interface JudgeCalibrationConfusionMatrix {
+  humanPassJudgePass: number;
+  humanPassJudgeFail: number;
+  humanFailJudgePass: number;
+  humanFailJudgeFail: number;
+}
+
+/** 所有比率均为 0-1；分母不存在时返回 null，避免伪造 0%。 */
+export interface JudgeCalibrationMetrics {
+  totalCases: number;
+  completedCases: number;
+  errorCases: number;
+  matchingCases: number;
+  accuracy: number | null;
+  cohenKappa: number | null;
+  /** Bad Case 漏判：人工 fail、Judge pass。 */
+  badCaseMissRate: number | null;
+  /** 误杀：人工 pass、Judge fail。 */
+  falseRejectRate: number | null;
+  confusion: JudgeCalibrationConfusionMatrix;
+}
+
+/** 一次校准只保存 Judge 判定与人工标签快照，不复制黄金集全文。 */
+export interface JudgeCalibrationRun {
+  id: string;
+  createTime: number;
+  finishTime: number;
+  goldenDatasetVersionId: string;
+  goldenDatasetName: string;
+  goldenDatasetVersion: number;
+  judgeModelId: string;
+  judgeModelName: string;
+  criteria: string;
+  status: "done" | "partial" | "error";
+  results: JudgeCalibrationCaseResult[];
+  metrics: JudgeCalibrationMetrics;
 }
 
 /**
