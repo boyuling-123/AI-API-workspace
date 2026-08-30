@@ -10,6 +10,7 @@
 - `tests/e2e/evaluation-trial-rerun.spec.ts` 使用 Mock 覆盖 3 条跑批、2 条试评中 1 条解析失败、试评历史保持 0、同一批输出两次正式评价形成 2 条独立记录。
 - E2E 精确断言被测模型只在首次跑批调用 3 次；后续试评和两轮正式评价只调用 `/api/evaluate`，被测模型调用总数不再增加。
 - 确认弹窗通过 WCAG 2A/2AA/2.1A/2.1AA 严重与致命问题检查。
+- 功能提交 `a9ffa6e` 在独立 detached 工作树全新安装 434 个包后，重复通过 quality 与 22 项 Playwright，结束时 Git 零改动。
 
 ## 安全边界
 
