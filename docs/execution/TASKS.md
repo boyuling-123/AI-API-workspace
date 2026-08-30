@@ -345,7 +345,7 @@
 - [x] 分支已推送并创建 [PR #30](https://github.com/boyuling-123/AI-API-workspace/pull/30)；首轮 workflow run `33296085052` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33296208642` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #30 为 Merged，合并 SHA 为 `1b6d01e`。
 
-## 进行中：PR 06F Evaluator Active 发布门禁
+## 已完成：PR 06F Evaluator Active 发布门禁
 
 分支：`codex/feat-evaluator-calibration-gate`
 
@@ -360,7 +360,21 @@
 - [x] 保存并人工检查 `docs/evidence/pr-06f/evaluator-release-gate.png`；本地 Secret Scan、零警告 lint、typecheck、137 项单测、2 项压力测试、20 路由构建和全量 27 项 Playwright 已通过。
 - [x] 功能快照 `7e81ea6` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #31](https://github.com/boyuling-123/AI-API-workspace/pull/31)；首轮 workflow run `33297002754` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再执行远端漂移、Review/线程与可合并状态审计并安全合并。
+- [x] 最终文档提交对应 workflow run `33297159622` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程且 PR 可合并后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #31 为 Merged，合并 SHA 为 `a2d5f0f`。
+
+## 进行中：PR 06G 多 Judge 校准与确定性仲裁核心
+
+分支：`codex/feat-multi-judge-calibration`
+
+- [x] 定义 `2-5` 个唯一 Judge 的运行快照，Judge 集合与仲裁策略共同形成稳定运行身份，旧单 Judge 历史保持兼容。
+- [x] 按 `Case 数 × Judge 数` 建立精确调用矩阵并共用 `1-5` 全局并发池；人工标签和复核说明不进入任何 Judge 请求。
+- [x] 完整保留每个 Judge 的标签、置信度、理由或错误，并确定性计算逐 Judge 指标、最终指标和分歧 Case 数。
+- [x] 支持多数票且平票保守 `fail`、全票通过两种策略；任一投票缺失或失败时整条 Case 记错，不使用部分票数静默仲裁。
+- [x] Active 发布前复算投票、仲裁、逐 Judge 指标、最终指标和分歧数，并把 Judge 集合与仲裁策略冻结到发布快照。
+- [x] 真实源码测试覆盖精确请求数、全局并发、非法策略、重复 Judge、失败隔离、真值隔离、旧单 Judge 兼容和多类证据篡改。
+- [x] 本地 quality 通过 297 文件密钥扫描、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；既有 27 项 Playwright 全部通过。
+- [ ] 提交功能快照后在独立干净工作树全新安装依赖并重复完整门禁，再自主创建 PR、等待两轮 GitHub CI 并安全合并。
+- [ ] 页面多 Judge 选择、精确费用确认、逐 Judge 指标与分歧下钻拆到后续短 PR；完成前 JUDGE-005 保持“部分实现”。
 
 ## 硬门禁
 

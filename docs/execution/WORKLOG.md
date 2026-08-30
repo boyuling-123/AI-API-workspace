@@ -791,3 +791,24 @@
 - JUDGE-008 与 PROMPT-007 已同时具备代码、异常路径、真实源码测试、Mock 用户路径、独立干净环境、视觉证据和 GitHub CI Trace，状态升级为“已验证”。
 
 下一步：提交首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后，执行远端漂移、Review/线程与可合并状态审计，再安全合并 PR #31。
+
+## 2026-08-30：PR 06F 最终合并
+
+- 最终文档提交 `a2d5f0f` 对应 workflow run `33297159622` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 再次获取远端后确认 `main` 保持在预期基线 `1b6d01e`，PR Head 与远端分支均为 `a2d5f0f`，工作区干净。
+- PR #31 非草稿、GitHub `mergeable=true`，无 Review 和未解决线程；以普通 fast-forward 推送到 `main`，未强推或改写历史。
+- GitHub 已确认 PR #31 为 Merged，合并 SHA 为 `a2d5f0f`；JUDGE-008 与 PROMPT-007 保持“已验证”。
+
+下一步：在短分支 `codex/feat-multi-judge-calibration` 领取 JUDGE-005 的多 Judge 独立投票与确定性分歧仲裁核心，页面接入继续拆分为后续小 PR。
+
+## 2026-08-30：PR 06G 多 Judge 校准核心本地实现
+
+- 从已合并的 `main@a2d5f0f` 创建短生命周期分支 `codex/feat-multi-judge-calibration`，本轮只交付 JUDGE-005 的可复用核心，页面接入继续拆分，避免扩大单个 PR。
+- 多 Judge 运行要求选择 `2-5` 个唯一模型，精确调用数为 Case 数乘 Judge 数；全部请求共用 `1-5` 全局并发池，单 Case API 契约保持不变。
+- 每个 Judge 独立收到 Case 与相同标准，人工标签、复核说明和其他 Judge 投票不会进入请求；原始票与逐 Judge 指标均完整保留。
+- 多数票策略在平票时固定为 `fail`，全票通过策略仅在全体 `pass` 时通过；任何投票缺失或失败都会把该 Case 标记为错误，禁止部分票数静默仲裁。
+- 运行身份由排序后的 Judge ID 集合与策略共同确定；发布前从原始票复算仲裁、逐 Judge 指标、最终指标、运行状态和分歧数，残缺或篡改证据无法通过 Active 门禁。
+- 发布快照新增 Judge 集合与仲裁策略，并继续受完整性指纹保护；旧单 Judge 运行和发布记录无需迁移。
+- 本地 `npm run quality` 通过 297 文件 Secret Scan、零 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 27 项 Playwright 回归通过。
+
+下一步：提交 PR 06G 功能快照，在独立干净工作树全新安装依赖并重复全部门禁。

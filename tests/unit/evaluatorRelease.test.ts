@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type {
   EvaluatorVersion,
   JudgeCalibrationCaseResult,
+  JudgeCalibrationModelSnapshot,
   JudgeCalibrationRun,
 } from "@/types";
 import { createEvaluatorVersion } from "@/lib/evaluatorVersion";
@@ -17,6 +18,12 @@ import {
   getActiveEvaluatorRelease,
   isEvaluatorReleaseIntact,
 } from "@/lib/evaluatorRelease";
+import {
+  arbitrateJudgeVotes,
+  buildMultiJudgeSelectionId,
+  calculatePerJudgeMetrics,
+  hasJudgeDisagreement,
+} from "@/lib/multiJudgeCalibration";
 
 describe("Evaluator calibration release gate", () => {
   it("publishes a fully calibrated version as an immutable Active release", () => {
@@ -134,6 +141,40 @@ describe("Evaluator calibration release gate", () => {
     expect(isEvaluatorReleaseIntact(first)).toBe(true);
   });
 
+  it("freezes intact multi-Judge evidence and blocks tampered votes", () => {
+    const evaluator = evaluatorVersion();
+    const run = multiJudgeCalibrationRun(evaluator);
+    const release = createEvaluatorRelease({
+      existingReleases: [],
+      evaluatorVersion: evaluator,
+      calibrationRun: run,
+      releasedBy: "Lu",
+      id: "release-multi",
+    });
+
+    expect(evaluateEvaluatorCalibrationGate(evaluator, run).passed).toBe(true);
+    expect(release.judgeModels).toEqual(MULTI_JUDGES);
+    expect(release.judgeModels).not.toBe(run.judgeModels);
+    expect(release.arbitrationStrategy).toBe("majority_conservative");
+    expect(isEvaluatorReleaseIntact(release)).toBe(true);
+    expect(
+      isEvaluatorReleaseIntact({
+        ...release,
+        arbitrationStrategy: "unanimous_pass",
+      })
+    ).toBe(false);
+
+    const tamperedRun = structuredClone(run);
+    tamperedRun.results[0].votes![0].judgeLabel = "fail";
+    const failedChecks = evaluateEvaluatorCalibrationGate(
+      evaluator,
+      tamperedRun
+    ).checks.filter((check) => !check.passed);
+    expect(failedChecks.map((check) => check.key)).toContain(
+      "result_integrity"
+    );
+  });
+
   it("redacts publisher secrets and rejects duplicate release ids", () => {
     const evaluator = evaluatorVersion();
     const run = calibrationRun(evaluator);
@@ -206,6 +247,48 @@ function smallFailingResults(): JudgeCalibrationCaseResult[] {
       reason: index === 5 ? "漏判" : "一致",
     };
   });
+}
+
+const MULTI_JUDGES: JudgeCalibrationModelSnapshot[] = [
+  { id: "judge-a", name: "Judge A" },
+  { id: "judge-b", name: "Judge B" },
+  { id: "judge-c", name: "Judge C" },
+];
+
+function multiJudgeCalibrationRun(
+  evaluator: EvaluatorVersion
+): JudgeCalibrationRun {
+  const results = passingResults().map((result) => {
+    const opposite = result.humanLabel === "pass" ? "fail" : "pass";
+    return arbitrateJudgeVotes({
+      caseId: result.caseId,
+      humanLabel: result.humanLabel,
+      strategy: "majority_conservative",
+      votes: MULTI_JUDGES.map((judge, index) => ({
+        judgeModelId: judge.id,
+        judgeModelName: judge.name,
+        status: "success" as const,
+        judgeLabel: index < 2 ? result.humanLabel : opposite,
+        confidence: 0.9,
+        reason: `${judge.name} 独立判断`,
+      })),
+    });
+  });
+  const run = calibrationRun(evaluator, results, "run-multi");
+  return {
+    ...run,
+    judgeModelId: buildMultiJudgeSelectionId(
+      MULTI_JUDGES,
+      "majority_conservative"
+    ),
+    judgeModelName: "3 Judges",
+    judgeModels: MULTI_JUDGES.map((judge) => ({ ...judge })),
+    arbitrationStrategy: "majority_conservative",
+    perJudgeMetrics: calculatePerJudgeMetrics(results, MULTI_JUDGES),
+    disagreementCases: results.filter((result) =>
+      hasJudgeDisagreement(result.votes ?? [])
+    ).length,
+  };
 }
 
 function calibrationRun(

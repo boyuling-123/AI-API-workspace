@@ -385,6 +385,26 @@ export interface GoldenDatasetVersion {
 
 export type JudgeCalibrationCaseStatus = "success" | "error";
 
+export interface JudgeCalibrationModelSnapshot {
+  id: string;
+  name: string;
+}
+
+export type JudgeArbitrationStrategy =
+  | "majority_conservative"
+  | "unanimous_pass";
+
+/** 单个 Judge 对一个黄金 Case 的原始投票，始终保留且不被仲裁结果覆盖。 */
+export interface JudgeCalibrationVote {
+  judgeModelId: string;
+  judgeModelName: string;
+  status: JudgeCalibrationCaseStatus;
+  judgeLabel?: GoldenHumanLabel;
+  confidence?: number;
+  reason?: string;
+  error?: string;
+}
+
 /** 单个黄金 Case 的 Judge 判定；人工标签只用于平台本地对比。 */
 export interface JudgeCalibrationCaseResult {
   caseId: string;
@@ -394,6 +414,8 @@ export interface JudgeCalibrationCaseResult {
   confidence?: number;
   reason?: string;
   error?: string;
+  /** 多 Judge 运行的独立原始投票；旧单 Judge 记录可缺省。 */
+  votes?: JudgeCalibrationVote[];
 }
 
 export interface JudgeCalibrationConfusionMatrix {
@@ -416,6 +438,12 @@ export interface JudgeCalibrationMetrics {
   /** 误杀：人工 pass、Judge fail。 */
   falseRejectRate: number | null;
   confusion: JudgeCalibrationConfusionMatrix;
+}
+
+export interface JudgeCalibrationPerModelMetrics {
+  judgeModelId: string;
+  judgeModelName: string;
+  metrics: JudgeCalibrationMetrics;
 }
 
 export type JudgeCalibrationTrigger =
@@ -463,6 +491,11 @@ export interface JudgeCalibrationRun {
   evaluatorDefinitionFingerprint?: string;
   evaluatorPolicyFingerprint?: string;
   evaluatorPromptFingerprint?: string;
+  /** 多 Judge 运行快照；旧单 Judge 记录可缺省。 */
+  judgeModels?: JudgeCalibrationModelSnapshot[];
+  arbitrationStrategy?: JudgeArbitrationStrategy;
+  perJudgeMetrics?: JudgeCalibrationPerModelMetrics[];
+  disagreementCases?: number;
 }
 
 export interface EvaluatorCalibrationGateThresholds {
@@ -489,6 +522,8 @@ export interface EvaluatorRelease {
   goldenDatasetVersion: number;
   judgeModelId: string;
   judgeModelName: string;
+  judgeModels?: JudgeCalibrationModelSnapshot[];
+  arbitrationStrategy?: JudgeArbitrationStrategy;
   thresholds: EvaluatorCalibrationGateThresholds;
   calibrationMetrics: JudgeCalibrationMetrics;
   previousReleaseId?: string;

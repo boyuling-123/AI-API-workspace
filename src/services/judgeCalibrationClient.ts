@@ -36,7 +36,7 @@ function errorMessage(error: unknown): string {
   ).slice(0, 2_000);
 }
 
-async function callJudgeCalibration(
+export async function requestJudgeCalibration(
   item: GoldenDatasetCase,
   modelId: string,
   criteria: string,
@@ -108,7 +108,7 @@ export async function runJudgeCalibration(
     runOne: async (item, runSignal) => {
       let result: JudgeCalibrationCaseResult;
       try {
-        const judgment = await callJudgeCalibration(
+        const judgment = await requestJudgeCalibration(
           item,
           judgeModelId,
           normalizedCriteria,

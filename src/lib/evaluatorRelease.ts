@@ -9,6 +9,7 @@ import { generateId } from "@/lib/id";
 import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 import { calculateJudgeCalibrationMetrics } from "@/lib/judgeCalibration";
 import { buildEvaluatorCalibrationCriteria } from "@/lib/judgeCalibrationRerun";
+import { isMultiJudgeCalibrationEvidenceIntact } from "@/lib/multiJudgeCalibration";
 import { redactSensitiveText } from "@/lib/redactSensitive";
 
 export const DEFAULT_EVALUATOR_GATE_THRESHOLDS: EvaluatorCalibrationGateThresholds = {
@@ -85,6 +86,7 @@ function releaseIntegritySource(release: Omit<EvaluatorRelease, "integrityFinger
 function calibrationResultsAreIntact(run: JudgeCalibrationRun): boolean {
   const caseIds = new Set<string>();
   return (
+    isMultiJudgeCalibrationEvidenceIntact(run) &&
     run.results.length > 0 &&
     run.results.every((result) => {
       if (!result.caseId.trim() || caseIds.has(result.caseId)) return false;
@@ -299,6 +301,16 @@ export function createEvaluatorRelease(
     goldenDatasetVersion: input.calibrationRun.goldenDatasetVersion,
     judgeModelId: input.calibrationRun.judgeModelId,
     judgeModelName: input.calibrationRun.judgeModelName,
+    ...(input.calibrationRun.judgeModels
+      ? {
+          judgeModels: input.calibrationRun.judgeModels.map((judge) => ({
+            ...judge,
+          })),
+        }
+      : {}),
+    ...(input.calibrationRun.arbitrationStrategy
+      ? { arbitrationStrategy: input.calibrationRun.arbitrationStrategy }
+      : {}),
     thresholds,
     calibrationMetrics: cloneMetrics(
       calculateJudgeCalibrationMetrics(input.calibrationRun.results)

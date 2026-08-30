@@ -6,3 +6,4 @@
 - Axe WCAG 2A/2AA/2.1A/2.1AA 扫描严重与致命问题为 0。
 - 功能快照 `7e81ea6` 已在独立 detached 工作树全新安装依赖并通过完整 quality 与 27 项 Playwright，测试后 Git 零改动。
 - PR #31 首轮 workflow run `33297002754` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- 最终文档 workflow run `33297159622` 两道 CI 通过，PR #31 已以 `a2d5f0f` fast-forward 合并。
