@@ -388,7 +388,8 @@
 - [x] 结果区展示最终指标、逐 Judge 独立指标、内部分歧数，并可按 Case 展开每个 Judge 的原始标签、理由、置信度或错误。
 - [x] 新增 Mock Playwright 覆盖 `2 Case × 3 Judge = 6`、取消零调用、精确请求矩阵、真值隔离、持久化和刷新零新增请求；既有单 Judge 3 项回归通过。
 - [x] 视觉证据已生成并人工检查；本地 300 文件 Secret Scan、零警告 lint、typecheck、146 单测、2 压测、20 路由构建和全量 28 项 Playwright 通过，JUDGE-005 升级为“已实现”。
-- [ ] 在独立干净工作树复验全部门禁，再自主创建、验收和合并 PR 06H；GitHub CI 通过后把 JUDGE-005 升级为“已验证”。
+- [x] 功能快照 `3247632` 在独立 detached 工作树全新安装 434 个包，quality 与 28 项 Playwright 全部通过，结束时 HEAD 未漂移且 Git 零改动。
+- [ ] 自主创建、验收和合并 PR 06H；GitHub CI 通过后把 JUDGE-005 升级为“已验证”。
 
 ## 硬门禁
 

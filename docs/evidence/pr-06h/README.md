@@ -7,6 +7,7 @@
 - WCAG 自动检查覆盖费用确认弹窗和多 Judge 结果区；首轮发现宽表横向滚动缺少键盘入口，最终改为无需横向滚动的紧凑指标卡并通过复验，未关闭 Axe 规则。
 - 本地 quality 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项真实源码单测、2 项压力测试和 20 路由生产构建；全量 28 项 Playwright 全部通过。
 - 视觉截图 `multi-judge-calibration.png` 已人工检查，配置、精确调用公式、仲裁结果、逐 Judge 指标和原始票在双栏内可直接阅读。
+- 功能快照 `3247632` 已在独立 detached 工作树全新安装 434 个包，并再次通过完整 quality 与 28 项 Playwright；测试后 HEAD 未漂移且 Git 零改动。
 - 所有测试使用 Mock，未读取真实密钥，未调用真实或付费模型，未自动启动 AI 评价。
 
 ## 视觉证据
