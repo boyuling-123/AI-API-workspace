@@ -422,7 +422,8 @@
 - [x] 6 项真实源码单测覆盖风险解释、重复频次、事件只追加、脱敏、异常路径和篡改；Mock E2E 覆盖 `2 Case × 3 Judge = 6`、领取、改判、审计、刷新持久化、零新增调用和 WCAG。
 - [x] 视觉证据已生成并人工检查；初始基线本地 305 文件 Secret Scan、零警告 lint、typecheck、152 项单测、2 项压力测试、20 路由构建和全量 29 项 Playwright 通过。
 - [x] 审计发现远端 `main` 新增平台总览后，保留原提交并安全重放到最新基线；功能快照 `4c03e5e` 在独立 detached 工作树全新安装 434 个包，quality 与 `CI=1` 的全量 31 项 Playwright 通过，结束时 HEAD 未漂移且 Git 零改动。
-- [ ] 推送、创建 PR，等待 GitHub 两道 CI 后完成审查与安全合并。
+- [x] 分支已推送并自主创建 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35)；首轮 workflow run `33299671151` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
 
 ## 硬门禁
 
