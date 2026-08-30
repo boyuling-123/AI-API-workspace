@@ -972,3 +972,14 @@
 - 本地 `npm run quality` 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项真实源码单测、2 项压力测试和 20 路由生产构建；`CI=1` 全量 32 项 Playwright 全部通过。
 
 下一步：提交 PR 07B 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+
+## 2026-08-30：PR 07B 独立干净环境复验
+
+- 排行榜计算层、历史页面、真实源码测试、Mock E2E、视觉证据和台账功能快照提交为 `95335f4`，父提交为已合并 PR #35 的 `main@2d6d6f8`。
+- 在 `/tmp/eval-platform-pr07b-95335f4` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个依赖。
+- 干净环境 `npm run quality` 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 使用 `CI=1` 启动该工作树专属服务，全量 32 项 Playwright 与 WCAG 全部通过；排行榜、人工复核、多 Judge、Evaluator 和原跑批路径共同通过。
+- 全部门禁结束后 detached HEAD 仍为 `95335f4` 且 `git status --short` 无输出，证明实现不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级审计项；未执行破坏性 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 07B，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。

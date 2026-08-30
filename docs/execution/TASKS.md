@@ -435,7 +435,7 @@
 - [x] “AI 历史评价 → 查看”新增维度勾选、仅看单维度、全选恢复、即时排名卡片和原始 Case 明细锚点；旧无维度记录显示明确降级说明。
 - [x] 5 项真实源码单测覆盖权重、单维度反转、缺失值、并列名次、旧记录等权兼容与输入不变；Mock E2E 覆盖 `2 Case × 2 模型`、动态重排、零新增调用、明细下钻、刷新持久化、390px 无溢出和 WCAG。
 - [x] 视觉证据 `docs/evidence/pr-07b/evaluation-leaderboard.png` 已人工检查；本地 quality 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项单测、2 项压力测试和 20 路由构建，全量 32 项 Playwright 通过。
-- [ ] 提交功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+- [x] 功能快照 `95335f4` 在独立 detached 工作树全新安装 434 个依赖；quality 与 `CI=1` 全量 32 项 Playwright 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [ ] 推送、创建 PR，等待 GitHub 两道 CI 后完成审查与安全合并。
 
 ## 硬门禁
