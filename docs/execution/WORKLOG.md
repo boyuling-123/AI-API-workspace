@@ -591,3 +591,14 @@
 - `goldenDataset.test.ts` 共 8 项，直接覆盖双语字段、真实 Excel 工作簿、严格 JSON、非法数据、版本追加、深拷贝、篡改和敏感值脱敏。
 
 下一步：提交 PR 06A 精确功能快照，在独立干净工作树复验 quality 与既有 22 项 Playwright；管理页、E2E 与视觉证据保留给 PR 06B。
+
+## 2026-08-30：PR 06A 独立干净环境复验
+
+- 领域、解析、项目兼容字段、8 项单测与台账提交为 `3e0582a`，父提交为已合并的 `ad430a3`。
+- 在 `/tmp/eval-platform-pr06a-3e0582a` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 通过 262 文件 Secret Scan、零 lint、typecheck、112 项真实源码单测、2 项压力测试和 19 路由生产构建。
+- 干净环境既有 22 项 Playwright 全部通过，`.last-run.json` 状态为 `passed` 且无失败测试；本 PR 没有新增页面或 API 调用。
+- 全部门禁结束后 detached HEAD 仍为 `3e0582a` 且 `git status --short` 无输出，证明领域层不依赖当前工作区尚未提交的 PR 06B UI。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送 PR 06A 分支并等待 GitHub 两道质量门禁。
