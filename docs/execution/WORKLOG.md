@@ -478,3 +478,15 @@
 - 本地 `npm run quality` 通过 248 文件 Secret Scan、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由生产构建；修改后的全量 20 项 Playwright 再次通过。
 
 下一步：提交功能快照，并在独立干净工作树全新安装依赖后复验全部门禁。
+
+## 2026-08-30：PR 05B 独立干净环境复验
+
+- 功能、本地测试与视觉证据提交为 `34347aa`，父提交为已合并的 `f0fedce`；提交前后远端 `main` 未发生漂移。
+- 在 `/tmp/eval-platform-pr05b-TknArX` 以 detached HEAD 检出精确提交，并使用锁文件全新 `npm ci` 安装 434 个包。
+- 干净环境 `npm run quality` 再次通过 248 文件 Secret Scan、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由生产构建。
+- 第一次并行 E2E 中，既有 `batch-resume` 在冷编译负载下用尽 30 秒总预算；失败上下文显示任务仍为 `3 / 12` 运行中，而非断言或模型请求错误。
+- 该路径随后以单 worker 精确复跑 9.2 秒通过；同一干净环境再次执行全量套件，20 项 Playwright 全部通过。
+- 所有模型相关 API 均为 Mock，未读取真实密钥、未调用真实或付费模型、未自动启动 AI 评价；最终 `git status --short` 无输出。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并创建 PR 05B，等待 GitHub 核心质量与 Playwright 两道 CI。

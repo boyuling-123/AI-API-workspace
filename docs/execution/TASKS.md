@@ -238,7 +238,8 @@
 - [x] 真实源码单测覆盖追加、深拷贝、修改识别、非法家族、篡改和脱敏；Mock Playwright 覆盖 v1/v2、刷新持久化、显式评价和 WCAG。
 - [x] 保存并人工检查 `docs/evidence/pr-05b/evaluator-versions.png`；当前 95 项单测与全量 20 项 Playwright 通过。
 - [x] 本地 quality 通过 248 文件密钥扫描、零 lint、typecheck、95 项单测、2 项压力测试和 19 路由构建；全量 20 项 Playwright 通过。
-- [ ] 完成独立干净工作树复验、提交、推送、双轮 GitHub CI 与安全合并。
+- [x] 功能提交 `34347aa` 在独立干净工作树全新安装 434 个包，quality 与最终全量 20 项 Playwright 通过，结束时 Git 零改动。
+- [ ] 推送分支、创建 PR，完成双轮 GitHub CI 与安全合并。
 
 ## 硬门禁
 
