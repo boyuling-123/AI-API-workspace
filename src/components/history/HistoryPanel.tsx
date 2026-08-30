@@ -128,11 +128,13 @@ export function HistoryPanel({
                       onClick={() => onEvaluate(task)}
                       disabled={isActive}
                       title={
-                        isActive ? "任务完成后才能启动 AI 评价" : undefined
+                        isActive
+                          ? "任务完成后才能启动 AI 评价"
+                          : "复用该批次已有输出，只调用裁判模型"
                       }
                       className="rounded-md border border-amber-300 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:border-gray-200 disabled:bg-gray-50 disabled:text-gray-400"
                     >
-                      去AI评测
+                      复用输出去AI评测
                     </button>
                     <button
                       type="button"

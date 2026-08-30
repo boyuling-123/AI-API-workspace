@@ -242,7 +242,7 @@
 - [x] 推送分支并创建 [PR #23](https://github.com/boyuling-123/AI-API-workspace/pull/23)；workflow run `33287622657` 的核心质量与 Playwright 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33287776223` 两道 GitHub CI 通过；确认远端 `main` 未漂移后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #23 为 Merged，合并 SHA 为 `64b891b`。
 
-## 进行中：PR 05C Evaluator 版本 Diff 与安全恢复
+## 已完成：PR 05C Evaluator 版本 Diff 与安全恢复
 
 分支：`codex/feat-evaluator-version-diff`
 
@@ -255,7 +255,22 @@
 - [x] 保存并人工检查 `docs/evidence/pr-05c/version-diff-restore.png`；本地 quality 通过 254 文件密钥扫描、零 lint、typecheck、101 项单测、2 项压力测试和 19 路由构建，全量 21 项 Playwright 通过。
 - [x] 功能快照 `41197b2` 在独立干净工作树全新安装 434 个包，quality 与 21 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #24](https://github.com/boyuling-123/AI-API-workspace/pull/24)；首轮 workflow run `33290243949` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 推送首轮 CI 验收回写，完成第二轮 GitHub CI、远端漂移/审查检查与安全合并。
+- [x] 最终文档提交对应 workflow run `33290477614` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #24 为 Merged，合并 SHA 为 `8623da4`。
+
+## 进行中：PR 05D 少量试评与复用输出重新评价
+
+分支：`codex/feat-evaluator-trial-rerun`
+
+- [x] 新增统一评价执行计划，少量试评默认 3 条、最多 5 条，并与正式评价共用准确调用预览。
+- [x] 试评与正式评价均需显式确认；确认前零 Judge 请求，且被测模型/算法调用始终为 0。
+- [x] 试评展示成功评分与逐条解析错误，只保留在当前页面，不创建正式评价历史。
+- [x] 跑批历史入口明确标记“复用输出去AI评测”；同一 Task 每次正式评价追加独立记录，不覆盖既有结果。
+- [x] 真实源码单测覆盖默认值、上限、确定性范围、去重和写历史边界。
+- [x] Mock Playwright 覆盖 3 条跑批、2 条试评含解析失败、历史 0 条和两轮正式重评形成 2 条独立记录。
+- [x] 保存并人工检查 `docs/evidence/pr-05d/evaluation-trial-confirm.png`；确认弹窗通过 WCAG 严重与致命问题扫描。
+- [x] 本地 quality 通过 259 文件密钥扫描、零 lint、typecheck、104 项单测、2 项压力测试和 19 路由构建；全量 22 项 Playwright 通过。
+- [ ] 提交功能快照并在独立干净工作树完成全新安装、quality 与 Playwright 复验。
+- [ ] 推送分支、创建 PR，等待两道 GitHub CI 后完成最终验收与安全合并。
 
 ## 硬门禁
 

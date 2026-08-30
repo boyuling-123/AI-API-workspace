@@ -112,6 +112,10 @@ async function prepareSourceEvaluation(page: Page): Promise<{
   await page.getByRole("button", { name: "确认评价策略" }).click();
   await page.getByLabel("评价 Prompt").fill("请按所选维度严格评价。");
   await page.getByRole("button", { name: "开始 AI 评价" }).click();
+  await page
+    .getByRole("dialog", { name: "确认正式 AI 评价" })
+    .getByRole("button", { name: "确认并开始评价" })
+    .click();
   await expect.poll(() => evaluateCalls.length).toBe(1);
   await expect(page.getByText("Mock summary", { exact: true })).toBeVisible();
 
@@ -157,7 +161,7 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
   await expect(dialog.getByText("1 次", { exact: true })).toBeVisible();
   await expect(dialog.getByText("0 次", { exact: true })).toBeVisible();
   await expect(dialog.getByText("1 条", { exact: true })).toBeVisible();
-  await expect(dialog.getByText("风格自然度", { exact: true })).toBeVisible();
+  await expect(dialog).toContainText("本次维度：风格自然度");
   expect(evaluateCalls).toHaveLength(1);
   expect(runCalls).toHaveLength(1);
 

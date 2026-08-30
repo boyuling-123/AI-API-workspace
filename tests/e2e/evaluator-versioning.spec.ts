@@ -212,6 +212,10 @@ test("saves immutable Evaluator versions and binds one to evaluation history", a
   }
 
   await page.getByRole("button", { name: "开始 AI 评价" }).click();
+  await page
+    .getByRole("dialog", { name: "确认正式 AI 评价" })
+    .getByRole("button", { name: "确认并开始评价" })
+    .click();
   await expect.poll(() => evaluateCalls.length).toBe(1);
   await expect(page.getByText("Evaluator v2 评价完成")).toBeVisible();
   await page.getByRole("tab", { name: /AI历史评价/ }).click();

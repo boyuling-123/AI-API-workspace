@@ -534,3 +534,22 @@
 - PROMPT-005 与 PROMPT-006 已同时具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #24。
+
+## 2026-08-30：PR 05C 合并与 PR 05D 启动
+
+- PR #24 最终文档提交对应 workflow run `33290477614` 的核心质量与 Playwright 两道 GitHub CI 全部通过。
+- 确认远端 `main` 无漂移、无未解决 Review 或审查线程后，以普通 fast-forward 安全合并；GitHub 确认 Merged，合并 SHA 为 `8623da4`。
+- 本地 `main` 与 `origin/main` 同步到 `8623da4`，随后创建短生命周期分支 `codex/feat-evaluator-trial-rerun`，只领取 PROMPT-003 与 PROMPT-008。
+
+## 2026-08-30：PR 05D 本地实现与验收
+
+- 新增 `evaluationExecutionPlan.ts` 作为试评与正式评价范围、调用数和历史写入策略的单一真相源；试评默认 3 条、最多 5 条，确定性复用已有成功输出。
+- AI 评价页拆成“少量样本试评”和“正式 AI 评价”两个动作；两者都先展示裁判调用、被测模型零调用、复用输出和历史写入状态，确认前不发请求。
+- 试评成功评分继续使用现有结果表，失败项以输入序号展示裁判解析或接口错误；试评结束不调用 `onEvaluationComplete`，因此不创建 `EvaluationRecord`。
+- 跑批历史入口改为“复用输出去AI评测”；正式评价仍从既有 Task 的 `inputs/results` 读取，每轮成功结果都追加独立评价历史，不覆盖原任务或旧评价。
+- 新增真实源码单测和 `evaluation-trial-rerun.spec.ts`；浏览器路径模拟 3 次首次跑批、2 次试评调用和两轮各 3 次正式 Judge 调用，精确证明首次跑批后被测模型调用数不再增加。
+- 试评中模拟第 2 条裁判 JSON 解析失败，页面显示成功 1、失败 1，切换到 AI 历史仍为 0；之后两轮正式评价形成 2 条独立历史。
+- 视觉证据 `docs/evidence/pr-05d/evaluation-trial-confirm.png` 已人工检查，费用边界和操作区清晰；确认弹窗通过 WCAG 严重与致命问题门禁。
+- 本地 `npm run quality` 通过 259 文件 Secret Scan、零 lint、typecheck、104 项真实源码单测、2 项压力测试和 19 路由生产构建；全量 22 项 Playwright 全部通过。
+
+下一步：提交功能快照，在独立干净工作树全新安装依赖并重复全部门禁，再自主推送并创建 PR 05D。

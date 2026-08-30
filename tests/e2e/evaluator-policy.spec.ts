@@ -140,6 +140,10 @@ test("confirms weights and veto rules before deterministic evaluation", async ({
   expect(evaluateCalls).toHaveLength(0);
 
   await page.getByRole("button", { name: "开始 AI 评价" }).click();
+  await page
+    .getByRole("dialog", { name: "确认正式 AI 评价" })
+    .getByRole("button", { name: "确认并开始评价" })
+    .click();
   await expect.poll(() => evaluateCalls.length).toBe(1);
   expect(evaluateCalls[0]).toMatchObject({
     dimensions: [{ ...rubric, weight: 100, vetoThreshold: 6 }],

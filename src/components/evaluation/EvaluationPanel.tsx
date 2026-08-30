@@ -72,6 +72,12 @@ import {
   MAX_EVALUATOR_NAME_LENGTH,
 } from "@/lib/evaluatorVersion";
 import { restoreEvaluatorVersion } from "@/lib/evaluatorVersionDiff";
+import {
+  buildEvaluationExecutionPlan,
+  DEFAULT_TRIAL_EVALUATION_COUNT,
+  MAX_TRIAL_EVALUATION_COUNT,
+  type EvaluationExecutionIntent,
+} from "@/lib/evaluationExecutionPlan";
 import { formatDateTime } from "@/lib/datetime";
 
 /** 候选维度（带勾选态）：AI 生成或手动添加，用户勾选要纳入评价的维度。 */
@@ -247,6 +253,13 @@ export function EvaluationPanel({
   const [confirmedPolicyFingerprint, setConfirmedPolicyFingerprint] =
     useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmationIntent, setConfirmationIntent] =
+    useState<EvaluationExecutionIntent>("formal");
+  const [lastExecutionIntent, setLastExecutionIntent] =
+    useState<EvaluationExecutionIntent | null>(null);
+  const [trialCount, setTrialCount] = useState(
+    DEFAULT_TRIAL_EVALUATION_COUNT
+  );
   const [activeEvaluatorVersionId, setActiveEvaluatorVersionId] =
     useState("");
   const [compareEvaluatorVersionId, setCompareEvaluatorVersionId] =
@@ -266,8 +279,16 @@ export function EvaluationPanel({
     Record<string, DimensionHumanFeedbackDraft>
   >({});
 
-  const { evalResults, status, error, genDimensions, generatePrompt, evaluate, cancel } =
-    evaluation;
+  const {
+    evalResults,
+    itemErrors,
+    status,
+    error,
+    genDimensions,
+    generatePrompt,
+    evaluate,
+    cancel,
+  } = evaluation;
 
   const multimodalModels = useMemo(
     () => judgeModels.filter((model) => model.supportsImage),
@@ -457,6 +478,18 @@ export function EvaluationPanel({
     return { total: scopedInputs.length, matched: withExpected.length };
   }, [effectiveScopeIds, expectedAnswerKey, inputs]);
 
+  const judgeEligibleInputIds = useMemo(() => {
+    if (evaluationMode === "comparison") return effectiveScopeIds;
+    const eligible = new Set(
+      inputs
+        .filter((input) =>
+          Boolean(resolveExpectedAnswer(input, expectedAnswerKey).value)
+        )
+        .map((input) => input.id)
+    );
+    return effectiveScopeIds.filter((inputId) => eligible.has(inputId));
+  }, [effectiveScopeIds, evaluationMode, expectedAnswerKey, inputs]);
+
   // 本次将对比的目标名单（去重），用于喂给 AI 生成评价 Prompt。
   const targetNames = useMemo(() => {
     const names = new Set<string>();
@@ -475,6 +508,17 @@ export function EvaluationPanel({
   const isGeneratingDim = status === "gen-dim";
   const isGenerating = status === "generating";
   const isRunning = status === "running";
+  const trialPlan = buildEvaluationExecutionPlan({
+    intent: "trial",
+    eligibleInputIds: judgeEligibleInputIds,
+    trialCount,
+  });
+  const formalPlan = buildEvaluationExecutionPlan({
+    intent: "formal",
+    eligibleInputIds: judgeEligibleInputIds,
+  });
+  const confirmationPlan =
+    confirmationIntent === "trial" ? trialPlan : formalPlan;
 
   // AI 按测评需求生成候选维度 → 追加到待办列表（默认不勾选，由用户自行挑选）。
   // 再次点击为「追加一批」：不覆盖已有维度（尤其已勾选的），按维度名去重，总数封顶 15 条。
@@ -643,15 +687,17 @@ export function EvaluationPanel({
     }
   };
 
-  const executeEvaluation = async () => {
+  const executeEvaluation = async (intent: EvaluationExecutionIntent) => {
     if (!evalPrompt.trim() || !judgeModelId) return;
-    if (effectiveScopeIds.length === 0) return;
+    const executionPlan = intent === "trial" ? trialPlan : formalPlan;
+    if (executionPlan.inputIds.length === 0) return;
     if (validDimensions.length === 0) return;
     setConfirmOpen(false);
+    setLastExecutionIntent(intent);
     const collected = await evaluate({
       inputs,
       results,
-      scopeInputIds: effectiveScopeIds,
+      scopeInputIds: executionPlan.inputIds,
       evalPrompt: evalPrompt.trim(),
       modelId: judgeModelId,
       dimensions: validDimensions,
@@ -659,8 +705,8 @@ export function EvaluationPanel({
       expectedAnswerKey,
       concurrency,
     });
-    // 评价跑完（非取消、有结果）→ 回传上层生成 EvaluationRecord 存盘（v4.3 板块⑤）。
-    if (collected && collected.length > 0) {
+    // 试评只展示当前页结果；只有正式评价才生成 EvaluationRecord。
+    if (intent === "formal" && collected.length > 0) {
       onEvaluationComplete?.({
         evalModelId: judgeModelId,
         userRequirement: scenario.trim(),
@@ -684,11 +730,14 @@ export function EvaluationPanel({
 
   const handleEvaluate = () => {
     if (!canEvaluate) return;
-    if (newDimensionContext) {
-      setConfirmOpen(true);
-      return;
-    }
-    void executeEvaluation();
+    setConfirmationIntent("formal");
+    setConfirmOpen(true);
+  };
+
+  const handleTrialEvaluate = () => {
+    if (!canEvaluate || trialPlan.inputIds.length === 0) return;
+    setConfirmationIntent("trial");
+    setConfirmOpen(true);
   };
 
   const toggleSelectedInput = (inputId: string) => {
@@ -918,9 +967,11 @@ export function EvaluationPanel({
     duplicateDimensionNames.length === 0 &&
     policyConfirmed &&
     (evaluationMode === "comparison" || expectedCoverage.matched > 0) &&
-    effectiveScopeIds.length > 0 &&
+    formalPlan.inputIds.length > 0 &&
     !isRunning &&
-    (!newDimensionContext || status !== "done");
+    (!newDimensionContext ||
+      status !== "done" ||
+      lastExecutionIntent !== "formal");
   const canSaveEvaluatorVersion =
     Boolean(currentEvaluatorDefinitionFingerprint) &&
     Boolean(evaluatorName.trim()) &&
@@ -1068,6 +1119,14 @@ export function EvaluationPanel({
               <p className="font-semibold">只新增裁判维度，不重新跑模型或算法</p>
               <p className="mt-1 text-xs text-emerald-700">
                 来源评价：{newDimensionContext.sourceEvaluationId}。本次复用历史输出，评价范围锁定为来源评价已完成的样本；确认前不会调用裁判模型。
+              </p>
+            </div>
+          )}
+          {!newDimensionContext && (
+            <div className="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950">
+              <p className="font-semibold">已复用该批次的模型或算法输出</p>
+              <p className="mt-1 text-xs leading-5 text-sky-800">
+                试评与正式评价都只调用裁判模型，不会重新运行被测目标。试评结果仅在当前页面预览，正式评价才会写入 AI 历史评价。
               </p>
             </div>
           )}
@@ -2207,37 +2266,137 @@ export function EvaluationPanel({
             )}
           </div>
 
-          {error && (
+          {error && itemErrors.length === 0 && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-600">
               {error}
             </p>
           )}
 
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleEvaluate}
-              disabled={!canEvaluate}
-              className="rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {isRunning
-                ? "评价进行中…"
-                : status === "done" && newDimensionContext
-                  ? "新增维度评价已完成"
-                  : newDimensionContext
-                    ? "预览并确认新增维度评价"
-                    : "开始 AI 评价"}
-            </button>
+          <section
+            aria-label="评价执行"
+            className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-4 md:grid-cols-2"
+          >
+            <div className="rounded-lg border border-cyan-200 bg-white p-3">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-semibold text-cyan-950">
+                    先做少量样本试评
+                  </h3>
+                  <p className="mt-1 text-xs leading-5 text-cyan-800">
+                    检查分数与解析错误，不写入 AI 历史评价。
+                  </p>
+                </div>
+                <label className="flex items-center gap-1 text-xs text-slate-600">
+                  样本数
+                  <select
+                    aria-label="试评样本数"
+                    value={trialCount}
+                    onChange={(event) =>
+                      setTrialCount(Number(event.target.value))
+                    }
+                    disabled={isRunning}
+                    className="rounded-md border border-slate-300 bg-white px-2 py-1"
+                  >
+                    {Array.from(
+                      { length: MAX_TRIAL_EVALUATION_COUNT },
+                      (_, index) => index + 1
+                    ).map((count) => (
+                      <option key={count} value={count}>
+                        {count}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <button
+                type="button"
+                onClick={handleTrialEvaluate}
+                disabled={!canEvaluate || trialPlan.inputIds.length === 0}
+                className="mt-3 w-full rounded-md border border-cyan-500 bg-cyan-50 px-4 py-2 text-sm font-semibold text-cyan-900 hover:bg-cyan-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRunning && lastExecutionIntent === "trial"
+                  ? "试评进行中…"
+                  : `试评 ${trialPlan.judgeCallCount} 条（不写历史）`}
+              </button>
+            </div>
+
+            <div className="rounded-lg border border-blue-200 bg-white p-3">
+              <h3 className="text-sm font-semibold text-blue-950">
+                正式 AI 评价
+              </h3>
+              <p className="mt-1 text-xs leading-5 text-blue-800">
+                复用 {formalPlan.reusedOutputCount} 条历史输出，完成后新增独立评价记录。
+              </p>
+              <button
+                type="button"
+                onClick={handleEvaluate}
+                disabled={!canEvaluate}
+                className="mt-3 w-full rounded-md bg-blue-700 px-4 py-2 text-sm font-medium text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isRunning && lastExecutionIntent === "formal"
+                  ? "评价进行中…"
+                  : status === "done" &&
+                      newDimensionContext &&
+                      lastExecutionIntent === "formal"
+                    ? "新增维度评价已完成"
+                    : newDimensionContext
+                      ? "预览并确认新增维度评价"
+                      : "开始 AI 评价"}
+              </button>
+            </div>
+
             {isRunning && (
               <button
                 type="button"
                 onClick={cancel}
-                className="rounded-md border border-gray-300 px-4 py-2 text-sm transition hover:bg-gray-50"
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm transition hover:bg-gray-50 md:col-span-2"
               >
-                取消
+                取消本次评价
               </button>
             )}
-          </div>
+          </section>
+
+          {status === "done" && lastExecutionIntent && (
+            <div
+              role="status"
+              className={`rounded-md px-3 py-2 text-xs ${
+                lastExecutionIntent === "trial"
+                  ? "border border-cyan-200 bg-cyan-50 text-cyan-900"
+                  : "border border-emerald-200 bg-emerald-50 text-emerald-900"
+              }`}
+            >
+              {lastExecutionIntent === "trial"
+                ? `试评完成：成功 ${evalResults.length} 条，失败 ${itemErrors.length} 条。结果仅保留在当前页面，未写入 AI 历史评价。`
+                : evalResults.length > 0
+                  ? `正式评价完成：成功 ${evalResults.length} 条，已新增一条独立 AI 历史评价；被测模型或算法调用 0 次。`
+                  : "正式评价未产生可保存结果，请根据上方错误修正后重试；AI 历史评价未写入。"}
+            </div>
+          )}
+
+          {itemErrors.length > 0 && (
+            <div
+              role="alert"
+              aria-label="逐条评价错误"
+              className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
+            >
+              <p className="font-semibold">
+                有 {itemErrors.length} 条结果未能完成评价，请先修正裁判输出或 Prompt：
+              </p>
+              <ul className="mt-1 list-inside list-disc space-y-1">
+                {itemErrors.map((item) => {
+                  const inputIndex = inputs.findIndex(
+                    (input) => input.id === item.inputId
+                  );
+                  return (
+                    <li key={item.inputId}>
+                      输入 #{inputIndex >= 0 ? inputIndex + 1 : item.inputId}：
+                      {item.message}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
 
           <EvaluationResults
             evalResults={evalResults}
@@ -2248,54 +2407,63 @@ export function EvaluationPanel({
         </div>
       )}
 
-      {confirmOpen && newDimensionContext && incrementalPreview && (
+      {confirmOpen && confirmationPlan.inputIds.length > 0 && (
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="new-dimension-confirm-title"
+          aria-labelledby="evaluation-confirm-title"
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/40 p-4"
         >
           <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-2xl">
             <h3
-              id="new-dimension-confirm-title"
+              id="evaluation-confirm-title"
               className="text-base font-semibold text-slate-900"
             >
-              确认新增维度评价
+              {confirmationIntent === "trial"
+                ? "确认少量样本试评"
+                : newDimensionContext
+                  ? "确认新增维度评价"
+                  : "确认正式 AI 评价"}
             </h3>
             <p className="mt-1 text-xs text-slate-500">
-              将创建一条独立评价记录，来源评价与原始跑批结果都不会被覆盖。
+              {confirmationPlan.writesHistory
+                ? "完成后将创建一条独立评价记录，原始跑批结果和已有评价都不会被覆盖。"
+                : "本次只用于校验评分与解析质量，结果不会写入 AI 历史评价。"}
             </p>
 
             <dl className="mt-4 grid grid-cols-2 gap-2 text-sm">
               <div className="rounded-lg bg-amber-50 p-3">
                 <dt className="text-xs text-amber-700">裁判模型调用</dt>
                 <dd className="mt-1 text-lg font-semibold text-amber-900">
-                  {incrementalPreview.judgeCallCount} 次
+                  {confirmationPlan.judgeCallCount} 次
                 </dd>
               </div>
               <div className="rounded-lg bg-emerald-50 p-3">
                 <dt className="text-xs text-emerald-700">被测模型/算法调用</dt>
                 <dd className="mt-1 text-lg font-semibold text-emerald-900">
-                  0 次
+                  {confirmationPlan.testedTargetCallCount} 次
                 </dd>
               </div>
               <div className="rounded-lg bg-slate-50 p-3">
                 <dt className="text-xs text-slate-500">复用历史输出</dt>
                 <dd className="mt-1 font-semibold text-slate-800">
-                  {incrementalPreview.reusedOutputCount} 条
+                  {confirmationPlan.reusedOutputCount} 条
                 </dd>
               </div>
               <div className="rounded-lg bg-indigo-50 p-3">
-                <dt className="text-xs text-indigo-600">本次新增维度</dt>
+                <dt className="text-xs text-indigo-600">AI 历史评价</dt>
                 <dd className="mt-1 font-semibold text-indigo-900">
-                  {validDimensions.length} 个
+                  {confirmationPlan.writesHistory ? "新增 1 条" : "不写入"}
                 </dd>
               </div>
             </dl>
 
-            <div className="mt-3 rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-600">
-              {validDimensions.map((dimension) => dimension.name).join("、")}
-            </div>
+            {newDimensionContext && (
+              <div className="mt-3 rounded-md border border-slate-200 px-3 py-2 text-xs text-slate-600">
+                本次维度：
+                {validDimensions.map((dimension) => dimension.name).join("、")}
+              </div>
+            )}
             <p className="mt-3 text-xs text-amber-700">
               确认后才会调用裁判模型，可能产生模型费用；不会重新执行任何被测模型或算法。
             </p>
@@ -2310,10 +2478,12 @@ export function EvaluationPanel({
               </button>
               <button
                 type="button"
-                onClick={() => void executeEvaluation()}
+                onClick={() => void executeEvaluation(confirmationIntent)}
                 className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
               >
-                确认并开始评价
+                {confirmationIntent === "trial"
+                  ? "确认并开始试评"
+                  : "确认并开始评价"}
               </button>
             </div>
           </div>

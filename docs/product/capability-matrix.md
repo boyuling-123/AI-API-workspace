@@ -1,6 +1,6 @@
 # 测评平台 v5.0 能力矩阵
 
-> 审计日期：2026-08-29
+> 审计日期：2026-08-30
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)
 > 审计口径：前十章 75 条主能力逐项核对；实施顺序与验收标准不重复计数。
 
@@ -44,12 +44,12 @@
 | DIM-010 | 将维度保存为版本化 Evaluator 并生成 Judge Prompt | 已验证 | `EvaluatorVersion` 项目实体；`evaluatorVersion.ts` 负责追加版本、双指纹、深拷贝与完整性校验；`EvaluationPanel.tsx` 支持保存、查询和加载版本 | `evaluatorVersion.test.ts` 覆盖 v1/v2、旧版不变、草稿识别、非法家族、篡改与脱敏；`evaluator-versioning.spec.ts` 覆盖保存、切换、刷新持久化和版本绑定；本地、独立干净工作树与 PR #23 workflow run `33287622657` 两道 CI 全部通过 | 可保存、查询和复用不可变 Evaluator 版本 | Evaluator 生命周期 | [#23](https://github.com/boyuling-123/AI-API-workspace/pull/23) |
 | PROMPT-001 | 按维度、评分标准、证据和权重生成 Judge Prompt | 已验证 | `evalPromptService.ts` 与 `evaluateService.ts` 将完整 Rubric、权重和否决阈值写入 Prompt；Judge 只给独立维度分，`evaluatorPolicy.ts` 负责确定性汇总 | `rubricPromptServices.test.ts` 验证 Prompt 字段和策略计算；`rubricRouteBoundary.test.ts` 验证服务端门禁；`evaluator-policy.spec.ts` 验证确认后精确 Prompt/Judge 请求；本地、独立干净工作树与 PR #22 workflow run `33246361526` 两道 CI 全部通过 | Prompt 完整包含 Rubric、证据要求、权重和输出 Schema | Evaluator 生命周期 | [#22](https://github.com/boyuling-123/AI-API-workspace/pull/22) |
 | PROMPT-002 | 支持用户手动修改 Judge Prompt | 已验证 | `EvaluationPanel.tsx` 的 Prompt 编辑区与版本草稿状态；`evaluatorVersion.ts` 只追加新版本 | `evaluator-versioning.spec.ts` 手动修改 v1 Prompt、保存 v2、切回 v1 验证内容未覆盖，并在刷新后再次加载；本地、独立干净工作树与 PR #23 workflow run `33287622657` 两道 CI 全部通过 | 修改内容可保存且不会被意外覆盖 | Evaluator 生命周期 | [#23](https://github.com/boyuling-123/AI-API-workspace/pull/23) |
-| PROMPT-003 | 使用少量样本试跑并预览评分 | Demo | 可通过选中范围发起评价，无专用试跑版本 | 无 | 专用试跑不写正式记录，展示评分与解析错误 | Evaluator 生命周期 | 待关联 |
+| PROMPT-003 | 使用少量样本试跑并预览评分 | 已实现 | `evaluationExecutionPlan.ts` 统一限制默认 3 条、最多 5 条的确定性试评范围；`EvaluationPanel.tsx` 提供调用预览、显式确认、当前页结果与不落历史边界；`useEvaluation.ts` 保留逐条解析错误 | `evaluationExecutionPlan.test.ts` 直接覆盖真实执行计划；`evaluation-trial-rerun.spec.ts` 以 Mock 验证 2 条试评、1 条解析失败、历史保持 0、被测模型零重跑和弹窗 WCAG；本地 quality 与全量 22 项 Playwright 通过 | 专用试跑不写正式记录，展示评分与解析错误 | Evaluator 生命周期 | PR 05D（待创建） |
 | PROMPT-004 | 保存 Prompt 版本、修改人、时间和适用任务 | 已验证 | `EvaluatorVersion` 保存家族/版本、修改人、时间、变更说明、适用任务和完整 Prompt；`EvaluationRecord.evaluatorVersionId` 绑定实际版本；历史列表展示版本 | `evaluatorVersion.test.ts` 验证版本递增和元数据不可变；`evaluator-versioning.spec.ts` 验证 IndexedDB 刷新持久化及评价历史绑定 v2；本地、独立干净工作树与 PR #23 workflow run `33287622657` 两道 CI 全部通过 | 版本号、修改人、变更说明和适用范围全部持久化 | Evaluator 生命周期 | [#23](https://github.com/boyuling-123/AI-API-workspace/pull/23) |
 | PROMPT-005 | 新旧 Prompt 版本 Diff | 已验证 | `evaluatorVersionDiff.ts` 确定性输出结构字段、Rubric、逐行 Prompt 与影响范围；`EvaluatorVersionDiffPanel.tsx` 提供基线选择、上下文 Diff 和大文本折叠 | `evaluatorVersionDiff.test.ts` 覆盖结构化/逐行/大 Prompt/跨家族/篡改；`evaluator-version-diff-restore.spec.ts` 覆盖真实页面 Diff 与 WCAG；本地、独立干净工作树与 PR #24 workflow run `33290243949` 两道 CI 全部通过 | 支持结构化与文本 Diff，并标识影响范围 | Evaluator 生命周期 | [#24](https://github.com/boyuling-123/AI-API-workspace/pull/24) |
 | PROMPT-006 | 恢复历史 Prompt 版本 | 已验证 | `restoreEvaluatorVersion` 复用不可变创建入口追加 `vN+1`；页面只允许恢复非最新版并展示不会覆盖旧版本或调用 Judge | `evaluatorVersionDiff.test.ts` 验证 v1→v3、旧快照不变、最新版/缺失/篡改阻断；Mock E2E 验证刷新持久化、v1/v2 可回看和 Judge 零调用；本地、独立干净工作树与 PR #24 workflow run `33290243949` 两道 CI 全部通过 | 可从历史版本创建新版本且不篡改旧记录 | Evaluator 生命周期 | [#24](https://github.com/boyuling-123/AI-API-workspace/pull/24) |
 | PROMPT-007 | Prompt 或维度变化后重新校准 Judge | 设计中 | 无校准流程 | 无 | 变更触发黄金集校准，失败时阻止发布 | Judge 校准 | 待关联 |
-| PROMPT-008 | 复用模型输出，仅重新执行评价 | 已实现 | `HistoryPanel.tsx`；`WorkspaceBody.tsx`；`EvaluationPanel.tsx` | 待补：重评 E2E | 同一 Task 可生成多条独立评价记录且不再次调用被测模型 | Evaluator 生命周期 | 待关联 |
+| PROMPT-008 | 复用模型输出，仅重新执行评价 | 已实现 | `HistoryPanel.tsx` 明示复用输出入口；`evaluationExecutionPlan.ts` 固定被测目标调用为 0；`WorkspaceBody.tsx` 与 `EvaluationPanel.tsx` 复用同一 Task 输出并为每轮正式评价追加独立记录 | `evaluation-trial-rerun.spec.ts` 验证首次跑批后两轮正式评价只调用 `/api/evaluate`、被测模型调用数不增加，并形成 2 条独立历史；本地 quality 与全量 22 项 Playwright 通过 | 同一 Task 可生成多条独立评价记录且不再次调用被测模型 | Evaluator 生命周期 | PR 05D（待创建） |
 | JUDGE-001 | Judge 候选池记录厂商、模型、模态、上下文、成本和时延 | 部分实现 | `TargetConfig` 有名称、模态、状态，缺其余元数据 | 无 | 所有元数据可维护、筛选并进入评价快照 | Judge 校准 | 待关联 |
 | JUDGE-002 | 按文本、图片、代码等任务筛选 Judge | 部分实现 | `WorkspaceBody.tsx` 按文本/多模态筛选 | 无 | 各任务类型只能选择兼容 Judge，并解释禁用原因 | Judge 校准 | 待关联 |
 | JUDGE-003 | 建立人工标注黄金测试集 | 设计中 | 无 | 无 | 黄金集可导入、版本化并锁定人工标签 | Judge 校准 | 待关联 |
@@ -115,6 +115,7 @@
 - DIM-009 与 PROMPT-001 已在 PR #22 完成权重、一票否决、策略确认、Prompt 透传与平台确定性汇总；真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33246361526` 两道 CI 全部通过，状态为“已验证”。
 - DIM-010、PROMPT-002 与 PROMPT-004 已在 PR #23 完成不可变 Evaluator/Prompt 版本、元数据、刷新持久化和评价历史绑定；本地、独立干净工作树、视觉证据与 workflow run `33287622657` 两道 CI 全部通过，状态为“已验证”。
 - PROMPT-005 与 PROMPT-006 已在 PR #24 完成确定性结构/文本 Diff、影响范围和只追加恢复；代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 workflow run `33290243949` 两道 CI 全部通过，状态为“已验证”。
+- PROMPT-003 与 PROMPT-008 已在 PR 05D 本地完成少量试评、逐条错误、零历史写入、调用确认和同一 Task 两轮独立重评；真实源码单测、Mock 用户路径、视觉证据与全量本地门禁通过，状态为“已实现”，待独立干净环境和 GitHub CI 后升级为“已验证”。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

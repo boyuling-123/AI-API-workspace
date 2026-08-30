@@ -22,8 +22,14 @@ export type EvalStatus =
   | "done"
   | "error";
 
+export interface EvaluationItemError {
+  inputId: string;
+  message: string;
+}
+
 export interface UseEvaluationResult {
   evalResults: EvaluateResultPerInput[];
+  itemErrors: EvaluationItemError[];
   status: EvalStatus;
   error: string | null;
   genDimensions: (
@@ -57,6 +63,7 @@ export interface UseEvaluationResult {
  */
 export function useEvaluation(): UseEvaluationResult {
   const [evalResults, setEvalResults] = useState<EvaluateResultPerInput[]>([]);
+  const [itemErrors, setItemErrors] = useState<EvaluationItemError[]>([]);
   const [status, setStatus] = useState<EvalStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -122,6 +129,7 @@ export function useEvaluation(): UseEvaluationResult {
       setStatus("running");
       setError(null);
       setEvalResults([]);
+      setItemErrors([]);
       // 彩蛋：评价开始 → 宠物忙碌（只读状态、不影响业务）。
       emitPetStatus({ status: "busy", scene: "evaluate" });
 
@@ -145,6 +153,10 @@ export function useEvaluation(): UseEvaluationResult {
           },
           onItemError: (inputId, message) => {
             setError(`输入 ${inputId} 评价失败：${message}`);
+            setItemErrors((current) => [
+              ...current.filter((item) => item.inputId !== inputId),
+              { inputId, message },
+            ]);
           },
         });
         // 取消时不回传结果，避免把半截评价存成正式记录。
@@ -178,12 +190,14 @@ export function useEvaluation(): UseEvaluationResult {
 
   const clear = useCallback(() => {
     setEvalResults([]);
+    setItemErrors([]);
     setStatus("idle");
     setError(null);
   }, []);
 
   return {
     evalResults,
+    itemErrors,
     status,
     error,
     genDimensions,
