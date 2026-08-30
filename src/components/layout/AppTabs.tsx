@@ -22,7 +22,7 @@ export function AppTabs({ tabs, activeId, onChange }: AppTabsProps) {
     <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
       <nav
         aria-label="工作区功能导航"
-        className="flex gap-1"
+        className="scroll-thin flex gap-1 overflow-x-auto"
         role="tablist"
       >
         {tabs.map((tab) => {
@@ -34,7 +34,7 @@ export function AppTabs({ tabs, activeId, onChange }: AppTabsProps) {
               role="tab"
               type="button"
               onClick={() => onChange(tab.id)}
-              className={`relative flex cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors duration-150 ${
+              className={`relative flex shrink-0 cursor-pointer items-center gap-2 px-4 py-3 text-sm font-semibold transition-colors duration-150 ${
                 isActive
                   ? "text-brand-700 dark:text-brand-300"
                   : "text-slate-600 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-300"

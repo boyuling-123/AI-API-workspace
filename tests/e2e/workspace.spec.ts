@@ -30,11 +30,12 @@ test("keeps the batch console above input and explains target selection", async 
   ).toBeVisible();
 
   const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveCount(5);
+  await expect(tabs).toHaveCount(6);
   await expect(page.getByRole("tab", { name: "跑批", exact: true })).toHaveAttribute(
     "aria-selected",
     "true"
   );
+  await expect(page.getByRole("tab", { name: /Judge 校准/ })).toBeVisible();
   expect(safePage.apiRequests).toEqual([]);
 });
 

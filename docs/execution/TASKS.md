@@ -273,7 +273,7 @@
 - [x] 分支已推送并创建 [PR #25](https://github.com/boyuling-123/AI-API-workspace/pull/25)；首轮 workflow run `33292294441` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33292408679` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #25 为 Merged，合并 SHA 为 `ad430a3`。
 
-## 进行中：PR 06A 黄金集领域模型与严格导入边界
+## 已完成：PR 06A 黄金集领域模型与严格导入边界
 
 分支：`codex/feat-judge-golden-dataset`
 
@@ -284,9 +284,19 @@
 - [x] 8 项真实源码单测覆盖双语映射、真实 Excel、非法标签、重复 ID、越界分数、JSON 边界、版本追加、篡改和脱敏。
 - [x] 功能快照 `3e0582a` 在独立干净工作树全新安装 434 个包，quality 与既有 22 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并创建 [PR #26](https://github.com/boyuling-123/AI-API-workspace/pull/26)；首轮 workflow run `33293157412` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
+- [x] 最终文档提交对应 workflow run `33293293787` 两道 GitHub CI 通过；确认远端无漂移和未解决审查后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #26 为 Merged，合并 SHA 为 `50cdc17`。
 
-下一连续小 PR：PR 06B 独立 Judge 校准页、字段映射预览、人工核对、版本库、Mock E2E 与视觉证据。
+## 进行中：PR 06B 人工黄金集管理页与用户路径
+
+分支：`codex/feat-judge-golden-dataset-ui`
+
+- [x] 新增独立 Judge 校准页与第六个工作区导航入口；小屏导航支持横向滚动。
+- [x] 显示 Excel/CSV/JSON/JSONL 字段映射、未使用列和逐行问题；阻断问题不能通过“手工新增 Case”旁路绕过。
+- [x] 支持人工核对、发布锁定 v1、基于历史版本创建 vN+1，并在项目 IndexedDB 中刷新持久化。
+- [x] 页面明确显示本流程 0 次 Judge 调用，Mock E2E 拦截并断言全部 `/api/**` 调用为空。
+- [x] 保存并人工检查 `docs/evidence/pr-06b/golden-dataset-versions.png`；页面通过 WCAG 严重与致命问题扫描。
+- [x] 本地 quality 通过 267 文件密钥扫描、零 lint、typecheck、112 项单测、2 项压力测试和 19 路由构建；全量 23 项 Playwright 通过。
+- [ ] 提交功能快照，在独立干净工作树复验全部门禁，再自主创建 PR、通过 GitHub CI 并安全合并。
 
 ## 硬门禁
 

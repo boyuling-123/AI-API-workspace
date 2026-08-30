@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   EvaluatorVersion,
+  GoldenDatasetVersion,
   Project,
   Task,
   TargetConfig,
@@ -31,6 +32,7 @@ import { RunPanel } from "@/components/run/RunPanel";
 import { ResultArea } from "@/components/result/ResultArea";
 import { EvaluationPanel } from "@/components/evaluation/EvaluationPanel";
 import { HistoryPanel } from "@/components/history/HistoryPanel";
+import { GoldenDatasetPanel } from "@/components/calibration/GoldenDatasetPanel";
 import { AppTabs } from "@/components/layout/AppTabs";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import { targetSupportsImage } from "@/config/presetTargets";
@@ -39,9 +41,15 @@ import {
   getEvaluationRootId,
 } from "@/lib/newDimensionEvaluation";
 
-// 5 板块导航（v4.3）：① 跑批 ② 接口创建&管理 ③ 跑批历史 ④ AI 评价 ⑤ AI历史评价。
+// 6 板块导航：跑批、接口、历史、AI 评价、AI 历史与 Judge 校准资产。
 // 评价入口只在 ③→④（结果区进入），不在跑批板块；⑤ 为历史仓库可随便进。
-type WorkspaceTab = "run" | "access" | "result" | "evaluate" | "evalHistory";
+type WorkspaceTab =
+  | "run"
+  | "access"
+  | "result"
+  | "evaluate"
+  | "evalHistory"
+  | "calibration";
 
 interface WorkspaceBodyProps {
   project: Project;
@@ -71,7 +79,8 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       tab === "access" ||
       tab === "result" ||
       tab === "evaluate" ||
-      tab === "evalHistory"
+      tab === "evalHistory" ||
+      tab === "calibration"
     ) {
       setActiveTab(tab);
     }
@@ -369,6 +378,23 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [updateProject]
   );
 
+  const handleSaveGoldenDatasetVersion = useCallback(
+    (version: GoldenDatasetVersion) => {
+      updateProject(
+        (current) => {
+          const existing = current.goldenDatasetVersions ?? [];
+          if (existing.some((item) => item.id === version.id)) return current;
+          return {
+            ...current,
+            goldenDatasetVersions: [...existing, version],
+          };
+        },
+        { immediate: true }
+      );
+    },
+    [updateProject]
+  );
+
   // v4.3 增量2：删除某条历史评价记录。
   const handleDeleteEvaluation = useCallback(
     (evaluationId: string) => {
@@ -413,6 +439,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       <path d="M12 7v5l4 2" />
     </svg>
   );
+  const calibrationIcon = (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 3h6" /><path d="M10 3v5l-4.5 8.2A3 3 0 0 0 8.1 21h7.8a3 3 0 0 0 2.6-4.8L14 8V3" /><path d="M8 15h8" />
+    </svg>
+  );
 
   return (
     <div className="flex flex-col">
@@ -443,6 +474,17 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                 (project.evaluations?.length ?? 0) > 0 ? (
                   <span className="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">
                     {project.evaluations!.length}
+                  </span>
+                ) : null,
+            },
+            {
+              id: "calibration",
+              label: "Judge 校准",
+              icon: calibrationIcon,
+              badge:
+                (project.goldenDatasetVersions?.length ?? 0) > 0 ? (
+                  <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                    {project.goldenDatasetVersions!.length}
                   </span>
                 ) : null,
             },
@@ -680,7 +722,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             )}
           </section>
         </div>
-      ) : (
+      ) : activeTab === "evalHistory" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* ⑤ AI 评价结果与历史（v4.3 增量2）：历史仓库，可随便进；只从 Project.evaluations 读 */}
           <EvalHistoryPanel
@@ -690,6 +732,14 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             projectName={project.name}
             onDelete={handleDeleteEvaluation}
             onAddDimensions={handleAddEvaluationDimensions}
+          />
+        </div>
+      ) : (
+        <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-4 py-6 sm:px-6">
+          <GoldenDatasetPanel
+            projectName={project.name}
+            versions={project.goldenDatasetVersions ?? []}
+            onSave={handleSaveGoldenDatasetVersion}
           />
         </div>
       )}

@@ -612,3 +612,16 @@
 - JUDGE-003 继续保持“部分实现”：PR 06A 已验证领域和严格导入边界，独立管理页面与完整用户路径由连续小 PR 06B 提交。
 
 下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #26。
+
+## 2026-08-30：PR 06A 合并与 PR 06B 本地实现
+
+- PR #26 最终文档提交对应 workflow run `33293293787` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 确认远端 `main` 保持在预期基线 `ad430a3`、PR 可合并且无 Review 或未解决线程后，以普通 fast-forward 安全合并；GitHub 确认 Merged，合并 SHA 为 `50cdc17`。
+- 在不丢弃已保留 UI 草稿的前提下创建短生命周期分支 `codex/feat-judge-golden-dataset-ui`；PR 06B 只承接 JUDGE-003 的管理页面与用户验收层。
+- 新增独立“Judge 校准”工作区入口、严格字段映射预览、逐行阻断问题、人工真值草稿、不可变版本库，以及基于 vN 创建 vN+1 的显式操作。
+- 复核时发现坏文件导入后可能通过“手工新增 Case”清除阻断状态；已封闭该旁路并增加 E2E 断言，要求修复后重新导入或显式清空草稿。
+- `golden-dataset.spec.ts` 使用 Mock 覆盖坏文件、合法映射、v1/v2、旧标签不变、刷新持久化、WCAG 和零 API/Judge 调用；首轮全量 E2E 同时发现旧导航测试硬编码 5 个标签，已改为验证 6 个真实入口而非降低断言。
+- 本地 `npm run quality` 通过 267 文件 Secret Scan、零 lint、typecheck、112 项真实源码单测、2 项压力测试和 19 路由生产构建；修正基线后全量 23 项 Playwright 通过。
+- 视觉证据 `docs/evidence/pr-06b/golden-dataset-versions.png` 已按当前代码重新生成并人工检查，独立页面、版本状态与费用边界清晰。
+
+下一步：提交 PR 06B 功能快照，在独立干净工作树全新安装依赖并重复全部门禁，再自主推送、创建 PR 和完成 GitHub CI。
