@@ -342,7 +342,8 @@
 - [x] Mock E2E 覆盖 Evaluator v1→v2、确认前零新增调用、确认后精确重跑、两次历史、刷新持久化和 WCAG。
 - [x] 保存并人工检查 `docs/evidence/pr-06e/evaluator-rerun-comparison.png`；本地 quality 通过 286 文件密钥扫描、零 lint、typecheck、131 项单测、2 项压力测试和 20 路由构建；全量 26 项 Playwright 通过。
 - [x] 功能快照 `515aeb8` 在独立干净工作树全新安装 434 个包，quality 与 26 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
+- [x] 分支已推送并创建 [PR #30](https://github.com/boyuling-123/AI-API-workspace/pull/30)；首轮 workflow run `33296085052` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
 
 ## 硬门禁
 
