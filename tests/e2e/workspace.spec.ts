@@ -30,12 +30,65 @@ test("keeps the batch console above input and explains target selection", async 
   ).toBeVisible();
 
   const tabs = page.getByRole("tab");
-  await expect(tabs).toHaveCount(6);
+  await expect(tabs).toHaveCount(7);
   await expect(page.getByRole("tab", { name: "跑批", exact: true })).toHaveAttribute(
     "aria-selected",
     "true"
   );
+  await expect(page.getByRole("tab", { name: "平台总览" })).toBeVisible();
   await expect(page.getByRole("tab", { name: /Judge 校准/ })).toBeVisible();
+  expect(safePage.apiRequests).toEqual([]);
+});
+
+test("organizes platform capabilities without changing the default run entry", async ({
+  page,
+  safePage,
+}) => {
+  await openWorkspace(page, "/?tab=overview");
+
+  await expect(
+    page.getByRole("heading", {
+      name: "把数据、跑批、评价与校准，放回一条清晰链路",
+    })
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "平台能力地图" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "数据准备与跑批" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "模型与算法接入" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "AI 评价与 Evaluator" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "黄金集与 Judge 校准" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Agent 与外部召唤" })).toBeVisible();
+  await expect(page.getByText("大数据后端化 · 设计中", { exact: true })).toBeVisible();
+  await expect(page.getByText("Demo", { exact: true })).toBeVisible();
+  await expect(page.getByText("部分实现", { exact: true })).toBeVisible();
+  expect(safePage.apiRequests).toEqual([]);
+
+  if (process.env.CAPTURE_EVIDENCE === "1") {
+    await page.setViewportSize({ width: 1440, height: 1200 });
+    await page.screenshot({
+      path: "docs/evidence/pr-platform-overview/platform-overview.png",
+      fullPage: true,
+    });
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/?tab=overview");
+  await expect(
+    page.getByRole("heading", {
+      name: "把数据、跑批、评价与校准，放回一条清晰链路",
+    })
+  ).toBeVisible();
+  const viewport = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth);
+
+  await page.getByRole("button", { name: /开始批量运行/ }).first().click();
+  await expect(page.getByRole("tab", { name: "跑批", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true"
+  );
+  await expect(page.getByText("批量运行控制台", { exact: true })).toBeVisible();
   expect(safePage.apiRequests).toEqual([]);
 });
 
@@ -102,6 +155,7 @@ test("guides direct AI evaluation visits back to batch history", async ({
 
 for (const target of [
   { name: "run workspace", path: "/" },
+  { name: "platform overview", path: "/?tab=overview" },
   { name: "API capability workspace", path: "/?tab=access" },
 ]) {
   test(`${target.name} has no serious accessibility violations`, async ({

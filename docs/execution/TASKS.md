@@ -362,7 +362,7 @@
 - [x] 分支已推送并创建 [PR #31](https://github.com/boyuling-123/AI-API-workspace/pull/31)；首轮 workflow run `33297002754` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
 - [x] 最终文档提交对应 workflow run `33297159622` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程且 PR 可合并后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #31 为 Merged，合并 SHA 为 `a2d5f0f`。
 
-## 进行中：PR 06G 多 Judge 校准与确定性仲裁核心
+## 已完成：PR 06G 多 Judge 校准与确定性仲裁核心
 
 分支：`codex/feat-multi-judge-calibration`
 
@@ -375,8 +375,22 @@
 - [x] 本地 quality 通过 297 文件密钥扫描、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；既有 27 项 Playwright 全部通过。
 - [x] 功能快照 `7d7ba98` 在独立 detached 工作树全新安装 434 个包，quality 与 27 项 Playwright 全部通过，结束时 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #32](https://github.com/boyuling-123/AI-API-workspace/pull/32)；首轮 workflow run `33297825582` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 等待本次 CI 验收回写提交自身的两道 GitHub CI 通过，再执行远端漂移、Review/线程与可合并状态审计并安全合并。
+- [x] 最终文档提交对应 workflow run `33297951993` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程且 PR 可合并后，以非强推 fast-forward 安全合并，GitHub 已确认 PR #32 为 Merged，合并 SHA 为 `1720250`。
 - [ ] 页面多 Judge 选择、精确费用确认、逐 Judge 指标与分歧下钻拆到后续短 PR；完成前 JUDGE-005 保持“部分实现”。
+
+## 进行中：平台内容规整与总览页短 PR
+
+分支：`codex/feat-platform-overview`
+
+- [x] 新增独立“平台总览”标签和 `?tab=overview` 深链；“跑批”继续作为默认首页、导航第一项和首要操作入口。
+- [x] 按数据与跑批、模型接入、结果重跑、AI 评价、Judge 校准、Agent 外部召唤六条链路规整现有能力，并使用正式状态词展示真实边界。
+- [x] 项目资产与最近任务直接读取当前 `Project`，不新增状态副本，不请求 API，不自动调用模型或启动 AI 评价。
+- [x] 明确 Agent 外部召唤为 Demo、多 Judge 页面闭环为部分实现、20GB 级数据后端化为设计中。
+- [x] 修复既有顶部工具栏在 390px 宽度下的页面级横向溢出，保留全部新建、导入、导出和主题操作。
+- [x] 定向 Playwright 通过总览深链、七标签、真实状态、入口跳转、零 API 调用、390px 无溢出和 Axe WCAG，共 8 项。
+- [x] 保存并人工检查 `docs/evidence/pr-platform-overview/platform-overview.png`。
+- [x] 本地 quality 通过 300 文件 Secret Scan、零警告 lint、typecheck、146 项单测、2 项压力测试和 20 路由构建；全量 29 项 Playwright 全部通过。
+- [ ] 完成全量 quality、Playwright 与独立干净环境复验后，自主创建并合并短 PR。
 
 ## 硬门禁
 

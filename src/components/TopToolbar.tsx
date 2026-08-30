@@ -69,7 +69,7 @@ export function TopToolbar({
 
   return (
     <div className="flex flex-col">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-1.5 px-4 sm:gap-3 sm:px-6">
         {/* 品牌区：蓝色 logo + 双行平台名 */}
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 text-white shadow-card">
@@ -97,7 +97,7 @@ export function TopToolbar({
         </div>
 
         {/* 项目名输入：文件夹图标 + 内嵌输入 */}
-        <div className="ml-2 flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 dark:border-slate-700 dark:bg-slate-800">
+        <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 sm:ml-2 sm:flex-none sm:px-3 dark:border-slate-700 dark:bg-slate-800">
           <svg
             className="h-3.5 w-3.5 text-slate-400"
             viewBox="0 0 24 24"
@@ -111,18 +111,18 @@ export function TopToolbar({
             value={project.name}
             onChange={(event) => onRename(event.target.value)}
             placeholder="项目名称"
-            className="w-40 bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 dark:text-slate-200"
+            className="min-w-0 w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 sm:w-40 dark:text-slate-200"
           />
         </div>
 
         <SaveStatusBadge status={saveStatus} />
 
         {/* 右侧操作区 */}
-        <div className="ml-auto flex items-center gap-1.5">
+        <div className="ml-auto flex shrink-0 items-center gap-0 sm:gap-1.5">
           <button
             type="button"
             onClick={handleCreateNew}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
               className="h-4 w-4"
@@ -139,7 +139,7 @@ export function TopToolbar({
           <button
             type="button"
             onClick={handleImportClick}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
               className="h-4 w-4"
@@ -159,7 +159,7 @@ export function TopToolbar({
           <button
             type="button"
             onClick={() => exportProjectToJson(project)}
-            className="flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
               className="h-4 w-4"
@@ -181,7 +181,7 @@ export function TopToolbar({
             onClick={toggleTheme}
             aria-label="切换主题"
             title={theme === "dark" ? "切换到亮色" : "切换到暗色"}
-            className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition-colors duration-150 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-8 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             {theme === "dark" ? <MoonIcon /> : <SunIcon />}
           </button>

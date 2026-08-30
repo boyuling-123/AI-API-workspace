@@ -29,7 +29,7 @@
 | DOC-001 | 文档统一使用六种能力状态 | 已实现 | 本矩阵“状态定义” | 待补：文档状态枚举检查 | 所有当前 PRD 只使用六种状态且无自由文本状态 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-002 | OpenJudge 维度生成不得标为已实现 | 已实现 | `src/services/genDimensionsService.ts`；本矩阵 DIM-001 | 待补：文档口径检查 | 页面和当前 PRD 均明确 OpenJudge 尚未接入 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
 | DOC-003 | 准确说明维度生成上下文与 OpenJudge 状态 | 已验证 | `EvaluationPanel.tsx` 明示 Simple Rubrics、人工反馈一次生成、OpenJudge 与 Iterative Rubrics Generator 的真实状态；`dimensionGeneration.ts`、`dimensionHumanFeedback.ts` 与 `genDimensionsService.ts` 使用完整受控上下文 | `dimensionGeneration.test.ts` 覆盖真实请求、模式、Prompt、边界与脱敏；三条维度上下文 E2E 覆盖页面口径、Mock 精确请求与零自动评价；PR #18、#19、#20、#21 两道 CI 通过 | 文档、页面、Schema 与真实模型输入一致；准确区分当前 Simple/人工反馈一次生成、未接入的 OpenJudge 和未实现的 Iterative | PR 01 / 04A / 04B / 04C / 04D | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#18](https://github.com/boyuling-123/AI-API-workspace/pull/18)；[#19](https://github.com/boyuling-123/AI-API-workspace/pull/19)；[#20](https://github.com/boyuling-123/AI-API-workspace/pull/20)；[#21](https://github.com/boyuling-123/AI-API-workspace/pull/21) |
-| DOC-004 | 七个 Skill、MCP、Judge 校准和排行榜使用真实状态 | 已实现 | 本矩阵相关条目 | 待补：文档口径检查 | 所有未落地能力均为设计中、Demo 或部分实现 | PR 01 | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9) |
+| DOC-004 | 七个 Skill、MCP、Judge 校准和排行榜使用真实状态 | 已实现 | 本矩阵相关条目；`PlatformOverview.tsx` 把六条产品链路分别标为已验证、已实现、部分实现或 Demo，并把 20GB 级后端存储明确标为设计中 | `workspace.spec.ts` 验证总览真实状态、深链、零 API 调用、移动端无横向溢出与 WCAG；待补七个 Skill 和排行榜的完整口径检查 | 所有未落地能力均为设计中、Demo 或部分实现 | PR 01 / 平台总览短 PR | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；待关联 |
 | DOC-005 | 统一多人标注一致性口径 | 设计中 | 无 | 无 | 明确是否支持多人标注，并提供一致性指标与测试 | Judge 校准 | 待关联 |
 | DOC-006 | 区分产品方案、Demo 与当前代码 | 已验证 | 本矩阵；`ExternalApiCapabilities.tsx` | `tests/e2e/workspace.spec.ts` 覆盖四个规划路由状态、无 API 调用与 WCAG；PR #11 两道 CI 通过 | 页面和当前 PRD 不再把规划路由显示为可调用接口 | PR 01 / 02B | [#9](https://github.com/boyuling-123/AI-API-workspace/pull/9)；[#11](https://github.com/boyuling-123/AI-API-workspace/pull/11) |
 | DIM-001 | 建立 evaluation-dimension-generator Skill 并接入 OpenJudge | 设计中 | 无 | 无 | Skill 可独立运行并通过 OpenJudge 产出结构化候选维度 | 维度 Skill | 待关联 |
@@ -122,6 +122,7 @@
 - JUDGE-007 已在 PR #30 完成 Evaluator 绑定、变更重跑计划、同定义复用、基线关联和前后指标对比；最终文档 workflow run `33296208642` 两道 CI 通过并已合并，状态为“已验证”。
 - JUDGE-008 与 PROMPT-007 已在 PR #31 完成固定发布阈值、同家族与完整定义绑定、逐 Case/指标复算、失败阻断、二次确认和 Active 历史；本地、独立干净环境、视觉证据与 workflow run `33297002754` 两道 CI 全部通过，状态为“已验证”。
 - JUDGE-005 的多 Judge 核心已在 PR 06G 本地完成独立投票矩阵、逐 Judge 指标、确定性保守仲裁、失败隔离和发布前证据复算；页面选择、费用确认与分歧下钻尚未接入，因此保持“部分实现”。
+- 平台总览页把当前项目资产、六条产品主链路和真实能力边界集中呈现；跑批继续保持默认首页，Agent 外部召唤为 Demo，多 Judge 页面闭环为部分实现，20GB 级数据后端化为设计中，不以总览文案抬高矩阵状态。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

@@ -35,6 +35,7 @@ import { ResultArea } from "@/components/result/ResultArea";
 import { EvaluationPanel } from "@/components/evaluation/EvaluationPanel";
 import { HistoryPanel } from "@/components/history/HistoryPanel";
 import { GoldenDatasetPanel } from "@/components/calibration/GoldenDatasetPanel";
+import { PlatformOverview } from "@/components/overview/PlatformOverview";
 import { AppTabs } from "@/components/layout/AppTabs";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import { targetSupportsImage } from "@/config/presetTargets";
@@ -43,10 +44,11 @@ import {
   getEvaluationRootId,
 } from "@/lib/newDimensionEvaluation";
 
-// 6 板块导航：跑批、接口、历史、AI 评价、AI 历史与 Judge 校准资产。
+// 7 板块导航：跑批保持默认入口，总览负责解释完整链路与真实能力边界。
 // 评价入口只在 ③→④（结果区进入），不在跑批板块；⑤ 为历史仓库可随便进。
 type WorkspaceTab =
   | "run"
+  | "overview"
   | "access"
   | "result"
   | "evaluate"
@@ -78,6 +80,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     const contentMode = params.get("content_mode");
     if (
       tab === "run" ||
+      tab === "overview" ||
       tab === "access" ||
       tab === "result" ||
       tab === "evaluate" ||
@@ -452,6 +455,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       <polygon points="5 3 19 12 5 21 5 3" />
     </svg>
   );
+  const overviewIcon = (
+    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
+    </svg>
+  );
   const accessIcon = (
     <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
@@ -490,6 +498,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           onChange={(id) => handleTabChange(id as WorkspaceTab)}
           tabs={[
             { id: "run", label: "跑批", icon: runIcon },
+            { id: "overview", label: "平台总览", icon: overviewIcon },
             { id: "access", label: "接口创建&管理", icon: accessIcon },
             {
               id: "result",
@@ -528,7 +537,12 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
         />
       </div>
 
-      {activeTab === "run" ? (
+      {activeTab === "overview" ? (
+        <PlatformOverview
+          project={project}
+          onNavigate={(destination) => handleTabChange(destination)}
+        />
+      ) : activeTab === "run" ? (
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* 顶部运行控制台：先给用户明确当前能不能跑、还缺什么。 */}
           <RunPanel
