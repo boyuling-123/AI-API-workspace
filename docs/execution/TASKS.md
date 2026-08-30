@@ -297,7 +297,8 @@
 - [x] 保存并人工检查 `docs/evidence/pr-06b/golden-dataset-versions.png`；页面通过 WCAG 严重与致命问题扫描。
 - [x] 本地 quality 通过 267 文件密钥扫描、零 lint、typecheck、112 项单测、2 项压力测试和 19 路由构建；全量 23 项 Playwright 通过。
 - [x] 功能快照 `23fdb21` 在独立干净工作树全新安装 434 个包，quality 与 23 项 Playwright 全部通过，结束时 Git 零改动。
-- [ ] 推送分支并自主创建 PR，完成 GitHub CI、验收回写与安全合并。
+- [x] 分支已推送并创建 [PR #27](https://github.com/boyuling-123/AI-API-workspace/pull/27)；首轮 workflow run `33293740909` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
+- [ ] 等待本次验收回写提交自身的两道 GitHub CI 通过，再确认远端无漂移并安全合并。
 
 ## 硬门禁
 

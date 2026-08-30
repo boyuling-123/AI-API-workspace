@@ -636,3 +636,13 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 下一步：提交独立环境证据，推送分支并自主创建 PR 06B，等待 GitHub 核心质量与 Playwright 两道 CI。
+
+## 2026-08-30：PR 06B 创建与首轮 GitHub CI
+
+- 独立环境证据提交为 `f735000`，分支 `codex/feat-judge-golden-dataset-ui` 已推送并自主创建 [PR #27](https://github.com/boyuling-123/AI-API-workspace/pull/27)。
+- 创建 PR 后确认基线为 `main@50cdc17`、Head 为 `f735000`，GitHub 判定可自动合并。
+- workflow run `33293740909` 的 `Lint, test, build, and secret scan` Job 全部通过，覆盖 267 文件密钥扫描、lint、typecheck、112 项真实源码单测、2 项压力测试与 19 路由生产构建。
+- 同一 run 的 `Playwright user paths and accessibility` Job 通过全部 23 项浏览器与 WCAG 路径；失败 Trace 上传因没有失败而按设计跳过。
+- JUDGE-003 已同时具备代码、异常路径、真实源码测试、Mock 用户路径、视觉证据、独立干净环境与 GitHub CI Trace，升级为“已验证”。
+
+下一步：提交 PR 与首轮 CI 验收回写，等待该最终文档提交自身两道 CI 通过后确认远端无漂移并安全合并 PR #27。
