@@ -6,6 +6,7 @@
 - `judgeCalibrationService.test.ts` 覆盖白名单输入、人工标签/复核说明隔离、敏感值脱敏、严格标签和置信度解析。
 - `judgeCalibrationRoute.test.ts` 覆盖坏 JSON、缺字段零调用、合法单 Case 响应，以及 Judge 坏输出返回 500。
 - 本地 quality 通过 275 文件密钥扫描、零 lint、typecheck、123 项真实源码单测、2 项压力测试和 20 路由生产构建；全量既有 23 项 Playwright 通过。
+- 功能提交 `c1f60cd` 在独立 detached 工作树全新安装 434 个包后，再次通过 quality 与 23 项 Playwright，结束时 Git 零改动。
 
 ## 安全与费用边界
 
