@@ -858,3 +858,13 @@
 - `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 下一步：提交干净环境证据，推送分支并自主创建平台总览短 PR，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。
+
+## 2026-08-30：平台总览 PR 34 首轮 GitHub CI 验收
+
+- 分支 `codex/feat-platform-overview` 以 `main@1720250` 为基线推送，并自主创建 [PR #34](https://github.com/boyuling-123/AI-API-workspace/pull/34)；PR 仅包含平台总览、移动端工具栏修复、真实源码测试、视觉证据和对应文档。
+- 首轮 head `51f3fd9` 对应 workflow run `33298811346`。
+- `Lint, test, build, and secret scan` Job 全部成功：锁文件安装、密钥扫描、零警告 lint、类型检查、真实源码单测、任务池压力测试和生产构建均通过。
+- `Playwright user paths and accessibility` Job 全部成功：Chromium 安装、29 项用户路径与 WCAG 检查通过；因无失败，失败 Trace/截图上传步骤按预期跳过。
+- 首轮远端门禁没有调用真实或付费模型，也没有自动启动 AI 评价。
+
+下一步：让本次 CI 证据回写提交自身通过两道 GitHub CI，再执行远端漂移、Review/线程和可合并状态审计后安全合并 PR #34。

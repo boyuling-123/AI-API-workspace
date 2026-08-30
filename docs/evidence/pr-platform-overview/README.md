@@ -11,3 +11,4 @@
 - 未读取真实密钥，未调用真实或付费模型，未自动启动 AI 评价。
 - 功能快照 `04743ab` 在独立 detached 工作树全新安装 434 个包，并再次通过完整 quality 与 `CI=1` 的 29 项 Playwright；测试结束后 Git 零改动。
 - 干净环境第一次非 CI 运行误复用了端口 3100 上另一工作树的旧开发服务，出现旧版 6 标签和随后连接拒绝；强制 `CI=1` 启动本提交专属服务后全量通过，未把该基础设施失败隐藏或计作成功。
+- [PR #34](https://github.com/boyuling-123/AI-API-workspace/pull/34) 首轮 workflow run `33298811346` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
