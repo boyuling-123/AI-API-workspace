@@ -922,3 +922,16 @@
 - 使用 `CI=1` 启动本工作树专属服务后，全量 30 项 Playwright 与 WCAG 检查全部通过；PR 06H 新增路径和平台总览路径共同通过，无 API 或付费模型调用。
 
 下一步：提交同步结果并等待 PR #34 新 head 的两道 GitHub CI，再执行最终审计并安全合并。
+
+## 2026-08-30：PR 06H 最终合并与 PR 07A 人工复核闭环
+
+- PR #33 最终文档提交对应 workflow run `33298865195` 的核心质量与 Playwright/WCAG 两道 GitHub CI 全部通过。
+- 再次确认远端 `main` 无漂移、PR Head 与远端分支一致、无 Review 或未解决线程后，以普通 fast-forward 安全合并；GitHub 确认合并 SHA 为 `ff14ab5`。
+- 从该基线创建短生命周期分支 `codex/feat-calibration-review-queue`，领取 JUDGE-006，并让 REPORT-005/006 先获得校准场景下的部分闭环，不扩大为完整报告系统。
+- 新增确定性风险领域层：错误、漏判、人工/Judge 分歧、多 Judge 分歧、低置信度与跨运行重复均有固定分数、解释文本和稳定排序；风险计算与人工复核均为零模型调用。
+- 新增项目级只追加领取/完成事件，保存操作者、时间、原始标签、风险快照、结论、说明、领取引用和完整性指纹；损坏事件不参与状态推导，原始校准结果永不覆盖。
+- 页面支持状态、风险类型和关键词筛选；完成复核后同时展示人工覆盖层与原始 Judge 标签，并可展开领取、完成两步审计时间线。
+- 首轮全量 Playwright 捕获“领取复核”按钮对白对比度仅 `3.18:1`；改为更深的 `amber-700/800` 后，相关 4 项回归和全量 29 项 Playwright 全部通过，未关闭 Axe 规则。
+- 本地 `quality` 通过 305 文件 Secret Scan、零警告 lint、typecheck、152 项真实源码单测、2 项压力测试和 20 路由生产构建；视觉证据 `docs/evidence/pr-07a/calibration-review-queue.png` 已人工检查。
+
+下一步：提交 PR 07A 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。

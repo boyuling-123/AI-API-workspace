@@ -83,6 +83,8 @@ export interface Project {
   judgeCalibrationRuns?: JudgeCalibrationRun[];
   /** 通过校准门禁后追加的 Evaluator Active 发布记录；旧项目可缺省。 */
   evaluatorReleases?: EvaluatorRelease[];
+  /** 高风险校准 Case 的领取与人工复核事件；只追加，旧项目可缺省。 */
+  calibrationReviewEvents?: CalibrationReviewEvent[];
 }
 
 export interface Task {
@@ -496,6 +498,60 @@ export interface JudgeCalibrationRun {
   arbitrationStrategy?: JudgeArbitrationStrategy;
   perJudgeMetrics?: JudgeCalibrationPerModelMetrics[];
   disagreementCases?: number;
+}
+
+export type CalibrationReviewRiskCode =
+  | "judge_error"
+  | "bad_case_miss"
+  | "human_judge_disagreement"
+  | "multi_judge_disagreement"
+  | "low_confidence"
+  | "repeated_risk";
+
+export type CalibrationReviewRiskLevel = "critical" | "high" | "medium";
+
+export interface CalibrationReviewRiskSignal {
+  code: CalibrationReviewRiskCode;
+  label: string;
+  detail: string;
+  score: number;
+}
+
+export interface CalibrationReviewRiskSnapshot {
+  level: CalibrationReviewRiskLevel;
+  score: number;
+  occurrenceCount: number;
+  signals: CalibrationReviewRiskSignal[];
+}
+
+export type CalibrationReviewAction = "claimed" | "completed";
+
+export type CalibrationReviewDecision =
+  | "confirm_judge"
+  | "override_pass"
+  | "override_fail"
+  | "needs_followup";
+
+/**
+ * 复核事件只追加。原始 Judge 与人工标签作为快照保留，人工结论不覆盖校准结果。
+ */
+export interface CalibrationReviewEvent {
+  id: string;
+  reviewKey: string;
+  runId: string;
+  caseId: string;
+  action: CalibrationReviewAction;
+  actor: string;
+  createTime: number;
+  claimEventId?: string;
+  decision?: CalibrationReviewDecision;
+  note?: string;
+  resolutionLabel?: GoldenHumanLabel;
+  originalStatus: JudgeCalibrationCaseStatus;
+  originalHumanLabel: GoldenHumanLabel;
+  originalJudgeLabel?: GoldenHumanLabel;
+  risk: CalibrationReviewRiskSnapshot;
+  integrityFingerprint: string;
 }
 
 export interface EvaluatorCalibrationGateThresholds {

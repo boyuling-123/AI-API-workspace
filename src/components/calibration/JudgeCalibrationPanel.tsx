@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type {
+  CalibrationReviewEvent,
   EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetVersion,
@@ -27,6 +28,7 @@ import {
 import { runJudgeCalibration } from "@/services/judgeCalibrationClient";
 import { runMultiJudgeCalibration } from "@/services/multiJudgeCalibrationClient";
 import { EvaluatorReleaseGate } from "@/components/calibration/EvaluatorReleaseGate";
+import { CalibrationReviewQueue } from "@/components/calibration/CalibrationReviewQueue";
 
 interface JudgeModelOption {
   id: string;
@@ -39,8 +41,10 @@ interface JudgeCalibrationPanelProps {
   judgeModels: JudgeModelOption[];
   runs: JudgeCalibrationRun[];
   releases: EvaluatorRelease[];
+  reviewEvents: CalibrationReviewEvent[];
   onSaveRun: (run: JudgeCalibrationRun) => void;
   onSaveRelease: (release: EvaluatorRelease) => void;
+  onSaveReviewEvent: (event: CalibrationReviewEvent) => void;
 }
 
 const DEFAULT_CRITERIA =
@@ -264,8 +268,10 @@ export function JudgeCalibrationPanel({
   judgeModels,
   runs,
   releases,
+  reviewEvents,
   onSaveRun,
   onSaveRelease,
+  onSaveReviewEvent,
 }: JudgeCalibrationPanelProps) {
   const usableVersions = useMemo(
     () =>
@@ -955,6 +961,13 @@ export function JudgeCalibrationPanel({
           )}
         </section>
       </div>
+
+      <CalibrationReviewQueue
+        runs={runs}
+        versions={versions}
+        events={reviewEvents}
+        onSaveEvent={onSaveReviewEvent}
+      />
 
       <EvaluatorReleaseGate
         selectedRun={selectedRun}

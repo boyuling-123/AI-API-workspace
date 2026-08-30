@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
+  CalibrationReviewEvent,
   EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetVersion,
@@ -434,6 +435,23 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [updateProject]
   );
 
+  const handleSaveCalibrationReviewEvent = useCallback(
+    (event: CalibrationReviewEvent) => {
+      updateProject(
+        (current) => {
+          const existing = current.calibrationReviewEvents ?? [];
+          if (existing.some((item) => item.id === event.id)) return current;
+          return {
+            ...current,
+            calibrationReviewEvents: [...existing, event],
+          };
+        },
+        { immediate: true }
+      );
+    },
+    [updateProject]
+  );
+
   // v4.3 增量2：删除某条历史评价记录。
   const handleDeleteEvaluation = useCallback(
     (evaluationId: string) => {
@@ -793,9 +811,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             judgeModels={judgeModels}
             calibrationRuns={project.judgeCalibrationRuns ?? []}
             evaluatorReleases={project.evaluatorReleases ?? []}
+            calibrationReviewEvents={project.calibrationReviewEvents ?? []}
             onSave={handleSaveGoldenDatasetVersion}
             onSaveCalibrationRun={handleSaveJudgeCalibrationRun}
             onSaveEvaluatorRelease={handleSaveEvaluatorRelease}
+            onSaveCalibrationReviewEvent={handleSaveCalibrationReviewEvent}
           />
         </div>
       )}

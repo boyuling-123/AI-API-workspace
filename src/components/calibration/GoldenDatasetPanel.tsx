@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import type {
+  CalibrationReviewEvent,
   EvaluatorRelease,
   EvaluatorVersion,
   GoldenDatasetCase,
@@ -32,9 +33,11 @@ interface GoldenDatasetPanelProps {
   judgeModels: { id: string; name: string }[];
   calibrationRuns: JudgeCalibrationRun[];
   evaluatorReleases: EvaluatorRelease[];
+  calibrationReviewEvents: CalibrationReviewEvent[];
   onSave: (version: GoldenDatasetVersion) => void;
   onSaveCalibrationRun: (run: JudgeCalibrationRun) => void;
   onSaveEvaluatorRelease: (release: EvaluatorRelease) => void;
+  onSaveCalibrationReviewEvent: (event: CalibrationReviewEvent) => void;
 }
 
 function labelText(label: GoldenHumanLabel): string {
@@ -55,9 +58,11 @@ export function GoldenDatasetPanel({
   judgeModels,
   calibrationRuns,
   evaluatorReleases,
+  calibrationReviewEvents,
   onSave,
   onSaveCalibrationRun,
   onSaveEvaluatorRelease,
+  onSaveCalibrationReviewEvent,
 }: GoldenDatasetPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const usableVersions = useMemo(
@@ -629,8 +634,10 @@ export function GoldenDatasetPanel({
         judgeModels={judgeModels}
         runs={calibrationRuns}
         releases={evaluatorReleases}
+        reviewEvents={calibrationReviewEvents}
         onSaveRun={onSaveCalibrationRun}
         onSaveRelease={onSaveEvaluatorRelease}
+        onSaveReviewEvent={onSaveCalibrationReviewEvent}
       />
     </div>
   );
