@@ -410,7 +410,7 @@
 - [x] 同步 PR 06H 后本地 quality 通过 303 文件密钥扫描、零警告 lint、typecheck、146 单测、2 压测和 20 路由构建；`CI=1` 全量 30 项 Playwright 通过。
 - [ ] 同步提交自身两道 GitHub CI 通过后，再完成远端漂移、Review/线程和可合并状态审计并安全合并。
 
-## 进行中：PR 07A 校准风险队列与人工复核留痕
+## 已完成：PR 07A 校准风险队列与人工复核留痕
 
 分支：`codex/feat-calibration-review-queue`
 
@@ -423,7 +423,20 @@
 - [x] 视觉证据已生成并人工检查；初始基线本地 305 文件 Secret Scan、零警告 lint、typecheck、152 项单测、2 项压力测试、20 路由构建和全量 29 项 Playwright 通过。
 - [x] 审计发现远端 `main` 新增平台总览后，保留原提交并安全重放到最新基线；功能快照 `4c03e5e` 在独立 detached 工作树全新安装 434 个包，quality 与 `CI=1` 的全量 31 项 Playwright 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35)；首轮 workflow run `33299671151` 的核心质量与 Playwright/WCAG 两个 Job 全部通过。
-- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
+- [x] 最终证据提交 workflow run `33299834504` 两道 CI 通过；远端无漂移、Head 一致、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35)，合并 SHA 为 `2d6d6f8`。
+
+## 进行中：PR 07B 评价综合榜与动态维度重排
+
+分支：`codex/feat-evaluation-leaderboard`
+
+- [x] 新增纯计算层，按历史评价保存的原始维度分数生成综合榜与单维度榜；所选维度按原权重重新归一，不调用模型、不修改评价记录。
+- [x] 缺失、越界或非法维度分数不补零；覆盖不完整的目标继续展示分数、覆盖率与否决次数，但不授予正式名次。
+- [x] 正式名次按覆盖完整、综合分、覆盖率和稳定目标 ID 确定；同分使用竞赛排名，保证刷新与不同运行环境结果一致。
+- [x] “AI 历史评价 → 查看”新增维度勾选、仅看单维度、全选恢复、即时排名卡片和原始 Case 明细锚点；旧无维度记录显示明确降级说明。
+- [x] 5 项真实源码单测覆盖权重、单维度反转、缺失值、并列名次、旧记录等权兼容与输入不变；Mock E2E 覆盖 `2 Case × 2 模型`、动态重排、零新增调用、明细下钻、刷新持久化、390px 无溢出和 WCAG。
+- [x] 视觉证据 `docs/evidence/pr-07b/evaluation-leaderboard.png` 已人工检查；本地 quality 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项单测、2 项压力测试和 20 路由构建，全量 32 项 Playwright 通过。
+- [ ] 提交功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+- [ ] 推送、创建 PR，等待 GitHub 两道 CI 后完成审查与安全合并。
 
 ## 硬门禁
 

@@ -13,6 +13,7 @@ import { exportResultsToExcel } from "@/services/excel";
 import { ImageLightbox } from "@/components/result/ImageLightbox";
 import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
 import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
+import { EvaluationLeaderboard } from "./EvaluationLeaderboard";
 
 interface EvalHistoryPanelProps {
   /** 唯一数据来源：Project.evaluations（v4.3 增量2）。 */
@@ -291,6 +292,7 @@ interface EvalDetailTableProps {
  */
 function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
   const dimensions = record.dimensions ?? [];
+  const detailsTargetId = `evaluation-case-details-${record.id}`;
 
   const inputById = useMemo(
     () => new Map(task.inputs.map((input) => [input.id, input])),
@@ -327,12 +329,36 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
     () => new Map(task.results.map((row) => [row.inputId, row])),
     [task.results]
   );
+  const leaderboardTargets = useMemo(() => {
+    const targets = new Map<string, string>();
+    for (const row of task.results) {
+      for (const item of row.items) {
+        if (!targets.has(item.targetId)) {
+          targets.set(item.targetId, item.targetName || item.targetId);
+        }
+      }
+    }
+    return Array.from(targets, ([targetId, targetName]) => ({
+      targetId,
+      targetName,
+    }));
+  }, [task.results]);
 
   const evaluatedInputIds = record.results.map((item) => item.inputId);
   const dimensionColSpan = dimensions.length + 3; // 维度列 + 加权分 + 策略结果 + 总体点评
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-5">
+    <>
+      <EvaluationLeaderboard
+        key={record.id}
+        record={record}
+        detailsTargetId={detailsTargetId}
+        targets={leaderboardTargets}
+      />
+      <section
+        id={detailsTargetId}
+        className="flex scroll-mt-4 flex-col gap-3 rounded-lg border border-gray-200 bg-white p-5"
+      >
       <h2 className="text-base font-semibold">评价详情（按维度）</h2>
 
       <div className="overflow-x-auto rounded-lg border border-gray-200">
@@ -504,7 +530,8 @@ function EvalDetailTable({ record, task, onImageClick }: EvalDetailTableProps) {
           );
         })}
       </div>
-    </section>
+      </section>
+    </>
   );
 }
 

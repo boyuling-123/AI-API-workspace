@@ -958,3 +958,17 @@
 - 全部自动化继续使用 Mock，未读取真实密钥、调用真实或付费模型，或自动启动 AI 评价。
 
 下一步：提交首轮 CI 验收回写，等待该文档提交自身两道 GitHub CI 通过，再执行远端漂移、Review/线程和可合并状态审计并安全合并 PR #35。
+
+## 2026-08-30：PR 07A 最终合并与 PR 07B 评价排行榜
+
+- PR #35 最终证据提交 `2d6d6f8` 对应 workflow run `33299834504`，核心质量与 Playwright/WCAG 两个 Job 全部成功。
+- 合并前重新获取远端，确认 `main@9798b53` 无漂移、PR Head 与远端分支均为 `2d6d6f8`、PR 非草稿且可合并，并且无 Review 或未解决线程。
+- 以普通 fast-forward 将 PR #35 合入 `main`，未强推或改写历史；GitHub 确认 [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35) 为 Merged，合并 SHA 为 `2d6d6f8`。
+- 从该基线创建 `codex/feat-evaluation-leaderboard`，领取 REPORT-001/002，并为 REPORT-003 补真实用户下钻证据，不混入筛选、人工改分或 HTML 导出。
+- 新增确定性排行榜计算层：所选维度按原权重归一、逐 Case 计算后跨 Case 求平均；缺失或非法分数不补零，覆盖不足模型不授予正式名次，同分使用竞赛排名。
+- 历史详情新增综合榜、单维度榜、任意维度勾选、覆盖率、否决次数和原始 Case 锚点；切换维度与刷新均不增加 API 请求，也不修改历史记录。
+- 5 项真实源码单测全部通过；Mock Playwright 以 2 Case、2 模型验证综合榜与准确性单维度名次反转、原始理由下钻、刷新持久化、390px 无溢出和 WCAG。
+- 首轮 WCAG 发现“原权重”辅助文本对比度约 `2.5:1`；加深同类文本后 Axe 通过，未关闭规则。视觉证据 `docs/evidence/pr-07b/evaluation-leaderboard.png` 已人工检查。
+- 本地 `npm run quality` 通过 315 文件 Secret Scan、零警告 lint、typecheck、157 项真实源码单测、2 项压力测试和 20 路由生产构建；`CI=1` 全量 32 项 Playwright 全部通过。
+
+下一步：提交 PR 07B 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
