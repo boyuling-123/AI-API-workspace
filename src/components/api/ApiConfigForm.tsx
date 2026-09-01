@@ -1,9 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import type { TargetConfig, ParamDef, ContentKind, TargetType } from "@/types";
+import type {
+  TargetConfig,
+  ParamDef,
+  ContentKind,
+  TargetType,
+  ResourceCapability,
+  ResourceKind,
+} from "@/types";
 import { generateId } from "@/lib/id";
 import { CAPABILITIES } from "@/config/capabilities";
+import {
+  inferResourceCapabilities,
+  inferResourceKind,
+  RESOURCE_CAPABILITIES,
+} from "@/lib/resourceCatalog";
 
 interface ApiConfigFormProps {
   initial: TargetConfig | null;
@@ -17,6 +29,8 @@ interface DraftConfig {
   name: string;
   type: TargetType;
   contentKind: ContentKind;
+  resourceKind: ResourceKind;
+  capabilityTags: ResourceCapability[];
   source: TargetConfig["source"];
   url: string;
   method: "GET" | "POST";
@@ -46,6 +60,8 @@ function targetToDraft(target: TargetConfig): DraftConfig {
     name: target.name,
     type: target.type,
     contentKind: target.contentKind,
+    resourceKind: inferResourceKind(target),
+    capabilityTags: inferResourceCapabilities(target),
     source: target.source,
     url: template?.url ?? "",
     method: template?.method ?? "POST",
@@ -74,6 +90,8 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
       type: "comfyui",
       // ComfyUI 收窄形态恒为生图。
       contentKind: "image",
+      resourceKind: "algorithm",
+      capabilityTags: draft.capabilityTags,
       source: draft.source,
       inputParams: draft.inputParams,
       comfyui: {
@@ -92,6 +110,8 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
     name: draft.name,
     type: "custom",
     contentKind: draft.contentKind,
+    resourceKind: draft.resourceKind,
+    capabilityTags: draft.capabilityTags,
     source: draft.source,
     inputParams: draft.inputParams,
     requestTemplate: {
@@ -120,6 +140,8 @@ function createEmptyDraft(): DraftConfig {
     name: "",
     type: "custom",
     contentKind: "image",
+    resourceKind: "algorithm",
+    capabilityTags: ["text_to_image"],
     source: "manual",
     url: "",
     method: "POST",
@@ -255,6 +277,15 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
     });
   }
 
+  function toggleResourceCapability(capabilityId: ResourceCapability) {
+    setDraft((prev) => ({
+      ...prev,
+      capabilityTags: prev.capabilityTags.includes(capabilityId)
+        ? prev.capabilityTags.filter((id) => id !== capabilityId)
+        : [...prev.capabilityTags, capabilityId],
+    }));
+  }
+
   async function handleTest() {
     setTestState({ running: true });
     try {
@@ -306,6 +337,73 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
       setTestState({ running: false, ok: false, message: "名称必填" });
       return;
     }
+    if (draft.capabilityTags.length === 0) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: "至少选择一项资源能力",
+      });
+      return;
+    }
+    const nonFiniteRange = draft.inputParams.find(
+      (param) =>
+        param.type === "number" &&
+        ((param.min !== undefined && !Number.isFinite(param.min)) ||
+          (param.max !== undefined && !Number.isFinite(param.max)))
+    );
+    if (nonFiniteRange) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: `${nonFiniteRange.name || "未命名参数"} 的范围必须是有限数字`,
+      });
+      return;
+    }
+    const invalidNumericDefault = draft.inputParams.find(
+      (param) =>
+        param.type === "number" &&
+        param.defaultValue !== undefined &&
+        (typeof param.defaultValue !== "number" ||
+          !Number.isFinite(param.defaultValue))
+    );
+    if (invalidNumericDefault) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: `${invalidNumericDefault.name || "未命名参数"} 的默认值必须是有限数字`,
+      });
+      return;
+    }
+    const invalidRange = draft.inputParams.find(
+      (param) =>
+        param.type === "number" &&
+        param.min !== undefined &&
+        param.max !== undefined &&
+        param.min > param.max
+    );
+    if (invalidRange) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: `${invalidRange.name || "未命名参数"} 的最小值不能大于最大值`,
+      });
+      return;
+    }
+    const defaultOutsideRange = draft.inputParams.find(
+      (param) =>
+        param.type === "number" &&
+        typeof param.defaultValue === "number" &&
+        ((param.min !== undefined && param.defaultValue < param.min) ||
+          (param.max !== undefined && param.defaultValue > param.max))
+    );
+    if (defaultOutsideRange) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: `${defaultOutsideRange.name || "未命名参数"} 的默认值必须位于参数范围内`,
+      });
+      return;
+    }
     if (draft.type === "comfyui") {
       if (!draft.comfyServerUrl.trim()) {
         setTestState({ running: false, ok: false, message: "ComfyUI 服务地址必填" });
@@ -330,7 +428,20 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
         <span className="text-xs font-medium text-slate-600 dark:text-slate-300">接入类型</span>
         <select
           value={draft.type}
-          onChange={(e) => update("type", e.target.value as TargetType)}
+          onChange={(e) => {
+            const type = e.target.value as TargetType;
+            setDraft((current) => ({
+              ...current,
+              type,
+              ...(type === "comfyui"
+                ? {
+                    contentKind: "image" as const,
+                    resourceKind: "algorithm" as const,
+                    capabilityTags: ["text_to_image" as const],
+                  }
+                : {}),
+            }));
+          }}
           className="rounded border border-slate-300 px-2 py-1 text-xs"
         >
           <option value="custom">自定义 API（大模型/算法/生图）</option>
@@ -365,6 +476,14 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
           ，请核对是否正确——它决定该目标在文本/生图模式下是否可被选中，如有误请在上方下拉手动修正后再保存。
         </div>
       )}
+
+      <ResourceMetadataEditor
+        resourceKind={isComfy ? "algorithm" : draft.resourceKind}
+        capabilities={draft.capabilityTags}
+        resourceKindLocked={isComfy}
+        onKindChange={(value) => update("resourceKind", value)}
+        onCapabilityToggle={toggleResourceCapability}
+      />
 
       <Field label="名称">
         <input
@@ -516,6 +635,68 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
   );
 }
 
+function ResourceMetadataEditor({
+  resourceKind,
+  capabilities,
+  resourceKindLocked,
+  onKindChange,
+  onCapabilityToggle,
+}: {
+  resourceKind: ResourceKind;
+  capabilities: ResourceCapability[];
+  resourceKindLocked: boolean;
+  onKindChange: (value: ResourceKind) => void;
+  onCapabilityToggle: (value: ResourceCapability) => void;
+}) {
+  return (
+    <fieldset className="rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 dark:border-cyan-500/30 dark:bg-cyan-500/10">
+      <legend className="px-1 text-xs font-bold text-cyan-900 dark:text-cyan-100">
+        资源池元数据
+      </legend>
+      <p className="mb-3 text-xs leading-5 text-cyan-800 dark:text-cyan-200">
+        这些字段只描述资源，不改变调用方式。Judge 是文本输出模型可承担的角色，无需重复创建接口。
+      </p>
+      <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          资源类型
+          <select
+            aria-label="资源类型"
+            value={resourceKind}
+            disabled={resourceKindLocked}
+            onChange={(event) =>
+              onKindChange(event.target.value as ResourceKind)
+            }
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          >
+            <option value="model">模型</option>
+            <option value="algorithm">算法</option>
+          </select>
+        </label>
+        <div>
+          <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            业务能力（至少一项）
+          </p>
+          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {RESOURCE_CAPABILITIES.map((item) => (
+              <label
+                key={item.id}
+                className="flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border border-cyan-200 bg-white px-3 text-xs font-medium text-slate-700 transition hover:border-cyan-500 dark:border-cyan-500/30 dark:bg-slate-900 dark:text-slate-200"
+              >
+                <input
+                  type="checkbox"
+                  checked={capabilities.includes(item.id)}
+                  onChange={() => onCapabilityToggle(item.id)}
+                />
+                {item.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      </div>
+    </fieldset>
+  );
+}
+
 function Field({
   label,
   hint,
@@ -622,9 +803,16 @@ function ParamsEditor({
           />
           <select
             value={param.type}
-            onChange={(e) =>
-              onUpdate(index, { type: e.target.value as ParamDef["type"] })
-            }
+            onChange={(e) => {
+              const type = e.target.value as ParamDef["type"];
+              onUpdate(index, {
+                type,
+                defaultValue: undefined,
+                ...(type === "number"
+                  ? {}
+                  : { min: undefined, max: undefined }),
+              });
+            }}
             className="input w-28"
           >
             <option value="string">string</option>
@@ -646,6 +834,82 @@ function ParamsEditor({
             placeholder="说明（可选）"
             className="input flex-1"
           />
+          {param.type === "boolean" ? (
+            <select
+              aria-label={`${param.name || `参数 ${index + 1}`} 默认值`}
+              value={
+                typeof param.defaultValue === "boolean"
+                  ? String(param.defaultValue)
+                  : ""
+              }
+              onChange={(e) =>
+                onUpdate(index, {
+                  defaultValue:
+                    e.target.value === ""
+                      ? undefined
+                      : e.target.value === "true",
+                })
+              }
+              className="input w-28"
+            >
+              <option value="">无默认值</option>
+              <option value="true">true</option>
+              <option value="false">false</option>
+            </select>
+          ) : (
+            <input
+              type={param.type === "number" ? "number" : "text"}
+              aria-label={`${param.name || `参数 ${index + 1}`} 默认值`}
+              value={
+                (param.type === "number" &&
+                  typeof param.defaultValue === "number") ||
+                ((param.type === "string" || param.type === "image") &&
+                  typeof param.defaultValue === "string")
+                  ? String(param.defaultValue)
+                  : ""
+              }
+              onChange={(e) =>
+                onUpdate(index, {
+                  defaultValue:
+                    e.target.value === ""
+                      ? undefined
+                      : param.type === "number"
+                        ? Number(e.target.value)
+                        : e.target.value,
+                })
+              }
+              placeholder="默认值（可选）"
+              className="input w-32"
+            />
+          )}
+          {param.type === "number" && (
+            <>
+              <input
+                type="number"
+                aria-label={`${param.name || `参数 ${index + 1}`} 最小值`}
+                value={param.min ?? ""}
+                onChange={(e) =>
+                  onUpdate(index, {
+                    min: e.target.value === "" ? undefined : Number(e.target.value),
+                  })
+                }
+                placeholder="最小值"
+                className="input w-28"
+              />
+              <input
+                type="number"
+                aria-label={`${param.name || `参数 ${index + 1}`} 最大值`}
+                value={param.max ?? ""}
+                onChange={(e) =>
+                  onUpdate(index, {
+                    max: e.target.value === "" ? undefined : Number(e.target.value),
+                  })
+                }
+                placeholder="最大值"
+                className="input w-28"
+              />
+            </>
+          )}
           <button
             type="button"
             onClick={() => onRemove(index)}

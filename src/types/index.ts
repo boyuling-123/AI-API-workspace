@@ -61,6 +61,19 @@ export type TargetType = "custom" | "comfyui";
  */
 export type ContentKind = "text" | "multimodal" | "image";
 
+/** 资源池中的稳定分类。Judge 是模型可承担的角色，不复制为第二个资源。 */
+export type ResourceKind = "model" | "algorithm";
+
+export type ResourceCapability =
+  | "text_understanding"
+  | "image_understanding"
+  | "text_to_image"
+  | "image_editing"
+  | "video_generation"
+  | "business_algorithm";
+
+export type ResourceModality = "text" | "image" | "number" | "boolean";
+
 export interface Project {
   id: string;
   version: number;
@@ -179,6 +192,10 @@ export interface TargetConfig {
   type: TargetType;
   /** 内容能力标签：text | multimodal | image。与 status 独立两维。 */
   contentKind: ContentKind;
+  /** 资源池分类；旧项目缺省时由 contentKind 与接入类型确定性推断。 */
+  resourceKind?: ResourceKind;
+  /** 业务能力标签；旧项目缺省时由输入输出模态确定性补齐只读投影。 */
+  capabilityTags?: ResourceCapability[];
   /** 由 Agent 自动接入得来 还是 手动填写（仅标记来源，行为完全一致）。 */
   source: "agent" | "manual";
   /** 入参定义（AI 解析或手动定义；跑批时由 TaskInput 提供真实值）。 */
@@ -283,6 +300,9 @@ export interface ParamDef {
   desc?: string;
   defaultValue?: unknown;
   value?: unknown;
+  /** 数值参数的可接受边界；旧配置可缺省。 */
+  min?: number;
+  max?: number;
 }
 
 export interface Evaluation {

@@ -483,7 +483,7 @@
 - [x] 分支已推送并自主创建 [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41)；首轮 workflow run `33457148220` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-004 升级为“已验证”。
 - [x] 最终证据提交 workflow run `33471151305` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41)，合并 SHA 为 `d405d4a`。
 
-## 进行中：PR 07F 离线 HTML 评价报告
+## 已完成：PR 07F 离线 HTML 评价报告
 
 分支：`codex/feat-html-evaluation-report`
 
@@ -496,7 +496,20 @@
 - [x] 已生成并人工检查 1440px 全页视觉证据；完整 quality 通过 337 文件 Secret Scan、零警告 lint、typecheck、189 项单测、2 项压力测试和 20 路由构建，`CI=1` 全量 36 项 Playwright/WCAG 通过。
 - [x] 功能快照 `0192563` 在独立 detached 工作树全新安装 434 个包；完整 quality 与全量 36 项 Playwright/WCAG 再次通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #42](https://github.com/boyuling-123/AI-API-workspace/pull/42)；首轮 workflow run `33472850294` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-007 升级为“已验证”。
-- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
+- [x] 最终证据提交对应 workflow run `33473144666` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #42](https://github.com/boyuling-123/AI-API-workspace/pull/42)，合并 SHA 为 `0e7cb03`。
+
+## 进行中：PR 08A 统一资源池核心
+
+分支：`codex/feat-resource-pool-core`
+
+- [x] 在兼容旧项目的 `TargetConfig` 上补充模型/算法类型与能力标签，不复制第二份资源状态，也不升级项目 Schema。
+- [x] 将模型、算法和 Judge 候选统一投影成可筛选资源目录；Judge 仅作为满足条件的使用角色，不创建重复资源。
+- [x] 覆盖文本理解、图片理解、文生图、图像编辑、视频生成和业务算法六类能力，并展示输入/输出模态、必填参数与数值范围。
+- [x] 接口管理编辑器支持维护资源类型、能力标签及数值参数最小/最大值，旧接口按既有模态确定性推断。
+- [x] 接口管理页新增统一资源池总览、搜索和类型/角色/能力/模态组合筛选；筛选与编辑不会调用 API、模型或自动启动评价。
+- [x] 8 项真实源码单测与定向 Mock Playwright/WCAG 路径通过；覆盖未测试/失败模型不得成为 Judge 候选、默认值脱敏/截断及非法数值范围保存阻断；视觉证据 `docs/evidence/pr-08a/resource-pool.png` 已生成并人工检查，390px 无横向溢出。
+- [x] 完整本地 quality 通过 343 文件 Secret Scan、零警告 lint、typecheck、197 项单测、2 项压力测试和 20 路由构建；全量 37 项 Playwright/WCAG 通过。
+- [ ] 独立干净环境、GitHub CI 与合并审计通过后，将 POOL-001～003 升级为“已验证”。
 
 ## 硬门禁
 

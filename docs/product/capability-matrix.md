@@ -1,6 +1,6 @@
 # 测评平台 v5.0 能力矩阵
 
-> 审计日期：2026-08-30
+> 审计日期：2026-09-01
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)
 > 审计口径：前十章 75 条主能力逐项核对；实施顺序与验收标准不重复计数。
 
@@ -58,9 +58,9 @@
 | JUDGE-006 | 高风险与高频分歧 Case 可人工复核 | 已验证 | `calibrationReview.ts` 以固定规则生成可解释风险与稳定队列；`CalibrationReviewQueue.tsx` 支持领取、复核结论、必填说明和只追加审计；`Project.calibrationReviewEvents` 刷新持久化且不覆盖原始校准证据 | `calibrationReview.test.ts` 6 项覆盖错误、漏判、分歧、低置信度、重复频次、脱敏、异常与篡改；`calibration-review-queue.spec.ts` 覆盖领取、改判、审计、刷新零新增调用和 WCAG；独立环境 quality 与全量 31 项 Playwright 通过；workflow run `33299671151` 两道 CI 成功 | 风险规则可解释，Case 可领取、复核和留痕 | 报告复核 | [PR #35](https://github.com/boyuling-123/AI-API-workspace/pull/35) |
 | JUDGE-007 | Judge、维度或 Prompt 变化后重跑黄金集 | 已验证 | `JudgeCalibrationRun` 保存任务/基线/变更/Evaluator 快照；`judgeCalibrationRerun.ts` 自动规划首次、变化重跑和同配置复用；页面二次确认后追加历史并展示指标差异 | 6 项规划与服务边界单测、客户端快照测试及 `judge-calibration-rerun.spec.ts` 覆盖 v1→v2、精确调用、历史持久化、WCAG；本地、独立干净工作树与 workflow run `33296085052` 两道 CI 全部通过 | 变更自动创建校准任务并保留前后结果 | Judge 校准 | [#30](https://github.com/boyuling-123/AI-API-workspace/pull/30) |
 | JUDGE-008 | 校准失败时禁止发布 Evaluator | 已验证 | `evaluatorRelease.ts` 固定同家族、完整定义、结果/指标一致性、20 样本、准确率、κ、漏判率与零错误门禁；`EvaluatorReleaseGate.tsx` 提供二次确认、Active 和只追加历史 | `evaluatorRelease.test.ts` 6 项覆盖通过、阈值失败、跨家族、标准改写、指标篡改、重复 Case、历史与脱敏；`evaluator-release-gate.spec.ts` 覆盖 10% 漏判阻断、v2 达标发布、刷新持久化、0 次发布调用和 WCAG；本地、独立干净工作树与 workflow run `33297002754` 两道 CI 全部通过 | 未达到固定阈值、证据不完整或指标无法复算的版本无法成为 Active；发布后可追溯且旧记录不覆盖 | Judge 校准 | [#31](https://github.com/boyuling-123/AI-API-workspace/pull/31) |
-| POOL-001 | 建立模型、算法、Judge 统一资源池 | 部分实现 | `TargetConfig` 统一模型/算法，Judge 复用 Target | 无 | 资源角色、版本和能力均由统一实体表达 | 资源池 | 待关联 |
-| POOL-002 | 记录文本、图片、文生图、编辑、视频和业务算法能力 | 部分实现 | `ContentKind` 仅 text/multimodal/image | 无 | 能力枚举覆盖需求并支持扩展 | 资源池 | 待关联 |
-| POOL-003 | 记录输入输出模态和参数范围 | 部分实现 | `contentKind`；`inputParams` | 无 | 输入输出 Schema、范围和默认值均可校验 | 资源池 | 待关联 |
+| POOL-001 | 建立模型、算法、Judge 统一资源池 | 已实现 | `resourceCatalog.ts` 从唯一 `TargetConfig` 确定性投影模型/算法类型与被测目标/Judge 角色；`ResourcePoolPanel.tsx` 提供统一目录，`WorkspaceBody.tsx` 的 Judge 候选复用同一目录 | `resourceCatalog.test.ts` 覆盖旧项目推断、角色资格、去重和输入不变；`resource-pool.spec.ts` 覆盖真实页面目录、Judge 筛选、编辑持久化、零调用、WCAG 与 390px | 资源角色和能力由同一实体表达，目录无重复状态，并通过独立干净环境与 GitHub CI | 资源池 | PR 08A 待创建 |
+| POOL-002 | 记录文本、图片、文生图、编辑、视频和业务算法能力 | 已实现 | `ResourceCapability` 定义六类能力；预置和自定义资源可显式维护，旧资源由 `resourceCatalog.ts` 向后推断；页面支持能力展示和筛选 | `resourceCatalog.test.ts` 覆盖显式元数据规范化与旧项目推断；`resource-pool.spec.ts` 验证文生图筛选和业务算法编辑持久化 | 六类能力可维护、筛选、兼容旧项目，并通过独立干净环境与 GitHub CI | 资源池 | PR 08A 待创建 |
+| POOL-003 | 记录输入输出模态和参数范围 | 已实现 | `resourceCatalog.ts` 规范 text/image/number/boolean 输入模态及 text/image 输出模态；`ParamDef.min/max` 与 `ApiConfigForm.tsx` 支持类型化默认值、数值范围编辑和保存前校验，资源卡脱敏展示必填、默认值与范围 | `resourceCatalog.test.ts` 覆盖模态、默认值脱敏/截断、`1–8` 范围、非有限值隔离和源对象不变；`resource-pool.spec.ts` 验证最小值/默认值越界阻断、范围 `1–8` 更新为 `2–8`、默认值更新为 `4`、刷新投影与零调用 | 输入输出模态、必填、默认值和合法数值范围可校验，并通过独立干净环境与 GitHub CI | 资源池 | PR 08A 待创建 |
 | POOL-004 | 记录接口来源、版本、别名和有效状态 | 部分实现 | `TargetConfig.source/status/apiKeyRef` | 无 | 来源、版本、别名、健康状态均可查询 | 资源池 | 待关联 |
 | POOL-005 | 记录历史主题、维度表现、耗时、成本和失败率 | 部分实现 | Task/Evaluation 有结果与耗时，缺聚合成本指标 | 无 | 资源详情可展示全部历史指标与数据口径 | 资源池 | 待关联 |
 | POOL-006 | Agent 按任务要求筛选候选资源 | 设计中 | 无 | 无 | Agent 只收到过滤后的候选集并说明筛选依据 | 资源池 | 待关联 |
@@ -123,6 +123,7 @@
 - JUDGE-008 与 PROMPT-007 已在 PR #31 完成固定发布阈值、同家族与完整定义绑定、逐 Case/指标复算、失败阻断、二次确认和 Active 历史；本地、独立干净环境、视觉证据与 workflow run `33297002754` 两道 CI 全部通过，状态为“已验证”。
 - JUDGE-005 已由 PR #32 完成独立投票矩阵、确定性仲裁、失败隔离和发布前证据复算，并由 PR #33 完成多选、精确费用确认、逐 Judge 指标和原始票下钻；本地、独立干净环境、视觉证据与 workflow run `33298736070` 两道 CI 全部通过，状态为“已验证”。
 - 平台总览页把当前项目资产、六条产品主链路和真实能力边界集中呈现；跑批继续保持默认首页，Agent 外部召唤为 Demo，多 Judge 页面闭环为已验证，20GB 级数据后端化为设计中，不以总览文案抬高矩阵状态。
+- POOL-001～003 已由 PR 08A 完成统一目录投影、六类能力、输入输出模态、类型化默认值和数值范围维护；本地 197 项单测、2 项压力测试、20 路由构建、全量 37 项 Mock Playwright/WCAG 与视觉检查通过，独立环境和 GitHub CI 尚待完成，因此当前为“已实现”。
 - DIM-006 仍为“设计中”：当前只把人工反馈作为一次通用候选生成的上下文，没有多轮迭代、差异展示或收敛证据。
 - SEC-002/003/004 尚缺 IndexedDB、导出、Trace 和完整 UI 泄漏测试，继续保持“部分实现”。
 - 已实现能力仍需补齐自动化测试、CI 与截图或 Trace，之后才能升级为“已验证”。

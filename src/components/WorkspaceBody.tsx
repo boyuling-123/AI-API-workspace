@@ -38,9 +38,10 @@ import { EvaluationPanel } from "@/components/evaluation/EvaluationPanel";
 import { HistoryPanel } from "@/components/history/HistoryPanel";
 import { GoldenDatasetPanel } from "@/components/calibration/GoldenDatasetPanel";
 import { PlatformOverview } from "@/components/overview/PlatformOverview";
+import { ResourcePoolPanel } from "@/components/resources/ResourcePoolPanel";
 import { AppTabs } from "@/components/layout/AppTabs";
 import { RUNTIME_CONFIG } from "@/config/runtime";
-import { targetSupportsImage } from "@/config/presetTargets";
+import { buildResourceCatalog } from "@/lib/resourceCatalog";
 import {
   collectEvaluationLineageDimensions,
   getEvaluationRootId,
@@ -131,6 +132,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     [algoConfigs, targetIds]
   );
 
+  const resourceCatalog = useMemo(
+    () => buildResourceCatalog(algoConfigs),
+    [algoConfigs]
+  );
+
   // 选中目标所需列（去重）：prompt + 各目标入参名，作为 AI 造数据的列约束。
   const targetColumns = useMemo(() => {
     const columns = new Set<string>(["prompt"]);
@@ -143,17 +149,21 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   }, [selectedAlgoConfigs]);
 
   // 可作裁判的目标：出文字的目标（text / multimodal）。
-  // supportsImage（能否当含图裁判）= 仅 multimodal，由 targetSupportsImage 判断。
+  // Judge 候选统一由资源目录派生；未测试、失败或算法资源不会进入选择器。
   const judgeModels = useMemo(
     () =>
-      algoConfigs
-        .filter((config) => config.contentKind === "text" || config.contentKind === "multimodal")
-        .map((config) => ({
-          id: config.id,
-          name: config.name,
-          supportsImage: targetSupportsImage(config),
+      resourceCatalog
+        .filter(
+          (resource) =>
+            resource.status === "tested_ok" &&
+            resource.roles.includes("judge")
+        )
+        .map((resource) => ({
+          id: resource.id,
+          name: resource.name,
+          supportsImage: resource.inputModalities.includes("image"),
         })),
-    [algoConfigs]
+    [resourceCatalog]
   );
 
   const runner = useTaskRunner({
@@ -677,7 +687,8 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           </p>
         </div>
       ) : activeTab === "access" ? (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
+          <ResourcePoolPanel configs={algoConfigs} />
           {/* ② 接口创建&管理板块：新增/编辑接口、AI 解读文档自动建接口 */}
           <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
             <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
