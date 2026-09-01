@@ -494,7 +494,7 @@
 - [x] 损坏/缺失/未绑定版本不补造，损坏人工复核事件隔离；来源批次错配、非法时间与循环数据阻断导出。
 - [x] 7 项真实源码单测、全量 189 项单测、2 项压力测试、生产构建与定向 Mock Playwright/WCAG 路径通过；首次 Axe 对比度问题已修复而非关闭规则。
 - [x] 已生成并人工检查 1440px 全页视觉证据；完整 quality 通过 337 文件 Secret Scan、零警告 lint、typecheck、189 项单测、2 项压力测试和 20 路由构建，`CI=1` 全量 36 项 Playwright/WCAG 通过。
-- [ ] 提交功能快照并在独立 detached 工作树全新安装后复验完整 quality 与全量 Playwright。
+- [x] 功能快照 `0192563` 在独立 detached 工作树全新安装 434 个包；完整 quality 与全量 36 项 Playwright/WCAG 再次通过，结束时 HEAD 未漂移且 Git 零改动。
 - [ ] 推送短分支、自主创建 PR，等待两轮 GitHub CI 与最终审计后安全合并。
 
 ## 硬门禁

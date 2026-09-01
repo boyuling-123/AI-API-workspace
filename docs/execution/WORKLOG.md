@@ -1136,5 +1136,7 @@
 - 修复 `generatedAt` 虽为安全整数但超出 JavaScript 日期范围时文件名生成抛错的边界；报告生成时间严格阻断，旧历史异常时间降级显示“时间无效”，7 项定向单测继续通过。
 - 从真实下载产物离线打开并生成 `docs/evidence/pr-07f/evaluation-html-report.png`；人工检查概览、AI 原分榜、Rubric、Evaluator 版本、Case 证据、脱敏和机器快照层级，未发现裁切或错误状态。
 - 完整 quality 通过 337 个仓库文件 Secret Scan、零警告 lint、typecheck、38 个测试文件共 189 项单测、2 项压力测试和 20 路由生产构建；`CI=1` 全量 36 项 Playwright/WCAG 全部通过。
+- 提交功能快照 `019256325f05aadc873b767dc302443336aba508`，在独立 detached 工作树全新 `npm ci` 安装 434 个包后再次通过相同 quality 与 36 项 Playwright/WCAG；结束时 HEAD 精确一致且 Git 零改动。
+- `npm audit` 仍报告仓库既有 6 个高危传递依赖；未使用 `--force` 进行潜在破坏性升级，保留给依赖安全专项 PR 处理。
 
-下一步：提交功能快照，在独立 detached 工作树全新安装依赖并复验完整 quality 与全量 Playwright。
+下一步：提交干净环境验收纪实、推送短分支并自主创建 PR，等待 GitHub CI。
