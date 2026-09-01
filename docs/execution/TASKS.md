@@ -468,7 +468,7 @@
 - [x] 分支已推送并自主创建 [PR #39](https://github.com/boyuling-123/AI-API-workspace/pull/39)；首轮 workflow run `33303845225` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-006 升级为“已验证”。
 - [x] 最终证据提交 workflow run `33304014790` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #39](https://github.com/boyuling-123/AI-API-workspace/pull/39)，合并 SHA 为 `d7a2e68`。
 
-## 进行中：PR 07E Judge 可定位引用证据
+## 已完成：PR 07E Judge 可定位引用证据
 
 分支：`codex/feat-evaluation-evidence`
 
@@ -481,7 +481,21 @@
 - [x] 最终文档快照本地 quality 通过 332 文件 Secret Scan、零警告 lint、typecheck、182 项单测、2 项压力测试和 20 路由构建；`CI=1` 全量 35 项 Playwright/WCAG 通过。
 - [x] 功能快照 `59ae36c` 在独立 detached 工作树全新安装 434 个包；quality 与 `CI=1` 全量 35 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41)；首轮 workflow run `33457148220` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-004 升级为“已验证”。
-- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
+- [x] 最终证据提交 workflow run `33471151305` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41)，合并 SHA 为 `d405d4a`。
+
+## 进行中：PR 07F 离线 HTML 评价报告
+
+分支：`codex/feat-html-evaluation-report`
+
+- [x] 历史评价行新增独立“导出HTML报告”入口，只读取本地历史，不调用 API、模型或自动评价。
+- [x] 报告包含 AI 原分排行榜、Task 原始输入/输出、Rubric、Prompt、策略、Judge 证据、有效人工复核和完整 Evaluator 版本快照。
+- [x] 单文件内嵌机器可读脱敏快照与可复算指纹；离线打开自动显示校验结果，并支持打印及下载 JSON 快照。
+- [x] 常见 Key/Token/密码递归脱敏，动态内容安全转义；CSP 禁止网络与外部资源，data 图片可展示，远程图片明确标记未嵌入。
+- [x] 损坏/缺失/未绑定版本不补造，损坏人工复核事件隔离；来源批次错配、非法时间与循环数据阻断导出。
+- [x] 7 项真实源码单测、全量 189 项单测、2 项压力测试、生产构建与定向 Mock Playwright/WCAG 路径通过；首次 Axe 对比度问题已修复而非关闭规则。
+- [x] 已生成并人工检查 1440px 全页视觉证据；完整 quality 通过 337 文件 Secret Scan、零警告 lint、typecheck、189 项单测、2 项压力测试和 20 路由构建，`CI=1` 全量 36 项 Playwright/WCAG 通过。
+- [ ] 提交功能快照并在独立 detached 工作树全新安装后复验完整 quality 与全量 Playwright。
+- [ ] 推送短分支、自主创建 PR，等待两轮 GitHub CI 与最终审计后安全合并。
 
 ## 硬门禁
 

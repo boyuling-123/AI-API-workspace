@@ -12,6 +12,7 @@ import type {
 } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 import { exportResultsToExcel } from "@/services/excel";
+import { downloadEvaluationHtmlReport } from "@/services/evaluationHtmlReport";
 import { ImageLightbox } from "@/components/result/ImageLightbox";
 import { AUTO_EXPECTED_ANSWER_KEY } from "@/services/expectedAnswer";
 import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
@@ -142,6 +143,18 @@ export function EvalHistoryPanel({
     });
   };
 
+  const handleHtmlExport = (record: EvaluationRecord) => {
+    const task = taskById.get(record.sourceTaskId);
+    if (!task) return;
+    downloadEvaluationHtmlReport({
+      projectName,
+      record,
+      task,
+      evaluatorVersions,
+      reviewEvents,
+    });
+  };
+
   return (
     <>
       <section className="flex flex-col gap-3 rounded-lg border border-gray-200 bg-white p-5">
@@ -249,6 +262,15 @@ export function EvalHistoryPanel({
                       className="rounded-md border border-gray-300 px-2.5 py-1 text-xs transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
                     >
                       导出Excel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!task}
+                      onClick={() => handleHtmlExport(record)}
+                      title="下载含原始结果、评价配置、Evaluator 版本与完整性校验的离线报告"
+                      className="rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1 text-xs font-medium text-orange-800 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      导出HTML报告
                     </button>
                     <button
                       type="button"
