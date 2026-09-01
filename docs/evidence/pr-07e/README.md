@@ -32,3 +32,10 @@
 锁文件安装仍报告既有的 6 个 high 级依赖审计项；本 PR 未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
 
 所有自动化使用 Mock，不读取真实密钥，不调用真实或付费模型，不自动启动额外 AI 评价。
+
+## GitHub CI
+
+- [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41) 首轮 Head：`2ba6a541ade12091b6bb3bdcc967351296c7f7ec`。
+- workflow run `33457148220` 的 `Lint, test, build, and secret scan` 成功。
+- 同一 workflow run 的 `Playwright user paths and accessibility` 成功，全量 35 项用户路径与 WCAG 检查通过。
+- REPORT-004 据此升级为“已验证”；最终合并仍以本次证据回写提交自身 CI 和合并前审计为准。

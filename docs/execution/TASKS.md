@@ -480,7 +480,8 @@
 - [x] 12 项证据真实源码单测与完整 Mock 用户路径通过；视觉截图已人工检查，并修复固定列遮挡、历史表竖排挤压和 WCAG 位置文字对比度问题。
 - [x] 最终文档快照本地 quality 通过 332 文件 Secret Scan、零警告 lint、typecheck、182 项单测、2 项压力测试和 20 路由构建；`CI=1` 全量 35 项 Playwright/WCAG 通过。
 - [x] 功能快照 `59ae36c` 在独立 detached 工作树全新安装 434 个包；quality 与 `CI=1` 全量 35 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
-- [ ] 推送短分支、自主创建 PR，等待两轮 GitHub CI 与最终审计后安全合并。
+- [x] 分支已推送并自主创建 [PR #41](https://github.com/boyuling-123/AI-API-workspace/pull/41)；首轮 workflow run `33457148220` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-004 升级为“已验证”。
+- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
 
 ## 硬门禁
 
