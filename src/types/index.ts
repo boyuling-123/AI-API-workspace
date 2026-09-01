@@ -603,11 +603,52 @@ export interface DimensionPreset {
 /**
  * 单个目标在一条输入下的独立维度评分，以及平台确定性计算的策略结果。
  */
+export type EvaluationTextEvidenceSource =
+  | "input_prompt"
+  | "expected_answer"
+  | "target_output";
+
+export type EvaluationImageEvidenceSource = "input_image" | "target_image";
+
+export interface EvaluationTextEvidence {
+  kind: "text_quote";
+  source: EvaluationTextEvidenceSource;
+  /** target_output 时必填；其他文字来源不得携带。 */
+  targetId?: string;
+  /** 服务端从原文截取的精确片段，不信任模型提供的位置。 */
+  quote: string;
+  /** JavaScript UTF-16 字符索引，区间为 [start, end)。 */
+  start: number;
+  end: number;
+}
+
+export interface EvaluationImageEvidence {
+  kind: "image_observation";
+  source: EvaluationImageEvidenceSource;
+  /** target_image 时必填；input_image 不得携带。 */
+  targetId?: string;
+  /** 对应来源内从 1 开始的图片序号。 */
+  imageIndex: number;
+  observation: string;
+}
+
+export type EvaluationEvidence =
+  | EvaluationTextEvidence
+  | EvaluationImageEvidence;
+
+export interface EvaluationDimensionScore {
+  dimension: string;
+  score: number;
+  comment: string;
+  /** 新评价必须有结构化引用；旧记录可缺省。 */
+  evidence?: EvaluationEvidence[];
+}
+
 export interface TargetDimensionScores {
   targetId: string;
   targetName: string;
   /** Judge 按维度逐项打分，顺序与本次选定维度一致。 */
-  dimensionScores: { dimension: string; score: number; comment: string }[];
+  dimensionScores: EvaluationDimensionScore[];
   /** 平台按已确认权重确定性计算的 0-10 加权分；旧记录可缺省。 */
   weightedScore?: number;
   /** 是否命中任一维度的一票否决规则；旧记录可缺省。 */

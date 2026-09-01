@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type {
   EvaluationRecord,
+  EvaluationDimensionScore,
   EvaluationReviewEvent,
   EvaluatorVersion,
   ResultItem,
@@ -17,6 +18,7 @@ import { isEvaluatorVersionIntact } from "@/lib/evaluatorVersion";
 import { EvaluationLeaderboard } from "./EvaluationLeaderboard";
 import { EvaluationCaseFilterPanel } from "./EvaluationCaseFilterPanel";
 import { EvaluationHumanReviewPanel } from "./EvaluationHumanReviewPanel";
+import { EvaluationEvidenceList } from "./EvaluationEvidenceList";
 import {
   DEFAULT_DISAGREEMENT_THRESHOLD,
   DEFAULT_LOW_SCORE_THRESHOLD,
@@ -357,7 +359,7 @@ function EvalDetailTable({
     const map = new Map<
       string,
       {
-        dimensionScores: { dimension: string; score: number; comment: string }[];
+        dimensionScores: EvaluationDimensionScore[];
         weightedScore?: number;
         vetoed?: boolean;
         vetoReasons?: string[];
@@ -397,6 +399,16 @@ function EvalDetailTable({
       targetName,
     }));
   }, [task.results]);
+  const targetNames = useMemo(
+    () =>
+      new Map(
+        leaderboardTargets.map((target) => [
+          target.targetId,
+          target.targetName,
+        ])
+      ),
+    [leaderboardTargets]
+  );
   const caseInsights = useMemo(
     () =>
       buildEvaluationCaseInsights(record, task, {
@@ -548,13 +560,13 @@ function EvalDetailTable({
         </div>
       ) : (
       <div className="overflow-x-auto rounded-lg border border-gray-200">
-        <table className="w-full text-left text-sm">
+        <table className="w-full min-w-[1280px] text-left text-sm">
           <thead className="bg-gray-50 text-xs text-gray-500">
             <tr>
               <th className="w-32 px-3 py-2">#</th>
               <th className="w-40 px-3 py-2">使用的模型 / 算法</th>
-              <th className="px-3 py-2">输入（入参）</th>
-              <th className="px-3 py-2">出参</th>
+              <th className="min-w-48 px-3 py-2">输入（入参）</th>
+              <th className="min-w-48 px-3 py-2">出参</th>
               {dimensions.map((dimension) => (
                 <th
                   key={dimension.name}
@@ -573,7 +585,7 @@ function EvalDetailTable({
               ))}
               <th className="whitespace-nowrap px-3 py-2">加权分</th>
               <th className="whitespace-nowrap px-3 py-2">策略结果</th>
-              <th className="px-3 py-2">总体点评</th>
+              <th className="min-w-40 px-3 py-2">总体点评</th>
               <th className="w-40 px-3 py-2">人工复核</th>
             </tr>
           </thead>
@@ -655,33 +667,40 @@ function EvalDetailTable({
                           className="px-3 py-2.5"
                           title={cell?.comment || ""}
                         >
-                          {humanScore !== undefined ? (
-                            <span className="flex min-w-16 flex-col">
-                              <span
-                                aria-label={`人工有效分 ${humanScore.toFixed(1)}`}
-                                className="font-semibold text-teal-700"
-                              >
-                                {humanScore.toFixed(1)}
-                                <span className="ml-1 text-[10px] font-medium text-teal-600">
-                                  人工
+                          <div className="flex min-w-44 flex-col items-start">
+                            {humanScore !== undefined ? (
+                              <span className="flex min-w-16 flex-col">
+                                <span
+                                  aria-label={`人工有效分 ${humanScore.toFixed(1)}`}
+                                  className="font-semibold text-teal-700"
+                                >
+                                  {humanScore.toFixed(1)}
+                                  <span className="ml-1 text-[10px] font-medium text-teal-600">
+                                    人工
+                                  </span>
+                                </span>
+                                <span className="text-[10px] font-normal text-slate-400">
+                                  AI {cell?.score.toFixed(1) ?? "—"}
                                 </span>
                               </span>
-                              <span className="text-[10px] font-normal text-slate-400">
-                                AI {cell?.score.toFixed(1) ?? "—"}
+                            ) : cell ? (
+                              <span className="font-semibold text-blue-600">
+                                {cell.score.toFixed(1)}
+                                {cell.comment && (
+                                  <span className="ml-1 cursor-help font-normal text-gray-300 hover:text-gray-500">
+                                    ⓘ
+                                  </span>
+                                )}
                               </span>
-                            </span>
-                          ) : cell ? (
-                            <span className="font-semibold text-blue-600">
-                              {cell.score.toFixed(1)}
-                              {cell.comment && (
-                                <span className="ml-1 cursor-help font-normal text-gray-300 hover:text-gray-500">
-                                  ⓘ
-                                </span>
-                              )}
-                            </span>
-                          ) : (
-                            <span className="text-xs text-gray-400">-</span>
-                          )}
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                            <EvaluationEvidenceList
+                              evidence={cell?.evidence}
+                              targetNames={targetNames}
+                              label={`${item.targetName} ${dimension.name}`}
+                            />
+                          </div>
                         </td>
                       );
                     })}

@@ -51,7 +51,19 @@ describe("Rubric-aware Prompt services", () => {
           {
             targetId: "target-a",
             dimensionScores: [
-              { dimension: "准确性", score: 4, comment: "存在错误" },
+              {
+                dimension: "准确性",
+                score: 4,
+                comment: "存在错误",
+                evidence: [
+                  {
+                    kind: "text_quote",
+                    source: "target_output",
+                    targetId: "target-a",
+                    quote: "请提供订单号",
+                  },
+                ],
+              },
             ],
           },
         ],
@@ -85,10 +97,22 @@ describe("Rubric-aware Prompt services", () => {
     expect(prompt).toContain("证据要求：");
     expect(prompt).toContain("判断规则：");
     expect(prompt).toContain("权重：100%");
+    expect(prompt).toContain("每个目标的每个维度");
+    expect(prompt).toContain('"kind": "text_quote"');
     expect(result.scores[0]).toMatchObject({
       weightedScore: 4,
       vetoed: true,
       vetoReasons: ["“准确性”得分 4.0，低于否决阈值 5"],
     });
+    expect(result.scores[0].dimensionScores[0].evidence).toEqual([
+      {
+        kind: "text_quote",
+        source: "target_output",
+        targetId: "target-a",
+        quote: "请提供订单号",
+        start: 0,
+        end: 6,
+      },
+    ]);
   });
 });

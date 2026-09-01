@@ -1,5 +1,12 @@
 import * as XLSX from "xlsx";
-import type { EvalDimension, ResultItem, ResultRow, TaskInput } from "@/types";
+import type {
+  EvalDimension,
+  EvaluationDimensionScore,
+  EvaluationEvidence,
+  ResultItem,
+  ResultRow,
+  TaskInput,
+} from "@/types";
 import { generateId } from "@/lib/id";
 import { formatTimestamp } from "@/lib/datetime";
 import { RUN_ERROR_LABELS } from "@/lib/runError";
@@ -177,7 +184,7 @@ export interface ExportEvaluationData {
   inputId: string;
   scores: {
     targetId: string;
-    dimensionScores: { dimension: string; score: number; comment: string }[];
+    dimensionScores: EvaluationDimensionScore[];
     weightedScore?: number;
     vetoed?: boolean;
     vetoReasons?: string[];
@@ -253,6 +260,42 @@ function ensureUniqueColumn(name: string, used: Set<string>): string {
   return candidate;
 }
 
+function evidenceSourceLabel(
+  evidence: EvaluationEvidence,
+  targetNames: ReadonlyMap<string, string>
+): string {
+  if (evidence.kind === "text_quote") {
+    if (evidence.source === "input_prompt") return "输入 prompt";
+    if (evidence.source === "expected_answer") return "标准答案";
+    const targetName = evidence.targetId
+      ? targetNames.get(evidence.targetId) ?? evidence.targetId
+      : "未知目标";
+    return `${targetName} 输出`;
+  }
+  if (evidence.source === "input_image") {
+    return `输入图片 #${evidence.imageIndex}`;
+  }
+  const targetName = evidence.targetId
+    ? targetNames.get(evidence.targetId) ?? evidence.targetId
+    : "未知目标";
+  return `${targetName} 输出图片 #${evidence.imageIndex}`;
+}
+
+export function formatEvaluationEvidenceCell(
+  evidence: EvaluationEvidence[] | undefined,
+  targetNames: ReadonlyMap<string, string>
+): string {
+  if (!evidence?.length) return "未保存结构化证据";
+  return evidence
+    .map((item) => {
+      const source = evidenceSourceLabel(item, targetNames);
+      return item.kind === "text_quote"
+        ? `${source}[${item.start}, ${item.end})：「${item.quote}」`
+        : `${source}：${item.observation}`;
+    })
+    .join("\n");
+}
+
 /**
  * 导出运行结果为 Excel。每行一条输入，固定列（序号/prompt/image_url）+
  * 每个目标七列（输出 / 状态 / 结果来源 / 失败类型 / 尝试次数 / HTTP 状态 / 耗时(s)）。
@@ -274,6 +317,9 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
 
   const targetNames = targetIds.map((targetId) =>
     resolveTargetName(targetId, results)
+  );
+  const targetNameById = new Map(
+    targetIds.map((targetId, index) => [targetId, targetNames[index]])
   );
 
   const usedColumnNames = new Set<string>();
@@ -300,7 +346,8 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
       for (const dimension of dimensionList) {
         header.push(
           ensureUniqueColumn(`${name}_${dimension.name}_分`, usedColumnNames),
-          ensureUniqueColumn(`${name}_${dimension.name}_理由`, usedColumnNames)
+          ensureUniqueColumn(`${name}_${dimension.name}_理由`, usedColumnNames),
+          ensureUniqueColumn(`${name}_${dimension.name}_证据`, usedColumnNames)
         );
       }
       header.push(
@@ -373,7 +420,11 @@ export function exportResultsToExcel(params: ExportResultsParams): void {
         );
         for (const dimension of dimensionList) {
           const cell = dimScoreByName.get(dimension.name);
-          line.push(cell ? cell.score.toFixed(1) : "", cell?.comment ?? "");
+          line.push(
+            cell ? cell.score.toFixed(1) : "",
+            cell?.comment ?? "",
+            formatEvaluationEvidenceCell(cell?.evidence, targetNameById)
+          );
         }
         line.push(
           score?.weightedScore ?? "",

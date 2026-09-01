@@ -454,7 +454,7 @@
 - [x] 分支已推送并自主创建 [PR #38](https://github.com/boyuling-123/AI-API-workspace/pull/38)；首轮 workflow run `33302603833` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-005 升级为“已验证”。
 - [x] 最终证据提交 workflow run `33302748095` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #38](https://github.com/boyuling-123/AI-API-workspace/pull/38)，合并 SHA 为 `b881eaf`。
 
-## 进行中：PR 07D 通用评价人工复核与 Bad Case 留痕
+## 已完成：PR 07D 通用评价人工复核与 Bad Case 留痕
 
 分支：`codex/feat-evaluation-human-review`
 
@@ -466,7 +466,21 @@
 - [x] 视觉证据已人工检查；本地 quality 通过 327 文件 Secret Scan、零警告 lint、typecheck、170 项单测、2 项压力测试和 20 路由构建，全量 34 项 Playwright/WCAG 通过。
 - [x] 功能快照 `6811a64` 在独立 detached 工作树全新安装 434 个包；quality 与 `CI=1` 全量 34 项 Playwright 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #39](https://github.com/boyuling-123/AI-API-workspace/pull/39)；首轮 workflow run `33303845225` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，REPORT-006 升级为“已验证”。
-- [ ] 首轮 CI 证据回写提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并安全合并。
+- [x] 最终证据提交 workflow run `33304014790` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #39](https://github.com/boyuling-123/AI-API-workspace/pull/39)，合并 SHA 为 `d7a2e68`。
+
+## 进行中：PR 07E Judge 可定位引用证据
+
+分支：`codex/feat-evaluation-evidence`
+
+- [x] 评价结果 Schema 为每个目标 × 维度保存 1–3 条结构化证据，文字引用记录来源、精确原文和服务端计算的 `[start, end)`，图片观察记录来源、目标与从 1 开始的序号。
+- [x] 服务端拒绝未知目标、重复目标、缺失维度、缺失/重复证据、伪造原文、越界图片和错误来源；目标有输出时必须引用自身，标准答案模式必须同时引用 expected answer，横向模式禁止伪造标准答案。
+- [x] 客户端将输入图片和各目标输出图片压缩副本按稳定顺序送入同一次 Judge 请求；不增加模型调用，原图与历史跑批结果不修改。
+- [x] 即时结果、历史详情和刷新后记录均可展开证据；旧记录明确显示“未保存结构化证据”，不补造引用；人工复核仍只覆盖分数，证据保留 AI 原始口径。
+- [x] Excel 每个目标 × 维度新增“证据”列，保留来源、目标名、文字位置、原文或图片观察；Mock E2E 实际下载并用 `xlsx` 回读验证。
+- [x] 12 项证据真实源码单测与完整 Mock 用户路径通过；视觉截图已人工检查，并修复固定列遮挡、历史表竖排挤压和 WCAG 位置文字对比度问题。
+- [x] 最终文档快照本地 quality 通过 332 文件 Secret Scan、零警告 lint、typecheck、182 项单测、2 项压力测试和 20 路由构建；`CI=1` 全量 35 项 Playwright/WCAG 通过。
+- [ ] 提交功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+- [ ] 推送短分支、自主创建 PR，等待两轮 GitHub CI 与最终审计后安全合并。
 
 ## 硬门禁
 

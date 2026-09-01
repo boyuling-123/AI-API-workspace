@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { EvalDimension, ResultRow, TaskInput } from "@/types";
 import type { EvaluateResultPerInput } from "@/services/evaluateService";
+import { EvaluationEvidenceList } from "./EvaluationEvidenceList";
 
 interface EvaluationResultsProps {
   evalResults: EvaluateResultPerInput[];
@@ -134,6 +135,13 @@ function PerInputTable({
     });
     return copy;
   }, [evaluation.scores, sortDimension, sortDir]);
+  const targetNames = useMemo(
+    () =>
+      new Map(
+        evaluation.scores.map((target) => [target.targetId, target.targetName])
+      ),
+    [evaluation.scores]
+  );
 
   const sortArrow = (dimensionName: string): string => {
     if (sortDimension !== dimensionName) return "↕";
@@ -152,10 +160,10 @@ function PerInputTable({
         <table className="min-w-full border-collapse text-sm">
           <thead>
             <tr className="text-left text-xs text-gray-500">
-              <th className="sticky left-0 z-10 border-b border-gray-200 bg-white px-3 py-2">
+              <th className="sticky left-0 z-10 w-[120px] min-w-[120px] max-w-[120px] border-b border-gray-200 bg-white px-3 py-2">
                 输入
               </th>
-              <th className="sticky left-[120px] z-10 border-b border-gray-200 bg-white px-3 py-2">
+              <th className="sticky left-[120px] z-10 w-[160px] min-w-[160px] max-w-[160px] border-b border-gray-200 bg-white px-3 py-2">
                 目标
               </th>
               {dimensions.map((dimension) => (
@@ -197,14 +205,14 @@ function PerInputTable({
                 {rowIndex === 0 ? (
                   <td
                     rowSpan={sortedScores.length}
-                    className="sticky left-0 z-10 max-w-[120px] border-b border-r border-gray-100 bg-white px-3 py-2 align-top text-xs text-gray-600"
+                    className="sticky left-0 z-10 w-[120px] min-w-[120px] max-w-[120px] border-b border-r border-gray-100 bg-white px-3 py-2 align-top text-xs text-gray-600"
                   >
                     <span className="line-clamp-4 break-words">
                       {inputPrompt.slice(0, 80) || "(无 prompt)"}
                     </span>
                   </td>
                 ) : null}
-                <td className="sticky left-[120px] z-10 whitespace-nowrap border-b border-r border-gray-100 bg-white px-3 py-2 font-medium text-gray-800">
+                <td className="sticky left-[120px] z-10 w-[160px] min-w-[160px] max-w-[160px] whitespace-nowrap border-b border-r border-gray-100 bg-white px-3 py-2 font-medium text-gray-800">
                   {target.targetName}
                 </td>
                 {dimensions.map((dimension) => {
@@ -218,14 +226,23 @@ function PerInputTable({
                       className="border-b border-gray-100 px-3 py-2"
                       title={cell?.comment || ""}
                     >
-                      <span className={`font-semibold ${scoreClass(score)}`}>
-                        {formatScore(score)}
-                      </span>
-                      {cell?.comment && (
-                        <span className="ml-1 cursor-help text-gray-300 hover:text-gray-500">
-                          ⓘ
+                      <div className="flex flex-col items-start">
+                        <span>
+                          <span className={`font-semibold ${scoreClass(score)}`}>
+                            {formatScore(score)}
+                          </span>
+                          {cell?.comment && (
+                            <span className="ml-1 cursor-help text-gray-300 hover:text-gray-500">
+                              ⓘ
+                            </span>
+                          )}
                         </span>
-                      )}
+                        <EvaluationEvidenceList
+                          evidence={cell?.evidence}
+                          targetNames={targetNames}
+                          label={`输入 ${inputIndex + 1} ${target.targetName} ${dimension.name}`}
+                        />
+                      </div>
                     </td>
                   );
                 })}

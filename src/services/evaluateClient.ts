@@ -47,20 +47,41 @@ async function buildEvaluateItem(
       : undefined;
 
   const expected = resolveExpectedAnswer(input, expectedAnswerKey);
+  const successfulItems = resultRow.items.filter(
+    (item) => item.status === "success"
+  );
+  const targets = await Promise.all(
+    successfulItems.map(async (item) => {
+      const originalOutputImages = (item.outputImages ?? []).map(
+        (value, index) => ({
+          id: `${item.targetId}-output-${index + 1}`,
+          name: `${item.targetName || item.targetId} 输出图片 ${index + 1}`,
+          source: value.startsWith("data:image/")
+            ? ("base64" as const)
+            : ("url" as const),
+          value,
+        })
+      );
+      const outputImages =
+        originalOutputImages.length > 0
+          ? await compressImagesForJudge(originalOutputImages)
+          : undefined;
+      return {
+        targetId: item.targetId,
+        targetName: item.targetName,
+        outputText: item.outputText,
+        outputImageCount: originalOutputImages.length,
+        outputImages,
+      };
+    })
+  );
   return {
     inputId: input.id,
     prompt: input.prompt,
     expectedOutput: expected.value || undefined,
     expectedOutputKey: expected.key ?? undefined,
     images: compressedImages,
-    targets: resultRow.items
-      .filter((item) => item.status === "success")
-      .map((item) => ({
-        targetId: item.targetId,
-        targetName: item.targetName,
-        outputText: item.outputText,
-        outputImageCount: item.outputImages?.length ?? 0,
-      })),
+    targets,
   };
 }
 
