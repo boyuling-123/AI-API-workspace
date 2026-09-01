@@ -29,6 +29,10 @@
 - 复验结束时 HEAD 仍精确指向功能快照，Git 工作树零改动；未依赖原工作区缓存或未提交文件。
 - `npm audit` 报告仓库既有 6 个高危传递依赖，未使用 `--force` 破坏性升级；留给依赖安全专项 PR 评估与升级。
 
-GitHub CI 证据将在 PR 创建后补录。
+## GitHub CI
+
+- 已自主创建 [PR #42](https://github.com/boyuling-123/AI-API-workspace/pull/42)，非 Draft 且无基线冲突。
+- 首轮 Quality Gate workflow run `33472850294` 完成；“Lint, test, build, and secret scan”与“Playwright user paths and accessibility”两个 Job 均为 `success`。
+- 本次 CI 证据回写提交自身仍须通过第二轮相同门禁，之后才执行 Review、线程、远端漂移和可合并状态审计。
 
 所有自动化使用 Mock，不读取真实密钥，不调用真实或付费模型，不自动启动额外 AI 评价。
