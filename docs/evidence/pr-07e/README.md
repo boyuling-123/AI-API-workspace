@@ -27,4 +27,8 @@
 - Build：20 个路由通过生产构建。
 - Playwright / WCAG：全量 35 项通过。
 
+同一功能快照 `59ae36c` 已在独立 detached 工作树中按锁文件全新安装 434 个包，并重复通过完整 quality 与 `CI=1` 全量 35 项 Playwright；结束时 HEAD 未漂移且 Git 状态干净。
+
+锁文件安装仍报告既有的 6 个 high 级依赖审计项；本 PR 未执行可能引入破坏性升级的 `npm audit fix --force`，继续留给依赖治理专题。
+
 所有自动化使用 Mock，不读取真实密钥，不调用真实或付费模型，不自动启动额外 AI 评价。

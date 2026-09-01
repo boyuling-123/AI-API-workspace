@@ -1101,3 +1101,14 @@
 - 全部自动化使用 Mock，未读取真实密钥、调用真实或付费模型，或自动启动额外 AI 评价。REPORT-004 状态为“已实现”，待独立干净环境与 GitHub CI 后升级“已验证”。
 
 下一步：提交 PR 07E 功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+
+## 2026-09-01：PR 07E 独立干净环境复验
+
+- Judge 引用证据核心、即时/历史 UI、Excel、真实源码测试、Mock E2E、视觉证据和文档功能快照提交为 `59ae36c`，父提交为已合并 PR #39 的 `main@d7a2e68`。
+- 在 `/tmp/eval-platform-pr07e-59ae36c` 以 detached HEAD 检出精确提交，并在该目录按锁文件全新 `npm ci` 安装 434 个包；首次编排误在原仓库执行安装，已明确作废且未计入独立门禁。
+- 干净环境 `npm run quality` 通过 332 文件 Secret Scan、零警告 lint、typecheck、182 项真实源码单测、2 项压力测试和 20 路由生产构建。
+- 使用 `CI=1` 启动该工作树专属服务，全量 35 项 Playwright 与 WCAG 全部通过；新证据路径与既有人工复核、Case 筛选、排行榜、校准、Evaluator 和跑批路径共同通过。
+- 全部门禁结束后 detached HEAD 仍为 `59ae36c555c7ed8f918325a875a9d4afee45e8be` 且 `git status --short` 无输出，证明实现不依赖原工作树缓存、构建产物或未跟踪文件。
+- `npm ci` 仍报告锁文件既有的 6 个 high 级依赖审计项；未执行破坏性 `npm audit fix --force`，继续留给依赖治理专题。
+
+下一步：提交独立环境证据，推送分支并自主创建 PR 07E，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。

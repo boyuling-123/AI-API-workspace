@@ -479,7 +479,7 @@
 - [x] Excel 每个目标 × 维度新增“证据”列，保留来源、目标名、文字位置、原文或图片观察；Mock E2E 实际下载并用 `xlsx` 回读验证。
 - [x] 12 项证据真实源码单测与完整 Mock 用户路径通过；视觉截图已人工检查，并修复固定列遮挡、历史表竖排挤压和 WCAG 位置文字对比度问题。
 - [x] 最终文档快照本地 quality 通过 332 文件 Secret Scan、零警告 lint、typecheck、182 项单测、2 项压力测试和 20 路由构建；`CI=1` 全量 35 项 Playwright/WCAG 通过。
-- [ ] 提交功能快照，在独立 detached 工作树全新安装依赖并重复 quality 与全量 Playwright。
+- [x] 功能快照 `59ae36c` 在独立 detached 工作树全新安装 434 个包；quality 与 `CI=1` 全量 35 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [ ] 推送短分支、自主创建 PR，等待两轮 GitHub CI 与最终审计后安全合并。
 
 ## 硬门禁
