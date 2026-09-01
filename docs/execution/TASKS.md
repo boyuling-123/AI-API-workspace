@@ -509,7 +509,8 @@
 - [x] 接口管理页新增统一资源池总览、搜索和类型/角色/能力/模态组合筛选；筛选与编辑不会调用 API、模型或自动启动评价。
 - [x] 8 项真实源码单测与定向 Mock Playwright/WCAG 路径通过；覆盖未测试/失败模型不得成为 Judge 候选、默认值脱敏/截断及非法数值范围保存阻断；视觉证据 `docs/evidence/pr-08a/resource-pool.png` 已生成并人工检查，390px 无横向溢出。
 - [x] 完整本地 quality 通过 343 文件 Secret Scan、零警告 lint、typecheck、197 项单测、2 项压力测试和 20 路由构建；全量 37 项 Playwright/WCAG 通过。
-- [ ] 独立干净环境、GitHub CI 与合并审计通过后，将 POOL-001～003 升级为“已验证”。
+- [x] 功能快照 `c231edb` 在独立 detached 工作树全新安装 434 个包；完整 quality 与 37 项 Playwright/WCAG 再次通过，结束时 HEAD 未漂移且 Git 零改动。
+- [ ] GitHub CI 与合并审计通过后，将 POOL-001～003 升级为“已验证”。
 
 ## 硬门禁
 

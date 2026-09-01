@@ -26,3 +26,10 @@
 - Unit：39 个文件、197 项通过；Stress：2 项通过。
 - Production Build：20 个路由通过。
 - Playwright/WCAG：全量 37 项通过。
+
+## 独立干净环境
+
+- 功能快照：`c231edb45715feaaf5dd6b0af00b3bec9f10c01f`。
+- Detached 工作树全新安装 434 个包，完整 quality 与 37 项 Playwright/WCAG 再次通过。
+- 结束时 HEAD 未漂移、Git 零改动；未调用真实或付费模型。
+- `npm audit` 的 6 个高危传递依赖为既有依赖债务，本 PR 未执行破坏性强制升级。
