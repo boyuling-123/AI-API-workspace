@@ -525,7 +525,8 @@
 - [x] 7 项新增真实源码单测与完整 Mock 浏览器路径通过；覆盖规范化、冲突、脏导入、指纹边界、筛选、状态失效/恢复、WCAG 和 390px。
 - [x] 视觉证据 `docs/evidence/pr-08b/resource-identity-health.png` 已生成并人工检查；完整本地 quality 通过 348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试和 20 路由构建，全量 38 项 Playwright/WCAG 通过。
 - [x] 功能快照 `b10d469` 在独立 detached 工作树全新安装 434 个包；348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试、20 路由构建与全量 38 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
-- [ ] 推送分支、自主创建 PR，等待两轮 GitHub CI、完成最终审计并以普通 fast-forward 安全合并。
+- [x] 分支已推送并自主创建 [PR #44](https://github.com/boyuling-123/AI-API-workspace/pull/44)；首轮 workflow run `33588301577` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，POOL-004 升级为“已验证”。
+- [ ] 最终证据提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并以普通 fast-forward 安全合并。
 
 ## 硬门禁
 

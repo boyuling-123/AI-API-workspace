@@ -1219,3 +1219,14 @@
 - POOL-004 已具备本地与独立环境证据，仍等待 GitHub 两道 CI 后升级为“已验证”。
 
 下一步：提交独立环境证据、推送短生命周期分支并自主创建 PR 08B，等待 GitHub 核心质量与 Playwright/WCAG 两道 CI。
+
+## 2026-09-02：PR 08B 创建与首轮 GitHub CI
+
+- 推送 `codex/feat-resource-identity-health` 后确认远端 `main@5b14664` 与分支 merge-base 一致，无并行漂移；分支只有功能和独立环境证据两个提交。
+- GitHub 连接器创建 PR 仍因 integration 权限返回 403，自动降级为已登录应用内 GitHub 会话并自主创建 [PR #44](https://github.com/boyuling-123/AI-API-workspace/pull/44)；PR 非草稿、可合并，包含 2 个提交和 16 个文件。
+- workflow run `33588301577` 的 `Lint, test, build, and secret scan` Job 全部成功，覆盖锁文件安装、348 文件密钥扫描、零警告 lint、类型检查、204 项真实源码单测、2 项压力测试和 20 路由构建。
+- 同一 workflow run 的 `Playwright user paths and accessibility` Job 全部成功，全量 38 项用户路径与 WCAG 检查通过；因零失败，Trace/截图上传步骤按预期跳过。
+- POOL-004 已具备代码、异常边界、真实源码测试、完整 Mock 用户路径、视觉证据、独立干净环境与 GitHub CI，状态升级为“已验证”。
+- 全部自动化继续使用本地状态与 Mock，未读取真实密钥、调用真实或付费模型，或自动启动评价。
+
+下一步：提交首轮 CI 证据回写，等待该最终文档提交自身两道 GitHub CI 通过后，执行远端漂移、Review/线程与可合并状态审计，再安全合并 PR #44。

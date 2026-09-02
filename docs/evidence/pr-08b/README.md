@@ -37,4 +37,7 @@
 
 ## GitHub CI
 
-- PR 和 CI 结果将在对应阶段回写。
+- PR：[PR #44](https://github.com/boyuling-123/AI-API-workspace/pull/44)。
+- Workflow run：`33588301577`。
+- `Lint, test, build, and secret scan`：success。
+- `Playwright user paths and accessibility`：success；零失败，故失败 Trace/截图上传步骤按预期跳过。
