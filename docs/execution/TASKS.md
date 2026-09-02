@@ -524,7 +524,7 @@
 - [x] 只有用户明确点击“测试连通性”才更新测试结果与时间；资源浏览、筛选和编辑不做后台轮询，不调用模型或自动启动评价。
 - [x] 7 项新增真实源码单测与完整 Mock 浏览器路径通过；覆盖规范化、冲突、脏导入、指纹边界、筛选、状态失效/恢复、WCAG 和 390px。
 - [x] 视觉证据 `docs/evidence/pr-08b/resource-identity-health.png` 已生成并人工检查；完整本地 quality 通过 348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试和 20 路由构建，全量 38 项 Playwright/WCAG 通过。
-- [ ] 提交功能快照后，在独立 detached 工作树全新安装依赖并复验完整门禁。
+- [x] 功能快照 `b10d469` 在独立 detached 工作树全新安装 434 个包；348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试、20 路由构建与全量 38 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [ ] 推送分支、自主创建 PR，等待两轮 GitHub CI、完成最终审计并以普通 fast-forward 安全合并。
 
 ## 硬门禁

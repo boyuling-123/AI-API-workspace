@@ -27,6 +27,14 @@
 - Production Build：20 个路由通过。
 - Playwright/WCAG：全量 38 项通过。
 
-## 后续门禁
+## 独立干净环境
 
-- 独立干净环境和 GitHub CI 结果将在对应阶段回写。
+- 功能快照：`b10d4696c21bf2a46cd3c6dbcf72118dc663fe11`。
+- Detached 工作树按锁文件全新安装 434 个包，完整 quality 的全部组成门禁与 38 项 Playwright/WCAG 再次通过。
+- 第一次生产构建因 Google Fonts TLS 连接重置失败；同一未修改快照原样重试后成功生成 20 个路由，未降低门禁或改动源码。
+- 结束时 HEAD 未漂移、Git 零改动；未调用真实或付费模型。
+- `npm audit` 的 1 个 low、6 个 high 为锁文件既有依赖债务，本 PR 未执行破坏性强制升级。
+
+## GitHub CI
+
+- PR 和 CI 结果将在对应阶段回写。
