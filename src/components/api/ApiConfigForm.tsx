@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type {
   TargetConfig,
   ParamDef,
@@ -16,9 +16,17 @@ import {
   inferResourceKind,
   RESOURCE_CAPABILITIES,
 } from "@/lib/resourceCatalog";
+import {
+  buildTargetInvocationFingerprint,
+  normalizeResourceAliases,
+  normalizeResourceVersion,
+  parseResourceAliasText,
+  validateResourceIdentity,
+} from "@/lib/resourceIdentity";
 
 interface ApiConfigFormProps {
   initial: TargetConfig | null;
+  existingConfigs: readonly TargetConfig[];
   onSave: (config: TargetConfig) => void;
   onCancel: () => void;
 }
@@ -31,6 +39,8 @@ interface DraftConfig {
   contentKind: ContentKind;
   resourceKind: ResourceKind;
   capabilityTags: ResourceCapability[];
+  resourceVersion: string;
+  resourceAliases: string;
   source: TargetConfig["source"];
   url: string;
   method: "GET" | "POST";
@@ -38,6 +48,7 @@ interface DraftConfig {
   bodyTemplate: string;
   inputParams: ParamDef[];
   status: TargetConfig["status"];
+  statusUpdatedAt?: number;
   apiKeyRef: string;
   outputTextPath: string;
   outputImagePath: string;
@@ -62,6 +73,8 @@ function targetToDraft(target: TargetConfig): DraftConfig {
     contentKind: target.contentKind,
     resourceKind: inferResourceKind(target),
     capabilityTags: inferResourceCapabilities(target),
+    resourceVersion: target.resourceVersion ?? "",
+    resourceAliases: normalizeResourceAliases(target.resourceAliases).join(", "),
     source: target.source,
     url: template?.url ?? "",
     method: template?.method ?? "POST",
@@ -69,6 +82,7 @@ function targetToDraft(target: TargetConfig): DraftConfig {
     bodyTemplate: template?.bodyTemplate ?? "",
     inputParams: target.inputParams ?? [],
     status: target.status,
+    statusUpdatedAt: target.statusUpdatedAt,
     apiKeyRef: target.apiKeyRef ?? "",
     outputTextPath: template?.outputTextPath ?? "",
     outputImagePath: template?.outputImagePath ?? "",
@@ -83,6 +97,14 @@ function targetToDraft(target: TargetConfig): DraftConfig {
 }
 
 function draftToTarget(draft: DraftConfig): TargetConfig {
+  const resourceAliases = normalizeResourceAliases(
+    parseResourceAliasText(draft.resourceAliases)
+  );
+  const resourceIdentity = {
+    resourceVersion: normalizeResourceVersion(draft.resourceVersion),
+    resourceAliases: resourceAliases.length > 0 ? resourceAliases : undefined,
+  };
+
   if (draft.type === "comfyui") {
     return {
       id: draft.id,
@@ -92,6 +114,7 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
       contentKind: "image",
       resourceKind: "algorithm",
       capabilityTags: draft.capabilityTags,
+      ...resourceIdentity,
       source: draft.source,
       inputParams: draft.inputParams,
       comfyui: {
@@ -101,6 +124,7 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
         loraWeight: draft.comfyLoraName ? draft.comfyLoraWeight : undefined,
       },
       status: draft.status,
+      statusUpdatedAt: draft.statusUpdatedAt,
       preset: draft.preset,
     };
   }
@@ -112,6 +136,7 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
     contentKind: draft.contentKind,
     resourceKind: draft.resourceKind,
     capabilityTags: draft.capabilityTags,
+    ...resourceIdentity,
     source: draft.source,
     inputParams: draft.inputParams,
     requestTemplate: {
@@ -129,6 +154,7 @@ function draftToTarget(draft: DraftConfig): TargetConfig {
     },
     apiKeyRef: draft.apiKeyRef || undefined,
     status: draft.status,
+    statusUpdatedAt: draft.statusUpdatedAt,
     rawDoc: draft.rawDoc,
     preset: draft.preset,
   };
@@ -142,6 +168,8 @@ function createEmptyDraft(): DraftConfig {
     contentKind: "image",
     resourceKind: "algorithm",
     capabilityTags: ["text_to_image"],
+    resourceVersion: "",
+    resourceAliases: "",
     source: "manual",
     url: "",
     method: "POST",
@@ -163,9 +191,20 @@ function createEmptyDraft(): DraftConfig {
  * 算法 API 接入表单：填写 url/method/headers/apiKeyRef、入参 ParamDef、输出提取路径，
  * 提供「测试」按钮调用 /api/test-api 判定 tested_ok/tested_fail。
  */
-export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps) {
+export function ApiConfigForm({
+  initial,
+  existingConfigs,
+  onSave,
+  onCancel,
+}: ApiConfigFormProps) {
   const [draft, setDraft] = useState<DraftConfig>(
     initial ? targetToDraft(initial) : createEmptyDraft()
+  );
+  const validatedFingerprintRef = useRef<string | null>(
+    initial &&
+      (initial.status === "tested_ok" || initial.status === "tested_fail")
+      ? buildTargetInvocationFingerprint(initial)
+      : null
   );
   const [testState, setTestState] = useState<{
     running: boolean;
@@ -288,6 +327,8 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
 
   async function handleTest() {
     setTestState({ running: true });
+    const testedTarget = draftToTarget(draft);
+    const testedFingerprint = buildTargetInvocationFingerprint(testedTarget);
     try {
       const paramValues: Record<string, unknown> = {};
       for (const param of draft.inputParams) {
@@ -303,19 +344,29 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
       const response = await fetch("/api/test-api", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ target: draftToTarget(draft), paramValues }),
+        body: JSON.stringify({ target: testedTarget, paramValues }),
       });
       const data = await response.json();
+      const testedAt = Date.now();
+      validatedFingerprintRef.current = testedFingerprint;
 
       if (data.ok) {
-        setDraft((prev) => ({ ...prev, status: "tested_ok" }));
+        setDraft((prev) => ({
+          ...prev,
+          status: "tested_ok",
+          statusUpdatedAt: testedAt,
+        }));
         setTestState({
           running: false,
           ok: true,
           message: `通过：耗时 ${data.latencyMs}ms，提取到文本=${data.extractedTextOk}，图片 ${data.extractedImageCount} 张`,
         });
       } else {
-        setDraft((prev) => ({ ...prev, status: "tested_fail" }));
+        setDraft((prev) => ({
+          ...prev,
+          status: "tested_fail",
+          statusUpdatedAt: testedAt,
+        }));
         setTestState({
           running: false,
           ok: false,
@@ -323,7 +374,12 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
         });
       }
     } catch (error) {
-      setDraft((prev) => ({ ...prev, status: "tested_fail" }));
+      validatedFingerprintRef.current = testedFingerprint;
+      setDraft((prev) => ({
+        ...prev,
+        status: "tested_fail",
+        statusUpdatedAt: Date.now(),
+      }));
       setTestState({
         running: false,
         ok: false,
@@ -335,6 +391,20 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
   function handleSubmit() {
     if (!draft.name.trim()) {
       setTestState({ running: false, ok: false, message: "名称必填" });
+      return;
+    }
+    const identity = validateResourceIdentity({
+      targetId: draft.id,
+      version: draft.resourceVersion,
+      aliases: parseResourceAliasText(draft.resourceAliases),
+      existingConfigs,
+    });
+    if (!identity.ok) {
+      setTestState({
+        running: false,
+        ok: false,
+        message: identity.issues[0],
+      });
       return;
     }
     if (draft.capabilityTags.length === 0) {
@@ -417,7 +487,24 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
       setTestState({ running: false, ok: false, message: "请求 URL 必填" });
       return;
     }
-    onSave(draftToTarget(draft));
+    const normalizedDraft: DraftConfig = {
+      ...draft,
+      resourceVersion: identity.version ?? "",
+      resourceAliases: identity.aliases.join(", "),
+    };
+    let target = draftToTarget(normalizedDraft);
+    if (
+      (target.status === "tested_ok" || target.status === "tested_fail") &&
+      buildTargetInvocationFingerprint(target) !==
+        validatedFingerprintRef.current
+    ) {
+      target = {
+        ...target,
+        status: "unverified",
+        statusUpdatedAt: undefined,
+      };
+    }
+    onSave(target);
   }
 
   const isComfy = draft.type === "comfyui";
@@ -480,9 +567,13 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
       <ResourceMetadataEditor
         resourceKind={isComfy ? "algorithm" : draft.resourceKind}
         capabilities={draft.capabilityTags}
+        version={draft.resourceVersion}
+        aliases={draft.resourceAliases}
         resourceKindLocked={isComfy}
         onKindChange={(value) => update("resourceKind", value)}
         onCapabilityToggle={toggleResourceCapability}
+        onVersionChange={(value) => update("resourceVersion", value)}
+        onAliasesChange={(value) => update("resourceAliases", value)}
       />
 
       <Field label="名称">
@@ -638,15 +729,23 @@ export function ApiConfigForm({ initial, onSave, onCancel }: ApiConfigFormProps)
 function ResourceMetadataEditor({
   resourceKind,
   capabilities,
+  version,
+  aliases,
   resourceKindLocked,
   onKindChange,
   onCapabilityToggle,
+  onVersionChange,
+  onAliasesChange,
 }: {
   resourceKind: ResourceKind;
   capabilities: ResourceCapability[];
+  version: string;
+  aliases: string;
   resourceKindLocked: boolean;
   onKindChange: (value: ResourceKind) => void;
   onCapabilityToggle: (value: ResourceCapability) => void;
+  onVersionChange: (value: string) => void;
+  onAliasesChange: (value: string) => void;
 }) {
   return (
     <fieldset className="rounded-xl border border-cyan-200 bg-cyan-50/70 p-3 dark:border-cyan-500/30 dark:bg-cyan-500/10">
@@ -656,7 +755,7 @@ function ResourceMetadataEditor({
       <p className="mb-3 text-xs leading-5 text-cyan-800 dark:text-cyan-200">
         这些字段只描述资源，不改变调用方式。Judge 是文本输出模型可承担的角色，无需重复创建接口。
       </p>
-      <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)]">
+      <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
           资源类型
           <select
@@ -672,7 +771,28 @@ function ResourceMetadataEditor({
             <option value="algorithm">算法</option>
           </select>
         </label>
-        <div>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+          资源版本
+          <input
+            value={version}
+            onChange={(event) => onVersionChange(event.target.value)}
+            placeholder="如 1.2.0、2026-08 或 model-v4"
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+        </label>
+        <label className="flex flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200 sm:col-span-2">
+          资源别名
+          <input
+            value={aliases}
+            onChange={(event) => onAliasesChange(event.target.value)}
+            placeholder="default-judge, qwen-mm"
+            className="min-h-11 rounded-lg border border-slate-300 bg-white px-3 font-mono text-sm font-normal text-slate-900 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
+          />
+          <span className="font-normal text-slate-500 dark:text-slate-400">
+            用逗号分隔，最多 12 个；保存时转为小写稳定标识，且不能与其他资源 ID 或别名冲突。
+          </span>
+        </label>
+        <div className="sm:col-span-2">
           <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
             业务能力（至少一项）
           </p>

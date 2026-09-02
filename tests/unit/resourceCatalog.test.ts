@@ -64,6 +64,14 @@ describe("resourceCatalog", () => {
       max: 8,
       required: false,
     });
+    expect(
+      catalog.find((entry) => entry.id === "builtin-mock-algo")
+    ).toMatchObject({
+      version: "1.0.0",
+      aliases: ["mock-image", "image-main"],
+      identityIssues: [],
+      source: "preset",
+    });
   });
 
   it("infers backward-compatible metadata for old projects", () => {
@@ -134,6 +142,10 @@ describe("resourceCatalog", () => {
         contentKind: "image",
         resourceKind: "algorithm",
         capabilityTags: ["image_editing"],
+        resourceVersion: "image-v2",
+        resourceAliases: ["product-image"],
+        source: "agent",
+        status: "tested_fail",
         inputParams: [{ name: "image", type: "image", required: true }],
       }),
     ]);
@@ -144,8 +156,20 @@ describe("resourceCatalog", () => {
         kind: "algorithm",
         capability: "image_editing",
         modality: "image",
+        source: "agent",
+        status: "tested_fail",
         query: "商品图",
       }).map((entry) => entry.id)
+    ).toEqual(["image-algo"]);
+    expect(
+      filterResourceCatalog(catalog, { query: "product-image" }).map(
+        (entry) => entry.id
+      )
+    ).toEqual(["image-algo"]);
+    expect(
+      filterResourceCatalog(catalog, { query: "image-v2" }).map(
+        (entry) => entry.id
+      )
     ).toEqual(["image-algo"]);
     expect(
       filterResourceCatalog(catalog, {
@@ -202,5 +226,20 @@ describe("resourceCatalog", () => {
       max: undefined,
     });
     expect(JSON.stringify(target)).toBe(before);
+  });
+
+  it("keeps only valid positive connectivity timestamps", () => {
+    const [valid, invalid, outOfDateRange] = buildResourceCatalog([
+      legacyTarget({ id: "valid", statusUpdatedAt: 1_700_000_000_000 }),
+      legacyTarget({ id: "invalid", statusUpdatedAt: Number.NaN }),
+      legacyTarget({
+        id: "out-of-date-range",
+        statusUpdatedAt: Number.MAX_SAFE_INTEGER,
+      }),
+    ]);
+
+    expect(valid.statusUpdatedAt).toBe(1_700_000_000_000);
+    expect(invalid.statusUpdatedAt).toBeUndefined();
+    expect(outOfDateRange.statusUpdatedAt).toBeUndefined();
   });
 });

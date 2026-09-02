@@ -14,6 +14,7 @@ import {
   formatParameterRange,
   RESOURCE_CAPABILITIES,
   RESOURCE_CAPABILITY_LABELS,
+  type ResourceOrigin,
   type ResourceRole,
 } from "@/lib/resourceCatalog";
 
@@ -56,6 +57,22 @@ const STATUS_CLASS: Record<TargetConfig["status"], string> = {
     "border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300",
 };
 
+const SOURCE_LABEL: Record<ResourceOrigin, string> = {
+  preset: "内置",
+  agent: "Agent 接入",
+  manual: "手动接入",
+};
+
+const STATUS_TIME_FORMATTER = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: "Asia/Shanghai",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+
 export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<ResourceKind | "all">("all");
@@ -64,6 +81,10 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
     ResourceCapability | "all"
   >("all");
   const [modality, setModality] = useState<ResourceModality | "all">("all");
+  const [source, setSource] = useState<ResourceOrigin | "all">("all");
+  const [status, setStatus] = useState<TargetConfig["status"] | "all">(
+    "all"
+  );
   const deferredQuery = useDeferredValue(query);
   const catalog = buildResourceCatalog(configs);
   const visible = filterResourceCatalog(catalog, {
@@ -72,6 +93,8 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
     role,
     capability,
     modality,
+    source,
+    status,
   });
   const modelCount = catalog.filter((entry) => entry.kind === "model").length;
   const algorithmCount = catalog.length - modelCount;
@@ -85,6 +108,8 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
     setRole("all");
     setCapability("all");
     setModality("all");
+    setSource("all");
+    setStatus("all");
   }
 
   return (
@@ -118,14 +143,14 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
       </header>
 
       <div className="border-b border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-950/50">
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(220px,1fr)_repeat(4,minmax(120px,auto))]">
-          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className="flex min-w-0 flex-col gap-1 text-xs font-semibold text-slate-700 dark:text-slate-200 sm:col-span-2">
             搜索资源
             <input
               type="search"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="名称、ID、角色或能力"
+              placeholder="名称、ID、版本、别名、来源或能力"
               className="h-11 min-w-0 rounded-lg border border-slate-300 bg-white px-3 text-sm font-normal text-slate-900 outline-none transition focus:border-cyan-600 focus:ring-2 focus:ring-cyan-600/20 dark:border-slate-600 dark:bg-slate-900 dark:text-white"
             />
           </label>
@@ -176,6 +201,31 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
               ["boolean", "布尔值"],
             ]}
           />
+          <FilterSelect
+            label="接入来源"
+            value={source}
+            onChange={(value) => setSource(value as ResourceOrigin | "all")}
+            options={[
+              ["all", "全部来源"],
+              ["preset", "内置"],
+              ["agent", "Agent 接入"],
+              ["manual", "手动接入"],
+            ]}
+          />
+          <FilterSelect
+            label="有效状态"
+            value={status}
+            onChange={(value) =>
+              setStatus(value as TargetConfig["status"] | "all")
+            }
+            options={[
+              ["all", "全部状态"],
+              ["unverified", "未测试"],
+              ["tested_ok", "测试通过"],
+              ["tested_fail", "测试失败"],
+              ["unsupported", "不支持"],
+            ]}
+          />
         </div>
       </div>
 
@@ -188,7 +238,9 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
             kind !== "all" ||
             role !== "all" ||
             capability !== "all" ||
-            modality !== "all") && (
+            modality !== "all" ||
+            source !== "all" ||
+            status !== "all") && (
             <button
               type="button"
               onClick={clearFilters}
@@ -215,22 +267,56 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
                       <span className="rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white dark:bg-slate-100 dark:text-slate-900">
                         {KIND_LABEL[entry.kind]}
                       </span>
-                      {entry.preset && (
-                        <span className="rounded border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-200">
-                          内置
-                        </span>
-                      )}
+                      <span className="rounded border border-cyan-200 bg-cyan-50 px-2 py-0.5 text-[11px] font-semibold text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-200">
+                        {SOURCE_LABEL[entry.source]}
+                      </span>
                     </div>
                     <code className="mt-1 block break-all text-[11px] text-slate-500 dark:text-slate-400">
                       {entry.id}
                     </code>
                   </div>
                   <span
+                    title="仅表示最近一次手动连通性测试结果，不是实时健康监控"
                     className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${STATUS_CLASS[entry.status]}`}
                   >
                     {STATUS_LABEL[entry.status]}
                   </span>
                 </div>
+
+                <div className="mt-3 grid gap-2 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-300 sm:grid-cols-2">
+                  <p>
+                    <span className="font-semibold">资源版本：</span>
+                    {entry.version ?? "未标版本"}
+                  </p>
+                  <p>
+                    <span className="font-semibold">最近连通性测试：</span>
+                    {formatStatusUpdatedAt(entry.statusUpdatedAt)}
+                  </p>
+                  <div className="min-w-0 sm:col-span-2">
+                    <span className="font-semibold">稳定别名：</span>
+                    {entry.aliases.length > 0 ? (
+                      <span className="ml-1 inline-flex flex-wrap gap-1 align-middle">
+                        {entry.aliases.map((alias) => (
+                          <code
+                            key={alias}
+                            className="rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[11px] text-slate-700 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-200"
+                          >
+                            {alias}
+                          </code>
+                        ))}
+                      </span>
+                    ) : (
+                      "未设置"
+                    )}
+                  </div>
+                </div>
+
+                {entry.identityIssues.length > 0 && (
+                  <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-5 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100">
+                    导入的资源身份元数据需要校正：
+                    {entry.identityIssues.join("；")}
+                  </p>
+                )}
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   {entry.roles.map((item) => (
@@ -311,11 +397,15 @@ export function ResourcePoolPanel({ configs }: ResourcePoolPanelProps) {
         )}
 
         <p className="mt-4 rounded-lg border-l-4 border-cyan-700 bg-cyan-50 px-3 py-2 text-xs leading-5 text-cyan-900 dark:bg-cyan-500/10 dark:text-cyan-100">
-          资源池不保存第二份接口：上方目录始终由下方 TargetConfig 实时生成。编辑名称、能力、模态或参数后，筛选结果立即同步。
+          资源池不保存第二份接口：上方目录始终由下方 TargetConfig 实时生成。状态只记录最近一次明确发起的连通性测试，不做后台轮询，也不会自动调用模型。
         </p>
       </div>
     </section>
   );
+}
+
+function formatStatusUpdatedAt(value: number | undefined): string {
+  return value ? `${STATUS_TIME_FORMATTER.format(value)}（北京时间）` : "未记录";
 }
 
 function Metric({ label, value }: { label: string; value: number }) {

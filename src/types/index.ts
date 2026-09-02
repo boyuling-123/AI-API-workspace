@@ -196,6 +196,10 @@ export interface TargetConfig {
   resourceKind?: ResourceKind;
   /** 业务能力标签；旧项目缺省时由输入输出模态确定性补齐只读投影。 */
   capabilityTags?: ResourceCapability[];
+  /** 可读的模型/接口版本标识；不参与资源主键。 */
+  resourceVersion?: string;
+  /** 供搜索、Agent 引用和迁移对照使用的稳定别名。 */
+  resourceAliases?: string[];
   /** 由 Agent 自动接入得来 还是 手动填写（仅标记来源，行为完全一致）。 */
   source: "agent" | "manual";
   /** 入参定义（AI 解析或手动定义；跑批时由 TaskInput 提供真实值）。 */
@@ -222,6 +226,8 @@ export interface TargetConfig {
    */
   apiKeyRef?: string;
   status: "unverified" | "tested_ok" | "tested_fail" | "unsupported";
+  /** 最近一次真实连通性测试完成时间；元数据编辑不会伪造该时间。 */
+  statusUpdatedAt?: number;
   /** AI 解析时粘贴的文档原文（手动填则可空）。 */
   rawDoc?: string;
   /** true=内置预置目标（来自 presetTargets，一般只读/不可删，status 视为 tested_ok）。 */

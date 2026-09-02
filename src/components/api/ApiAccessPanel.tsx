@@ -108,6 +108,7 @@ export function ApiAccessPanel({ configs, onChange }: ApiAccessPanelProps) {
       {showForm ? (
         <ApiConfigForm
           initial={editing}
+          existingConfigs={configs}
           onCancel={() => {
             setEditing(null);
             setIsCreating(false);
@@ -185,6 +186,17 @@ function ApiConfigList({
                     ? `${config.requestTemplate.method} ${config.requestTemplate.url}`
                     : "通过平台内置通道调用"}
                 </span>
+                {(config.resourceVersion ||
+                  (config.resourceAliases?.length ?? 0) > 0) && (
+                  <span className="truncate text-[11px] text-slate-500 dark:text-slate-400">
+                    {config.resourceVersion
+                      ? `版本 ${config.resourceVersion}`
+                      : "未标版本"}
+                    {(config.resourceAliases?.length ?? 0) > 0
+                      ? ` · 别名 ${config.resourceAliases?.join(", ")}`
+                      : ""}
+                  </span>
+                )}
               </div>
               <div className="ml-auto flex gap-2">
                 <button

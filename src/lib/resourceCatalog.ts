@@ -7,8 +7,14 @@ import type {
   TargetConfig,
 } from "@/types";
 import { redactSensitiveText } from "@/lib/redactSensitive";
+import {
+  inspectResourceIdentityIssues,
+  normalizeResourceAliases,
+  normalizeResourceVersion,
+} from "@/lib/resourceIdentity";
 
 export type ResourceRole = "test_target" | "judge";
+export type ResourceOrigin = "preset" | TargetConfig["source"];
 
 export interface ResourceParameterProfile {
   name: string;
@@ -28,8 +34,12 @@ export interface ResourceCatalogEntry {
   inputModalities: ResourceModality[];
   outputModalities: ResourceModality[];
   parameters: ResourceParameterProfile[];
+  version?: string;
+  aliases: string[];
+  identityIssues: string[];
   status: TargetConfig["status"];
-  source: TargetConfig["source"];
+  statusUpdatedAt?: number;
+  source: ResourceOrigin;
   preset: boolean;
 }
 
@@ -39,6 +49,8 @@ export interface ResourceCatalogFilter {
   role?: ResourceRole | "all";
   capability?: ResourceCapability | "all";
   modality?: ResourceModality | "all";
+  source?: ResourceOrigin | "all";
+  status?: TargetConfig["status"] | "all";
 }
 
 export const RESOURCE_CAPABILITIES: ReadonlyArray<{
@@ -124,8 +136,12 @@ export function buildResourceCatalog(
       inputModalities,
       outputModalities,
       parameters: config.inputParams.map(toParameterProfile),
+      version: normalizeResourceVersion(config.resourceVersion),
+      aliases: normalizeResourceAliases(config.resourceAliases),
+      identityIssues: inspectResourceIdentityIssues(config, configs),
       status: config.status,
-      source: config.source,
+      statusUpdatedAt: validTimestampOrUndefined(config.statusUpdatedAt),
+      source: config.preset ? "preset" : config.source,
       preset: Boolean(config.preset),
     };
   });
@@ -162,11 +178,29 @@ export function filterResourceCatalog(
     ) {
       return false;
     }
+    if (
+      filters.source &&
+      filters.source !== "all" &&
+      entry.source !== filters.source
+    ) {
+      return false;
+    }
+    if (
+      filters.status &&
+      filters.status !== "all" &&
+      entry.status !== filters.status
+    ) {
+      return false;
+    }
     if (!query) return true;
     const searchable = [
       entry.id,
       entry.name,
       entry.kind,
+      entry.version ?? "",
+      entry.source,
+      entry.status,
+      ...entry.aliases,
       ...entry.roles,
       ...entry.capabilities.map((item) => RESOURCE_CAPABILITY_LABELS[item]),
     ]
@@ -233,6 +267,18 @@ function toParameterProfile(param: ParamDef): ResourceParameterProfile {
 
 function finiteOrUndefined(value: number | undefined): number | undefined {
   return value !== undefined && Number.isFinite(value) ? value : undefined;
+}
+
+function validTimestampOrUndefined(value: number | undefined): number | undefined {
+  if (
+    value === undefined ||
+    !Number.isSafeInteger(value) ||
+    value <= 0 ||
+    Number.isNaN(new Date(value).getTime())
+  ) {
+    return undefined;
+  }
+  return value;
 }
 
 function uniqueInOrder<T>(values: readonly T[], order: readonly T[]): T[] {
