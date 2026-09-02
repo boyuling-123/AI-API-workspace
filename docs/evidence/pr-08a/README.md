@@ -33,3 +33,10 @@
 - Detached 工作树全新安装 434 个包，完整 quality 与 37 项 Playwright/WCAG 再次通过。
 - 结束时 HEAD 未漂移、Git 零改动；未调用真实或付费模型。
 - `npm audit` 的 6 个高危传递依赖为既有依赖债务，本 PR 未执行破坏性强制升级。
+
+## GitHub CI
+
+- PR：[PR #43](https://github.com/boyuling-123/AI-API-workspace/pull/43)。
+- Workflow run：`33475468716`。
+- `Lint, test, build, and secret scan`：success。
+- `Playwright user paths and accessibility`：success；零失败，故失败 Trace/截图上传步骤按预期跳过。
