@@ -19,7 +19,7 @@
 
 ## 状态与流程
 
-- 当前状态：已实现，本地门禁通过，待 PR 最终 head CI 与合并；尚未标记已验证。
+- 当前状态：已验证，限定本规格的非破坏性保留范围；本地门禁及最终 head CI 通过，PR #47 已合并。
 - 分支：`codex/fix-preserve-legacy-projects`；[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47)，功能提交 `037c527`。
 - Developer Helper 适配：Planner 固定保留边界 → Developer 最小存储/Hook/提示修复 → Tester 使用合成数据验证真实路径 → 门禁/PR/最终 CI → 正常合并。角色自检不冒充独立批准。
 - 回滚：正常 revert 本 PR 代码提交，不执行数据库回滚或删除；回滚到旧实现会重新带回隐式删除风险，应优先向前修复或停止使用旧版加载入口。

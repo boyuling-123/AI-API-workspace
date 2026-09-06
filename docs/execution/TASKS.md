@@ -18,6 +18,10 @@
 
 - 02:56：PR #47 首轮 CI 两道 Job 全通过；最终文档提交仍须 CI 成功后正常合并，下一项仅为 N2B，不引入后端迁移。
 
+- 03:04：PR #47 最终 CI `34053385100` 两道 Job 全通过，正常合并为 `3281918`。F-STORE-001 限定范围升级为已验证。当前分支 `codex/refactor-project-repository`，下一 Ready F-STORE-002 / N2B 见 `.sdd/next-feature-repository.md`，尚未实施。
+
+- 03:18：F-STORE-002 / N2B 完成真实契约/适配器/Hook 接入，237 unit、2 stress、47 E2E、本轮截图/Trace 与基础门禁通过；待提交创建 PR 和最终 CI。下一 Ready N5 已记录 `.sdd/next-feature-actions.md`；不能宣称已有跨设备、后端迁移或完整 MCP 管理。
+
 ## 已完成：PR 01 基线迁移与状态校准
 
 分支：`codex/chore-baseline-sync`

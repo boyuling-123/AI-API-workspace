@@ -1,5 +1,12 @@
 # 测评平台开发纪实
 
+## 2026-09-07：F-STORE-002 项目存储契约
+
+- 从 PR #47 合并后的 main 独立创建 `codex/refactor-project-repository`。将顶层兼容/固定错误文案抽成纯策略，旧 db.ts 保留兼容导出；新增纯契约、唯一真实 IndexedDB 适配器和组合入口，useProject 只走契约，移除无意义的 db 占位 effect。
+- 不改库名/表/Schema、保存队列或 debounce；能力声明明确 browser-origin / project-only，无同步、迁移或流式能力。draftDb、归档与服务端 MCP 桥接独立留待后续。
+- 8 项新增单测覆盖默认绑定、数据不变、快照隔离、兼容读取、写保护、显式删除与真实源码依赖边界。首轮一项测试因错误的异常引用相等假设失败，依据 Dexie 的真实包装语义改为验证失败/类型/安全文案后通过。
+- 全量 237 unit、2 stress、47 E2E/WCAG、lint/typecheck/build 通过。4 条存储路径另采集成功 Trace 和本轮合成截图，原用户数据未读取，真实模型零调用。下一步提交/PR/最终 CI/正常合并，继续 N5 真实能力审计。
+
 ## 2026-09-07：F-STORE-001 非破坏性本地项目保护
 
 - 以 PR #46 合并后的 main 为基线单开 `codex/fix-preserve-legacy-projects`，保留原目录四项草稿，不升级 Schema，不引入新后端。
@@ -11,6 +18,8 @@
 - 02:52：F-STORE-001 功能提交 `037c527` 已推送，浏览器自主创建 [PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47)；首轮 CI `34053067332` 运行中。下一步回写文档并等待最终 head CI，再审查合并，未冒充独立自批准。
 
 - 02:56：PR #47 首轮 CI `34053067332` 两道 Job 全通过；准备只含 PR/证据状态的最终文档提交，远端最终 head 通过前不合并。
+
+- 03:04：最终 head `89d21c9` 的 CI `34053385100` 两道 Job success，head/base 无漂移、无 Review 或未解决线程，通过浏览器正常合并 PR #47，合并 SHA `328191879d0bc4117a608f386041c796c37f6a1a`。按最新 main 创建 `codex/refactor-project-repository`，仅保留本次收尾文档，准备下一独立存储契约节点。
 
 ## 2026-08-25：PR 01 启动
 
