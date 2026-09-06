@@ -27,6 +27,7 @@ export function AgentObservabilityLab() {
   const [experiment, setExperiment] = useState<AgentExperiment | null>(null);
   const [selectedTraceId, setSelectedTraceId] = useState<string | null>(null);
   const [running, setRunning] = useState(false);
+  const [runningMode, setRunningMode] = useState<"mock" | "langgraph" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
@@ -34,22 +35,26 @@ export function AgentObservabilityLab() {
   const selected = summaries.find((item) => item.traceId === selectedTraceId);
   const spans = experiment?.spans.filter((span) => span.traceId === selectedTraceId) ?? [];
 
-  async function run() {
+  async function run(mode: "mock" | "langgraph" = "mock") {
     if (abortRef.current) return;
     const controller = new AbortController();
     abortRef.current = controller;
     setRunning(true);
+    setRunningMode(mode);
     setError(null);
     try {
-      const { runLocalAgentExperiment } = await import("@/services/runLocalAgentExperiment");
-      const result = await runLocalAgentExperiment(controller.signal);
+      const result = mode === "langgraph"
+        ? await (await import("@/services/runLangGraphExperimentClient")).runLangGraphExperimentClient(controller.signal)
+        : await (await import("@/services/runLocalAgentExperiment")).runLocalAgentExperiment(controller.signal);
+      if (controller.signal.aborted) throw new Error("CANCELLED");
       setExperiment(result);
       setSelectedTraceId(summarizeAgentExperiment(result)[0]?.traceId ?? null);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "本地实验失败，请重试。");
+      setError(controller.signal.aborted ? "本地实验已停止，之前完成的结果保留。" : reason instanceof Error ? reason.message : "本地实验失败，请重试。");
     } finally {
       if (abortRef.current === controller) abortRef.current = null;
       setRunning(false);
+      setRunningMode(null);
     }
   }
 
@@ -58,7 +63,7 @@ export function AgentObservabilityLab() {
     const url = URL.createObjectURL(new Blob([serializeAgentExperiment(experiment)], { type: "application/json;charset=utf-8" }));
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "agent-observability-local-mock.json";
+    anchor.download = experiment.source === "local-langgraph-mock-otel" ? "agent-observability-langgraph-mock.json" : "agent-observability-local-mock.json";
     anchor.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
@@ -83,20 +88,25 @@ export function AgentObservabilityLab() {
           <p className="mb-2 text-xs font-semibold tracking-wider text-slate-600">OBSERVABILITY / 调用链实验</p>
           <h1 id="agent-lab-title" className="text-2xl font-semibold tracking-tight sm:text-3xl">Agent 观测实验室</h1>
           <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">
-            先看清过程，再讨论质量。使用真实 OpenTelemetry SDK 记录模拟 Agent 的步骤、耗时、异常与父子关系。
+            先看清过程，再讨论质量。使用真实 OpenTelemetry SDK 记录步骤、耗时、异常与父子关系；可选择模拟流程或真实 LangGraph 调度。
           </p>
           <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950">
             本页为 Mock 验证，不是真实模型评测。决策、工具和故障均由本地桩控制；耗时不能用于比较模型能力。Token 和模型成本未测量。
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button type="primary" aria-label="运行 3 组本地实验" aria-busy={running} loading={running} onClick={run}>运行 3 组本地实验</Button>
+            <Button type="primary" aria-label="运行 3 组本地实验" aria-busy={runningMode === "mock"} loading={runningMode === "mock"} disabled={running} onClick={() => run()}>运行 3 组本地实验</Button>
+            <Button aria-label="运行 LangGraph 实验" aria-busy={runningMode === "langgraph"} loading={runningMode === "langgraph"} disabled={running} onClick={() => run("langgraph")}>运行 LangGraph 实验</Button>
             <Button disabled={!experiment || running} onClick={download}>下载实验 JSON</Button>
             {running && <Button onClick={() => abortRef.current?.abort()}>停止本地实验</Button>}
           </div>
+          <p className="mt-3 text-sm leading-6 text-slate-700">LangGraph 1.4.14：真实框架 + 固定 Mock 节点，运行顺序与自动重试 2 组实验。仅访问本机执行接口，不连接 LangSmith 或模型。</p>
+          {experiment && <p className="mt-2 text-sm font-medium text-blue-800" aria-label="当前结果来源">
+            当前结果：{experiment.source === "local-langgraph-mock-otel" ? "LangGraph 真实调度 / Mock 节点 / 框架回调采集" : "本地模拟流程 / 手动 SDK 埋点"}
+          </p>}
           <p className="mt-2 text-xs leading-6 text-slate-600" role="status" aria-label="实验采集状态">
-            {running ? "正在本地采集调用链，不调用模型或外部 API…" : experiment ? "采集完成。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : "点击后运行顺序工作流、失败重试、并行协作。不会修改现有项目数据。"}
+            {running ? "正在本地采集调用链，不调用模型或外部 API…" : error ? "本次采集未完成；如有之前完成的结果，仍保留在下方。" : experiment ? "采集完成。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : "选择上方一种实验后开始。不会修改现有项目数据。"}
           </p>
-          {error && <p role="alert" className="mt-2 text-sm text-red-800">{error}</p>}
+          {error && <p role="alert" aria-label="实验运行错误" className="mt-2 text-sm text-red-800">{error}</p>}
         </section>
 
         <section aria-label="采集摘要" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -144,7 +154,8 @@ export function AgentObservabilityLab() {
           <summary className="cursor-pointer font-semibold">接入边界与开源来源</summary>
           <div className="mt-3 space-y-2 leading-7 text-slate-600">
             <p>已接入：OpenTelemetry 手动 SDK 埋点、内存导出器，Ant Design 表格/树/按钮及中文语言包。步骤检查器真实复用 Langfuse 时间范围、滚动定位与调用树展开源码（7637df1）；保留 MIT 许可和来源摘要，不是整站 Fork。</p>
-            <p>待开发：框架回调、OTLP 实时接收、历史存储与告警；本页不等同于已兼容 LangGraph、AgentScope 或所有 Agent 框架。</p>
+            <p>新增：LangGraph 1.4.14 / Core 1.2.9 的 StateGraph 与 retryPolicy 真实运行，回调转 OTel。框架在不继承密钥环境的短时本机子进程中执行，拒绝网络访问；不是运行任意代码的安全沙箱。</p>
+            <p>待开发：任意用户 Agent 接入、AgentScope、OTLP 实时接收、历史存储与告警；固定 Mock 节点实验不等同于所有框架兼容或真实模型质量评测。</p>
             <p>我们的改动：统一实验数据契约、任务与步骤分层统计、失败恢复场景、中文交互及真实源码测试。上游库仍保留各自许可，不冒充原创框架。</p>
           </div>
         </details>

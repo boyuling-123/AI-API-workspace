@@ -64,7 +64,7 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 - 首个代码节点：`F-OBS-001`，真实 OTel SDK 与 Ant Design 中文观测实验室；测试与 CI 状态见 `../evidence/pr-agent-observability/README.md`。
 - 已完成：F-DATA-001 只读历史归档/分页演示（PR #46），F-STORE-001 非破坏性旧项目保护（PR #47）及 F-STORE-002 真实项目存储契约（PR #48）；各自最终 CI 已通过并合并。
 - 已完成：F-ACT-001 两项共享只读 Action、中文工具页、同源 API 与官方 SDK stdio MCP（PR #49 最终 CI 通过并合并）；没有对话自治或浏览器项目桥接，写入/评分工具未开放。
-- 当前节点：F-OBS-002 实际复用固定 Langfuse 提交的时间范围/选中定位、调用树展开两份纯逻辑，中文检查器已接线，验收中；文件/许可/差异见 [受控复用清单](../../third_party/langfuse/README.md)。
+- 已完成：F-OBS-002 实际复用固定 Langfuse 提交的时间范围/选中定位、调用树展开两份纯逻辑，中文检查器最终 CI 通过，PR #50 已合并；文件/许可/差异见 [受控复用清单](../../third_party/langfuse/README.md)。
 - 未完成：Langfuse 整站 UI 容器移植、框架回调兼容性、真实模型评测、观测轨迹持久化及大数据性能验证。
 - PR：[F-OBS-001 / #45](https://github.com/boyuling-123/AI-API-workspace/pull/45)，本地与最终远端 CI 通过，已正常合并。
 
@@ -74,12 +74,13 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 
 | 来源 | 借鉴的优势 | 本工作台里的用途 | 当前状态与差异化 |
 |---|---|---|---|
-| Langfuse | Trace/Span 层级、实验与数据集、SDK/MCP 互通 | 中文“调用链/步骤/实验”信息层级，以 OTel 作为未来连接边界 | 两份纯逻辑已受控复用并接入中文检查器，验收中；未 Fork 整站、不引入其整套服务依赖 |
+| Langfuse | Trace/Span 层级、实验与数据集、SDK/MCP 互通 | 中文“调用链/步骤/实验”信息层级，以 OTel 作为未来连接边界 | 两份纯逻辑已受控复用并接入中文检查器，PR #50 最终 CI 通过并合并；未 Fork 整站、不引入其整套服务依赖 |
 | AgentOps / Opik | Agent 工具链、执行过程回放与调试 | 区分最终任务失败、中间失败后恢复、并行分支 | 本地 Mock 已编码；不是这两个框架已接入，不把阶段耗时当模型质量 |
 | DeepEval | 指标即代码、任务/工具等细分评测 | EvaluationEngine 适配输出独立维度、要求所需轨迹字段 | 设计中；保留人工黄金集与 Judge 校准优势，不强行平均总分 |
 | promptfoo | 声明式用例/断言、回归与红队工作流 | 可迁移评测配置、确定性断言优先、受控批量执行 | 设计中；不复制整个服务，不默认生成攻击或调用 Judge |
 | DeepTeam / Giskard | 安全场景与测试集合 | 可选的经授权安全测试适配器 | 暂缓实际运行；安全报告不代表保证模型安全 |
 | AgentScope | Agent 工程与 OTel 追踪，具有中文文档生态 | 后续优先验收的 Agent 框架之一，沿用其已提供的埋点能力 | 设计中；不另造一个 Agent 框架，不宣称已运行兼容测试 |
+| LangGraph | 显式状态图、节点调度与失败重试 | 编译顺序与失败恢复两张图，将真实回调转换为既有 OTel/中文检查器 | F-OBS-003 本地门禁通过，PR #51 最终 CI 待验；真实框架、固定 Mock 节点，非真实模型或任意 Agent 兼容 |
 | Ant Design | 企业工具组件、表格/树及中文语言包 | 实际复用观测表格、步骤树、按钮，中文文案与错误提示 | 观测与归档页已验收合并，工具页沿用组件验收中；不用翻译皮肤掩盖缺失业务能力 |
 
 AgentScope 官方 [Tracing 文档](https://doc.agentscope.io/tutorial/task_tracing.html) 给出 OpenTelemetry 与 Langfuse 的接法；[仓库](https://github.com/agentscope-ai/agentscope) 标示 Apache-2.0。框架已有 SDK/回调时优先复用；不同版本的字段和父子关系必须各自测试，不能从 OTel 兼容推出“所有框架均已接入”。
@@ -95,6 +96,7 @@ AgentScope 官方 [Tracing 文档](https://doc.agentscope.io/tutorial/task_traci
 | @modelcontextprotocol/client 2.0.0（dev-only） | Client、StdioClientTransport | 同上，保留发布包完整许可 | 官方客户端子进程验证两个协议年代，不把自写协议模拟当接入成功 |
 | zod 4.5.4 | strictObject、enum | [Zod](https://github.com/colinhacks/zod)，MIT | 空参数 Schema、未知字段拒绝，UI/API/MCP 共享业务校验 |
 | langfuse/langfuse `7637df1e1aadddbbfd0a45b960ecc97451381ce5` | timelineCalculations / flattenTreeOrder | [固定源文件、许可及摘要](../../third_party/langfuse/README.md)，所选文件为 MIT Expat | 两份纯函数受控 vendoring，仅换类型导入；外围中文 UI 和有界 OTel 适配是本项目代码，不冒充上游组件 |
+| @langchain/langgraph 1.4.14 / core 1.2.9 | StateGraph、StateSchema、retryPolicy、callbacks | [固定依赖、传递许可与行为审计](../../third_party/langgraph/README.md)，MIT | 框架不进浏览器包；空凭据环境的短时进程、固定 Mock 节点、真实回调埋点，不启用 LangSmith |
 
 `package-lock.json` 保留依赖精确版本与完整性摘要；原 LICENSE 随 npm 包分发。服务不使用网络 Exporter。新路由不依赖现有项目数据库，观测 OTel SDK 在主动点击后动态加载，MCP SDK 只在独立 Node 进程使用；Ant Design 的依赖位于相关页面块而非强塞旧首页。
 

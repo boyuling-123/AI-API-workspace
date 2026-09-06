@@ -20,7 +20,15 @@ export interface AgentObservation {
 
 export interface AgentExperiment {
   schemaVersion: 1;
-  source: "local-mock-otel";
+  source: "local-mock-otel" | "local-langgraph-mock-otel";
+  framework?: {
+    name: "@langchain/langgraph";
+    version: "1.4.14";
+    coreVersion: "1.2.9";
+    execution: "StateGraph";
+    nodes: "mock";
+    events: "callbacks";
+  };
   createdAt: string;
   instrumentation: { name: "@opentelemetry/sdk-trace-base"; version: string };
   modelCalls: 0;
