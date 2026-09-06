@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { Client } from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
-import { ACTION_ERRORS, PLATFORM_ACTION_NAMES } from "@/lib/platformActions";
+import { ACTION_ERRORS, ACTION_LIMITS, PLATFORM_ACTION_NAMES } from "@/lib/platformActions";
 import { actionArchiveFixture } from "../helpers/actionArchiveFixture";
 
 const roots: string[] = [];
@@ -35,7 +35,11 @@ describe("official MCP client to compiled real stdio server", () => {
     expect(tools.every((tool) => tool.inputSchema.additionalProperties === false)).toBe(true);
     const capabilities = await client.callTool({ name: "get_platform_capabilities", arguments: {} });
     expect(capabilities.isError).not.toBe(true);
-    expect(capabilities.structuredContent).toMatchObject({ action: "get_platform_capabilities", modelCalls: 0 });
+    expect(capabilities.structuredContent).toMatchObject({ action: "get_platform_capabilities", modelCalls: 0, limits: ACTION_LIMITS });
+    expect(JSON.stringify(capabilities.structuredContent)).toContain("真实 LangGraph 调度固定 Mock 节点");
+    expect(JSON.stringify(capabilities.structuredContent)).toContain("不代表任意用户 Agent 或框架已兼容");
+    expect(JSON.stringify(capabilities.structuredContent)).toContain("来源未认证，不证明现场执行，也不会重放 Agent");
+    expect(capabilities.content).toEqual([{ type: "text", text: JSON.stringify(capabilities.structuredContent) }]);
     const archive = await client.callTool({ name: "get_archive_summary", arguments: {} });
     expect(archive.isError).not.toBe(true);
     expect(archive.structuredContent).toMatchObject({ action: "get_archive_summary", summary: { totalRecords: 2, uniqueRecordIds: 1, provenance: "synthetic" } });

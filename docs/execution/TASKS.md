@@ -5,7 +5,7 @@
 最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
 
 - 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
-- 最新：N12文档提交 `b5561bb` 已推送，[PR #54](https://github.com/boyuling-123/AI-API-workspace/pull/54) 自主创建，首次CI `34065674746`运行中；纯文档回写后仍等最终head完整CI。14份Markdown/138链接、72行ID/阶段/状态、旧75行不变、464文件扫描通过。3002预览52679运行；下一Ready `.sdd/next-feature-capability-claims.md`（P0-A）尚未实施，不新开框架/存储。PR53已合并不重复。
+- 最新：N13/P0-A共享声明修复完成本地验收，299unit/2stress/quality、4专项和全量67 E2E无重试通过，467文件扫描/截图/4成功Trace/Diff通过。当前 `codex/fix-observability-capability-claims` 待提交/PR/最终CI；预览52679已停，准备恢复。下一Ready `.sdd/next-feature-morning-handoff.md`，不再新开大业务；PR54已合并不重复。
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。

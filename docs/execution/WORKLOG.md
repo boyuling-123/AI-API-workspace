@@ -1,6 +1,14 @@
 # 测评平台开发纪实
 
+## 2026-09-07 N13：共享能力声明校准
+
+- Planner：N12发现Action旧文案否认所有真实框架适配，与PR51限定LangGraph交付不一致。新规格只修声明和相关断言，复用原UI/API/MCP响应，不新增工具、权限、模型或存储。
+- Developer：仅改ACTION_LIMITS一处业务声明，增加Action/API/MCP实际响应断言与一条浏览器路径，不复制实现；其余执行器和页面结构不变。
+- Tester：完整quality299unit/2stress/24路由、零lint/typecheck通过；4专项与全量67 E2E无重试通过，截图视觉已核对、4成功Trace摘要留证、最终467文件扫描与Diff通过。预览52679已停止，准备恢复；尚未提交/PR。
+
 ## 2026-09-07 N12：需求与阶段证据校准
+
+- 07:11：最终head0592bc0的CI34065796603质量/浏览器Job全成功，核对head/base与空Review/线程后自主正常合并PR54，SHA4d7d7f94b940f6f1cd7184978fdaf232f93764de。进入最新main短分支 `codex/fix-observability-capability-claims`，N13仅规格未实施，不重复审计/PR。
 
 - 07:03：文档初稿提交 `b5561bb` 自主推送并创建PR54，首轮CI `34065674746`已触发。纯文档补链接后仍以最终head完整CI为准，不重跑本地业务测试或虚报数字。下一Ready仅P0-A能力声明校准，尚未实施。
 

@@ -1,6 +1,6 @@
 # N12 文档审计规格与验收
 
-状态：文档及本地文档门禁通过，[PR #54](https://github.com/boyuling-123/AI-API-workspace/pull/54) 已创建，最终CI待完成。分支：`codex/docs-stage-gap-audit`，基线`5e25d1c`。[验收证据](../evidence/pr-stage-gap-audit/README.md)。
+状态：文档审计完成，本地文档门禁与[PR #54](https://github.com/boyuling-123/AI-API-workspace/pull/54)最终CI通过并正常合并；不是新增业务功能。分支：`codex/docs-stage-gap-audit`，基线`5e25d1c`。[验收证据](../evidence/pr-stage-gap-audit/README.md)。
 
 ## 范围与计划
 

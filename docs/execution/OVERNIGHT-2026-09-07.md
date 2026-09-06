@@ -13,7 +13,7 @@
 - 原仓库：`../AI-API-workspace-v5`，本夜不得修改或清理其未提交草稿。
 - 隔离工作树：`AI-API-workspace-overnight-20260907`，本文件所在仓库。
 - 起始基线：`origin/main@caa2517`，已成功 fetch 后创建。
-- 当前分支：`codex/docs-stage-gap-audit`，从 PR #53 合并后的 `origin/main@5e25d1c` 创建；首次推送显式指定该新分支，不向 main 直接推送。
+- 当前分支：`codex/fix-observability-capability-claims`，从 PR #54 合并后的 `origin/main@4d7d7f9` 创建；首次推送显式指定该新分支，不向 main 直接推送。
 - 自动任务：`automation`，已从旧线程迁入本次讨论线程，并替换旧 v6 存储开发指令。
 - 每轮开始先读取本文件、`TASKS.md`、`WORKLOG.md`、最新用户消息和 `git status`。
 - 每轮结束记录当前分支、提交、测试结果、PR、未完成步骤与下一项 Ready。
@@ -48,7 +48,8 @@
 | N9 首个真实框架适配 | 已完成 | 真实 LangGraph 1.4.14 调度固定 Mock 节点，回调接现有 OTel/检查器 | 固定版本、隔离遥测与网络；不声称全框架兼容 | F-OBS-003：278 unit / 2 stress / 55 E2E，3 条再验/截图/Trace；PR #51 最终 CI 通过并合并 |
 | N10 中文面试演示入口 | 已完成 | 串起现有历史/观测/助手/工程证据，复用已有页面 | 不自动读正文/跑模型，不夸大数据与兼容性，移动端/axe/路径验收 | F-DEMO-001：287 unit/2 stress/61 E2E、截图/6成功Trace、PR #52 最终CI通过并合并 |
 | N11 观测结果本机回读 | 已完成 | 两种本平台 Mock JSON，严格有界校验、确认前保留结果、来源未认证标记 | 零回读 API/模型；异常/往返/手机/axe/证据/最终 CI | F-OBS-004；298 unit/2 stress/66 E2E、5成功Trace/截图与PR #53最终CI通过，已正常合并 |
-| N12 阶段差距审计 | 已创建PR，待最终CI | 最新PRD基线、72行逐项表、8MCP/4Assistant场景、下一小PR依赖、README校准 | 链接/数字/来源/范围/SecretScan通过，最终headCI；不升级业务状态 | PR54；14份Markdown/138链接/72行ID、旧75行不变、464文件扫描通过；最终CI待验 |
+| N12 阶段差距审计 | 已完成 | 最新PRD基线、72行逐项表、8MCP/4Assistant场景、下一小PR依赖、README校准 | 链接/数字/来源/范围/SecretScan通过，最终headCI；不升级业务状态 | PR54最终head0592bc0/CI34065796603两道Job通过，07:10正常合并4d7d7f9 |
+| N13 共享观测声明校准 | 本地门禁通过，待PR | P0-A：UI/API/MCP区分固定真实LangGraph/Mock节点、未认证文件、任意Agent未兼容 | 两工具不扩权；源码/协议/API/UI一致；完整门禁和最终CI | 299unit/2stress/quality、4专项与全量67 E2E无重试，截图/4成功Trace、467扫描通过；待最终CI |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
 每轮只领取 1 至 3 个相关节点。若 N3 没有合适的可独立复用模块，记录实证和暂缓理由，不为完成数量而重写替代品。N2 的契约拆分不得顺带提升 Schema 或清理不兼容记录；发现历史删除行为时必须有单独迁移保护方案。
@@ -73,6 +74,12 @@
 - 01:27：按最新要求优先推进 N3/4：已安装锁定 OTel/Ant Design 依赖，独立实验页面与真实源码测试就绪，5 条新增单测通过；首轮 E2E 1 通过/1 对比度失败，正在修复复验。尚未提交/推送/创建 PR。下一轮先查当前验收进程，不重复安装/实现。
 
 ## 最新检查点（优先于初始记录）
+
+- 07:18：N13完整quality与67 E2E无重试全通过，4专项成功Trace/截图已复核、467扫描/Diff通过；准备提交/推送/创建PR和最终CI。下一Ready `.sdd/next-feature-morning-handoff.md` 仅汇总实验与早间交付，不再加框架/后端。预览3002已恢复为会话99982，实际页面只读查询声明核对通过；下次build/E2E前只停它，原四草稿不变。
+
+- 07:14：N13已修改共享ACTION_LIMITS和对应真实Action/API/正式MCP/浏览器断言，不增工具权限。全量299unit已通过（含新1项），完整quality启动后再E2E/截图/Trace。3002预览52679已仅对此会话CtrlC停止，验收后恢复。未提交/推送/PR，不重复实施；下一仅收尾审计，不开大业务或新框架。
+
+- 07:11：PR54最终head0592bc0/CI34065796603质量与浏览器Job全success，head/base无漂移、无Review/未解决线程、Ready to merge后普通合并为4d7d7f94b940f6f1cd7184978fdaf232f93764de。最新main新建 `codex/fix-observability-capability-claims`，N13规格阶段，尚未改业务代码。下一按 `.sdd/next-feature-capability-claims.md` 实施；预览52679运行，测试前只停它；不再重复N12。
 
 - 07:03：N12初稿 `b5561bb` 已提交推送，自主创建PR54，首轮CI `34065674746`运行中。仅文档回写后等待最终head质量/浏览器CI，不重复本轮审计；下一Ready `.sdd/next-feature-capability-claims.md` 尚未实施，独立小PR校准观测能力旧声明，再做收尾。3002预览52679保持运行，原四草稿不变，没有读正文或调用模型。
 
