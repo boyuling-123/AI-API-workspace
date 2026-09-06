@@ -66,7 +66,7 @@ export function PlatformTools() {
                     <p className="mt-1 break-all font-mono text-xs text-slate-600">{action.name}</p>
                     <p className="mt-2 max-w-lg text-sm leading-6 text-slate-600">{action.description}</p>
                   </div>
-                  <Button className="shrink-0" disabled={running !== null} loading={running === action.name} onClick={() => void run(action.name)}>{action.title}</Button>
+                  <Button className="shrink-0" aria-label={action.title} aria-busy={running === action.name} disabled={running !== null} loading={running === action.name} onClick={() => void run(action.name)}>{action.title}</Button>
                 </div>)}
               </div>
               <p className="text-xs leading-6 text-slate-600">进入页面不会读取归档。首次点击统计会顺序核对所有索引分片，不下载全部正文。</p>

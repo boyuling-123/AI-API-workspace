@@ -1,6 +1,6 @@
 # F-ACT-001 验收证据
 
-状态：本地完整验收通过，准备提交/推送/创建 PR；最终 CI 待验，不标记已验证。
+状态：功能提交 `856062fcb7c72852a56e16b26f7841a75a4644c1` 已推送并创建 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)。[首轮 CI 34056733123](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34056733123) Quality 通过、浏览器 49 通过 / 1 失败；修复后本地全量再次通过，最终修复 head CI 待验，不标记已验证。
 
 ## 需求与代码
 
@@ -20,6 +20,7 @@
 - 修复后 `npm run quality`：250 项单测（新增 13 项，包含 4 项真实 MCP 子进程测试）、2 项压力测试、lint 零警告、typecheck、Next build 全通过。
 - `npm run test:e2e -- tests/e2e/platform-tools.spec.ts --workers=2 --trace=on --output=local-data/actions-e2e`：3 项通过；成功 Trace 已保留。
 - 全量 Playwright：修复后 50 / 50 通过（1.9m）。第一轮 48 通过 / 2 失败，不把失败轮计为验收通过。
+- 04:17 远端名称问题修复后，工具页三条路径各重复三轮：9 / 9 通过（27.8s），并重新通过完整 quality（250 unit / 2 stress、lint/typecheck/build/扫描）及全量 50 / 50 E2E（2.0m）。最终修复 head 的远端复验仍是合并前提。
 - 03:55 截图 [platform-tools.png](platform-tools.png) 已目视检查，中文标题/工具/统计/边界区层级清晰，没有真实业务正文；截图明确使用 63 条合成夹具。
 - 原工作树四项资源性能草稿未变；未读取真实密钥、未调用真实模型、未改任何宿主 MCP 配置。
 - 03:57 用官方客户端从非项目 cwd 启动 stdio，默认配置成功返回真实本机归档摘要，与既有只读核对一致。实际统计记录在忽略的 `local-data/F-ACT-001-LOCAL-CHECK.md`，公开截图与 CI 仍全部使用合成夹具。
@@ -30,6 +31,7 @@
 1. TypeScript 对测试用例中空 Header 对象推断出包含 undefined 的联合类型；将夹具显式声明为 `Record<string, string>[]`，不放宽生产校验。
 2. axe 发现可滚动 JSON `pre` 缺键盘焦点；补 `tabIndex`、命名 region、可见焦点样式，保留严格 axe 门禁。
 3. 错误路径测试同时匹配到 Next 隐藏 route announcer；为业务错误加中文可访问名称并精确定位，不删除框架播报节点、不弱化错误内容断言。
+4. GitHub Linux 浏览器两次在 503 后重试超时。下载 artifact `9996245964` 的截图、AX 上下文与 Trace，确认错误已经显示、按钮已启用，但 Ant Design 退出动画的 `loading` 图标仍计入按钮名称，精确中文定位失效。固定业务按钮 `aria-label`，用 `aria-busy` 单独表达请求状态；回归测试用受控响应验证加载中名称、禁用、失败后恢复和再次真实查询，不加长超时、不改为宽松选择器。失败包保留于忽略的 `local-data/pr49-ci-failure/`。
 
 ## 可追踪产物
 
@@ -40,6 +42,14 @@
 | 真实工具查询与归档摘要 | `a773995796ff9655bd29b7c97ce54a4214c061940bf6ea80961448afbe7a1efa` |
 | 缺配置、安全错误与重试 | `dd5d69def2ffdb599c4dcd7627000ae92f4ac7af851db42bbbd456f1ee28da95` |
 | 首页入口、移动端、键盘与 API 只读限制 | `f16f99e0ae1f1c64540d6299de15174843a36623d8f4d13852444ddd2e4457d0` |
+
+远端问题修复后的三轮 Trace 保留于 `local-data/actions-retry-fix/`。第一轮三条分别为：
+
+| 用户路径 | 修复后成功 Trace SHA-256 |
+| --- | --- |
+| 真实查询 | `b4ea787e0534100357b235e0e9152a363ea5c084212ba3f5d3403191717b86b6` |
+| 加载状态、503 与重试 | `ccebdce6519f651b75faea338c961714811f745117e618c9e675e026e4328369` |
+| 入口与移动端 | `9770ad7dd401b844277a2150c271208755db4962255dc76c4297ac82eff77ac9` |
 
 ## 限制与回滚
 

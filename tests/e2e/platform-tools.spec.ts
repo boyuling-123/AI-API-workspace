@@ -52,15 +52,28 @@ test("unavailable tool has Chinese error, clears stale results and recovers with
   await page.goto("/assistant-tools");
   await page.getByRole("button", { name: "查询平台能力", exact: true }).click();
   await expect(page.getByText("已开放 2 项工具", { exact: false })).toBeVisible();
-  await page.route("**/api/platform-actions?action=get_archive_summary", (route) => route.fulfill({
-    status: 503, contentType: "application/json", body: JSON.stringify({ ok: false, code: "NOT_CONFIGURED", error: "synthetic-private-server-path" }),
-  }));
-  await page.getByRole("button", { name: "读取归档统计", exact: true }).click();
+  let releaseFailure!: () => void;
+  const pendingFailure = new Promise<void>((resolve) => { releaseFailure = resolve; });
+  await page.route("**/api/platform-actions?action=get_archive_summary", async (route) => {
+    await pendingFailure;
+    await route.fulfill({
+      status: 503, contentType: "application/json", body: JSON.stringify({ ok: false, code: "NOT_CONFIGURED", error: "synthetic-private-server-path" }),
+    });
+  });
+  const retryButton = page.getByRole("button", { name: "读取归档统计", exact: true });
+  try {
+    await retryButton.click();
+    await expect(retryButton).toHaveAttribute("aria-busy", "true");
+    await expect(retryButton).toBeDisabled();
+    await expect(page.getByRole("status")).toContainText("正在执行只读查询");
+  } finally { releaseFailure(); }
   await expect(page.getByRole("alert", { name: "工具调用错误" })).toContainText("尚未配置本地历史归档");
+  await expect(retryButton).toHaveAttribute("aria-busy", "false");
+  await expect(retryButton).toBeEnabled();
   await expect(page.getByText("已开放 2 项工具", { exact: false })).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("synthetic-private-server-path");
   await page.unroute("**/api/platform-actions?action=get_archive_summary");
-  await page.getByRole("button", { name: "读取归档统计", exact: true }).click();
+  await retryButton.click();
   await expect(page.locator("dd")).toHaveText(["63", "62", "2"]);
   await expect(page.getByRole("alert", { name: "工具调用错误" })).toHaveCount(0);
 });

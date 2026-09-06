@@ -43,7 +43,7 @@
 | N3 最小上游复用样例 | 已完成 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，PR #45 最终 CI 通过并合并，产品范围仍 Demo |
 | N4 中文 UI 接入 | 已完成，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核，CI 通过 |
 | N7 本地结果演示 | 已完成 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；220 unit/2 stress/43 E2E、真实本机联调与最终 CI 通过，PR #46 已合并 |
-| N5 MCP/Assistant 契约 | 本地通过，待 PR/CI | F-ACT-001：两项共享只读 Action、中文工具页、同源 API、真实 stdio MCP；写动作与完整 Assistant 暂缓 | 已有/待实现明确区分；无默认模型调用；正式客户端协议与用户路径测试 | 250 unit / 2 stress / 50 E2E / 构建通过，合成截图与 3 条成功 Trace；本机摘要联调成功，尚未提交 |
+| N5 MCP/Assistant 契约 | 本地通过，待最终 CI | F-ACT-001：两项共享只读 Action、中文工具页、同源 API、真实 stdio MCP；写动作与完整 Assistant 暂缓 | 已有/待实现明确区分；无默认模型调用；正式客户端协议与用户路径测试 | 250 unit / 2 stress / 50 E2E / 构建通过，合成截图与 3 条成功 Trace；本机摘要联调成功，PR #49 已创建 |
 | N8 Langfuse 具体源码复用 | 待 N5 合并 | 固定上游版本、审计候选依赖和许可，选可独立复用的 UI/纯逻辑模块再接线 | 必须有原始文件/版本/许可及真实代码证据；不能把重绘称为 Fork，不引入完整后端 | 下一 Ready 见 `.sdd/next-feature-langfuse.md`，当前仅规划 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
@@ -70,6 +70,9 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 04:17：名称修复后 9 次重复工具路径、250 unit / 2 stress、全量 50 E2E、构建及基础门禁再次通过；将修复和首轮 CI 证据一并提交到 PR49，再等待该 head 的 CI。未开始 N8，不用首次失败运行冒充成功。
+- 04:15：PR49 首轮 CI `34056733123` Quality 通过 / 浏览器 49/50，下载失败证据后修复加载图标污染按钮名称的问题，补忙碌/禁用/恢复断言。正在跑 3 次重复路径与全量门禁，最终 head 通过前不合并、不进入 N8；预览 99950 已停。
+- 04:02：功能提交 `856062fcb7c72852a56e16b26f7841a75a4644c1` 已推送并自主创建 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，首轮 CI `34056733123` 运行中；仅证据文档在回写，最终文档 head 仍需 CI 通过。3002 预览已恢复 / 会话 99950，下一轮 build/E2E 前仅停此服务。下一 Ready `.sdd/next-feature-langfuse.md`，当前不提前实施。
 - 03:58：F-ACT-001 修复后完整 quality 与 50 E2E 全通过，3 条成功 Trace/合成截图已复核；真实本机 MCP 摘要联调成功，原工作树四项草稿不变。接下来只需最后 Diff/Secret Scan、commit/push/PR，最终 head CI 后合并。下一 Ready 为 Langfuse 具体源码复用审计，不开启新后端或真实模型；3002 尚未恢复。
 - 03:50：F-ACT-001 已完成实现，13 项新增源码/API/正式 MCP 子进程测试通过，覆盖 2025 handshake 和 2026 pinned；全量 250 unit / 2 stress、lint/typecheck/build 通过。首轮 typecheck 发现测试用例 Header 联合类型推断问题，已明确类型后复验。3002 / 会话 36021 已停；完整 50 E2E 正在执行，结束后恢复预览。未提交/推送/创建本节点 PR，不重复实现。
 - 03:30：PR #48 最终 head `cc340ab` 的 CI `34054851224` 两道 Job 全部 success；head/base 无漂移、无阻塞 Review、GitHub Ready to merge 后正常合并，SHA `0a26dbfbed36378e9b8c93ce5972d9fe67e41dfd`。当前已进入 `codex/feat-platform-actions`，只有本次 PR48 收尾文档待提交；N5 尚未编写业务代码。下一步读 `.sdd/next-feature-actions.md`、importer Skill 和相关源码，先厘清真实能力。预览 3002 / 会话 36021 仍在运行，下一轮 build/E2E 前仅停此会话。

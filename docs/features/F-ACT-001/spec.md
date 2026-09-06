@@ -27,7 +27,7 @@
 ## 当前状态
 
 - 状态：已实现，验收中；分支 `codex/feat-platform-actions`，基线 PR #48 merge `0a26dbfb`。
-- Issue/PR：待创建；测试与截图未完成前不标记为已验证。
+- Issue/PR：[PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，功能提交 `856062f` 已推送；本地门禁通过，最终 head CI 未完成前不标记为已验证。
 - 代码证据：`src/lib/platformActions.ts`、`src/server/platformActions.ts`、`src/mcp`、`src/app/api/platform-actions/route.ts`、`src/components/assistant/PlatformTools.tsx`。
 - 本地证据：250 unit（新增 13）/ 2 stress / 50 E2E，独立 MCP/Next build、lint/typecheck/Secret Scan 通过；3 条成功 Trace、合成截图与本机真实摘要联调见 [验收报告](../../evidence/pr-platform-actions/README.md)。待最终 head CI 后才标为已验证。
 - 回滚：正常 revert 本节点；删除的只是工具入口，原 IndexedDB 与归档文件不变，不执行数据回滚。
