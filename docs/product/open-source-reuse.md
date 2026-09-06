@@ -64,7 +64,7 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 - 首个代码节点：`F-OBS-001`，真实 OTel SDK 与 Ant Design 中文观测实验室；测试与 CI 状态见 `../evidence/pr-agent-observability/README.md`。
 - 未完成：Langfuse 具体组件抽离、框架回调兼容性、真实模型评测、持久化及大数据性能验证。
 - 下一步：本地现有数据只读盘点/分页演示；可替换 ProjectRepository 后移，不新增后端存储。
-- PR：[F-OBS-001 / #45](https://github.com/boyuling-123/AI-API-workspace/pull/45)，本地门禁通过，最终远端 CI 通过前不合并。
+- PR：[F-OBS-001 / #45](https://github.com/boyuling-123/AI-API-workspace/pull/45)，本地与最终远端 CI 通过，已正常合并。
 
 ## 提取优势，而非拼装整个平台
 
@@ -78,7 +78,7 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 | promptfoo | 声明式用例/断言、回归与红队工作流 | 可迁移评测配置、确定性断言优先、受控批量执行 | 设计中；不复制整个服务，不默认生成攻击或调用 Judge |
 | DeepTeam / Giskard | 安全场景与测试集合 | 可选的经授权安全测试适配器 | 暂缓实际运行；安全报告不代表保证模型安全 |
 | AgentScope | Agent 工程与 OTel 追踪，具有中文文档生态 | 后续优先验收的 Agent 框架之一，沿用其已提供的埋点能力 | 设计中；不另造一个 Agent 框架，不宣称已运行兼容测试 |
-| Ant Design | 企业工具组件、表格/树及中文语言包 | 实际复用观测表格、步骤树、按钮，中文文案与错误提示 | 已接线，验收中；不用翻译皮肤掩盖缺失业务能力 |
+| Ant Design | 企业工具组件、表格/树及中文语言包 | 实际复用观测表格、步骤树、按钮，中文文案与错误提示 | 观测页已验收合并，归档页沿用组件验收中；不用翻译皮肤掩盖缺失业务能力 |
 
 AgentScope 官方 [Tracing 文档](https://doc.agentscope.io/tutorial/task_tracing.html) 给出 OpenTelemetry 与 Langfuse 的接法；[仓库](https://github.com/agentscope-ai/agentscope) 标示 Apache-2.0。框架已有 SDK/回调时优先复用；不同版本的字段和父子关系必须各自测试，不能从 OTel 兼容推出“所有框架均已接入”。
 

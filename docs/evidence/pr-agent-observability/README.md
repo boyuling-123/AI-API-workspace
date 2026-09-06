@@ -1,6 +1,6 @@
 # F-OBS-001 验收记录
 
-日期：2026-09-07。结论：本地门禁通过，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已创建；最终 head 的远端 CI 通过前不合并。产品状态仍为 Demo；真实模型和框架回调未验收。
+日期：2026-09-07。结论：本地及远端门禁通过，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并。最终 head `51d2c62` 的 [CI run 34049163074](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34049163074) 两个 Job 全部 success；合并提交 `f4a4422`。产品状态仍为 Demo；真实模型和框架回调未验收。
 
 ## 本地结果
 
