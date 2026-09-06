@@ -1,6 +1,6 @@
 # P0-A / N13：共享观测能力声明校准
 
-状态：已实现；299unit/2stress/quality、4专项和全量67 E2E无重试通过，截图/Trace复核完成，最终CI待验。[证据](../../evidence/pr-capability-claims/README.md)。基线：PR54合并4d7d7f9，分支`codex/fix-observability-capability-claims`。这是F-ACT-001文案缺陷修复，不新增产品能力计数。
+状态：已实现；299unit/2stress/quality、4专项和全量67 E2E无重试通过，截图/Trace复核完成，[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55)最终CI待验。[证据](../../evidence/pr-capability-claims/README.md)。基线：PR54合并4d7d7f9，分支`codex/fix-observability-capability-claims`。这是F-ACT-001文案缺陷修复，不新增产品能力计数。
 
 ## 缺陷与范围
 
