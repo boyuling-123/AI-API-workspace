@@ -1,6 +1,6 @@
 # F-OBS-003 真实 LangGraph 的本地 Mock 节点观测
 
-状态：已实现，本地门禁通过，待 PR 最终 CI。分支：`codex/feat-langgraph-observability`。前置：PR #50 已合并。
+状态：已实现，本地门禁通过，[PR #51](https://github.com/boyuling-123/AI-API-workspace/pull/51) 最终 CI 待验。分支：`codex/feat-langgraph-observability`。前置：PR #50 已合并。
 
 ## 需求与边界
 

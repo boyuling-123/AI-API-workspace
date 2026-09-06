@@ -1,6 +1,6 @@
 # F-OBS-003 验收证据
 
-状态：本地最终验收通过，待提交/PR/最终 CI，未标记已验证。
+状态：本地最终验收通过，[PR #51](https://github.com/boyuling-123/AI-API-workspace/pull/51) 已创建，最终 head 的远端 CI 通过前不标记已验证。功能提交 `2ca382fdcf9ce71be756ecb28b790fbf4f914c1d`；首次 CI [34061034711](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34061034711) 已触发。PR/证据回写是纯文档提交，后续以最终 head 的完整 CI 为合并门禁，不要求旧 head 重复完成。
 
 ## 真实代码路径
 
@@ -15,7 +15,7 @@
 
 最终 `npm run quality` 通过：278 unit（新增14）/ 2 stress、lint 零警告、typecheck、23 路由 build、439 文件 Secret Scan。全量 55 E2E 通过，3 条本主题路径再次通过；含实际本机 API、来源/导出、故障/取消保留旧结果、键盘、390px、axe 零违规。原目录四项草稿未变。
 
-截图 [langgraph-lab.png](langgraph-lab.png) 已人工视觉复核，SHA-256 `d8695e6f0cf58aeb52e8609ca5a3327bf60b47b5e2aa1f769dbd0a940ac93342`。只含固定合成节点，不含真实业务数据。成功 Trace 保留在 Git 忽略的 `local-data/langgraph-final-e2e/`：
+截图 [langgraph-lab.png](langgraph-lab.png) 已视觉复核，SHA-256 `d8695e6f0cf58aeb52e8609ca5a3327bf60b47b5e2aa1f769dbd0a940ac93342`。只含固定合成节点，不含真实业务数据。成功 Trace 保留在 Git 忽略的 `local-data/langgraph-final-e2e/`：
 
 | 路径 | Trace SHA-256 |
 |---|---|
