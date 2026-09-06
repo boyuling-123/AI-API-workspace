@@ -1,6 +1,6 @@
 # F-DEMO-001 中文产品演示导览
 
-状态：已实现，本地完整门禁通过，待 PR 最终 CI。[测试与回滚证据](../../evidence/pr-interview-walkthrough/README.md)。分支 `codex/feat-interview-walkthrough`，基线 PR #51 合并后的 main。
+状态：已实现，本地完整门禁通过，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 最终 CI 待验。[测试与回滚证据](../../evidence/pr-interview-walkthrough/README.md)。分支 `codex/feat-interview-walkthrough`，基线 PR #51 合并后的 main。
 
 ## 需求
 

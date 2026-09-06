@@ -1,6 +1,6 @@
 # F-DEMO-001 验收证据
 
-状态：已实现，本地完整门禁通过，待 PR 最终 CI。分支 `codex/feat-interview-walkthrough`，基线 `main@93f46ca`。本主题只串起现有能力，不新增模型、存储、框架依赖或真实数据复制。
+状态：已实现，本地完整门禁通过，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 已创建，最终 head CI 待验。功能提交 `3b2db7d9963feed7528effc4437305543fbc1d8f`，首次 [CI 34062722427](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34062722427) 已触发；PR 证据回写为纯文档，后续以最终 head 的完整 CI 为准。分支 `codex/feat-interview-walkthrough`，基线 `main@93f46ca`。本主题只串起现有能力，不新增模型、存储、框架依赖或真实数据复制。
 
 ## 真实代码与用户路径
 
@@ -18,6 +18,8 @@
 首次4条路径为3通过/1文案断言错误，修正为真实初始提示并增加下载禁用断言。首次全量59条为58通过/1超时：把所有导航串成单条超过30秒，拆成可独立验收的三条路径而不扩大超时。之后首次6条路径为5通过/1冷启动归档响应超出7秒UI断言；改为等待此次显式点击产生的真实HTTP响应、校验200，再断言连接状态和50条分页，仍保持30秒单路径限制。修正后6条全通过。最终 `CI=1 npm run test:e2e` 全量61条全部通过（2.1分钟，无重试），不拿前一轮失败或旧55条记录代替。
 
 截图 [interview-guide.png](interview-guide.png) 已视觉检查：五章侧栏、清晰 H1/H2/H3、操作/证据/边界与主按钮可见，无遮挡。SHA-256 `90a936d5f9bd881a363c80dd611d9cc7b1689108965f43da3b05c22ad78dd01b`。截图只有固定产品说明，没有业务数据。
+
+本机预览3002已恢复，Computer Use 实际核对历史规模章节、访问提示和章节跳转，页面停在失败定位。预览未启动实验或读取归档正文；相关业务联通以合成E2E和前序PR的本机只读证据为准。
 
 成功 Trace 仅保留在 Git 忽略的 `local-data/interview-final-e2e/`，便于本机复核：
 
