@@ -3,14 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "npm run langgraph:build",
     "dev": "next dev",
+    "prebuild": "npm run langgraph:build",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "npm run test:unit",
     "mcp:build": "tsc -p tsconfig.mcp.json",
-    "pretest:unit": "npm run mcp:build",
+    "langgraph:build": "tsc -p tsconfig.langgraph.json",
+    "pretest:unit": "npm run mcp:build && npm run langgraph:build",
     "test:unit": "vitest run tests/unit",
     "test:stress": "vitest run tests/stress",
     "test:e2e": "playwright test",
@@ -19,6 +22,8 @@
     "quality": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:unit && npm run test:stress && npm run build"
   },
   "dependencies": {
+    "@langchain/core": "1.2.9",
+    "@langchain/langgraph": "1.4.14",
     "@modelcontextprotocol/server": "2.0.0",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/sdk-trace-base": "2.11.0",

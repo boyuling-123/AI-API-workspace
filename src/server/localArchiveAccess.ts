@@ -1,22 +1,10 @@
 import path from "node:path";
 import { ARCHIVE_TYPES, type ArchiveType } from "../lib/localArchive";
 import { ArchiveError, LocalArchiveReader, readArchiveFile } from "./localArchiveReader";
+import { isLocalRequest } from "./localRequest";
 
 export function assertLocalArchiveRequest(request: Request): void {
-  const url = new URL(request.url);
-  const site = request.headers.get("sec-fetch-site");
-  const origin = request.headers.get("origin");
-  const host = request.headers.get("host") ?? url.host;
-  let browserOrigin: URL;
-  try { browserOrigin = new URL(`${url.protocol}//${host}`); }
-  catch { throw new ArchiveError("LOCAL_ONLY", "仅允许从本机工作台读取归档。", 403); }
-  // Next may normalize its internal URL to localhost even when the browser uses 127.0.0.1.
-  // Validate the actual Host separately, then bind Origin to that exact browser origin.
-  const loopback = (hostname: string) => ["127.0.0.1", "localhost", "[::1]"].includes(hostname);
-  if (!loopback(url.hostname) || !loopback(browserOrigin.hostname) || browserOrigin.host !== host ||
-    browserOrigin.port !== url.port || (origin !== null && origin !== browserOrigin.origin) ||
-    (site !== null && site !== "same-origin" && site !== "none") ||
-    request.headers.get("x-eval-archive") !== "local-read") {
+  if (!isLocalRequest(request, "x-eval-archive", "local-read")) {
     throw new ArchiveError("LOCAL_ONLY", "仅允许从本机工作台读取归档。", 403);
   }
 }

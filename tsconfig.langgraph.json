@@ -1,0 +1,6 @@
+{
+  "extends": "./tsconfig.mcp.json",
+  "compilerOptions": { "outDir": ".langgraph-dist" },
+  "include": ["src/langgraph/stdio.ts"],
+  "exclude": ["node_modules", ".next", ".mcp-dist", ".langgraph-dist"]
+}

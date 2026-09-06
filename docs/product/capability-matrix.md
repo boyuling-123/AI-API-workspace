@@ -1,5 +1,7 @@
 # 测评平台 v5.0 能力矩阵
 
+新增独立能力 F-OBS-003：已实现（真实 LangGraph 调度 + 固定 Mock 节点，本地门禁通过，待 PR 最终 CI）。[规格/验收](../features/F-OBS-003/spec.md)、代码 `src/langgraph`、`src/server/langgraphExperiment.ts` 与 `/observability`，以及 [14 项新增单测/3 项新增 E2E/截图与 Trace](../evidence/pr-langgraph-observability/README.md)。PR 尚未创建；不代表任意用户 Agent 或真实模型接入，不改变旧 75 项统计基数。
+
 > 2026-09-07 增量说明：本矩阵保留为旧功能证据，后续按 [开源源码复用方案](open-source-reuse.md) 与 [夜间台账](../execution/OVERNIGHT-2026-09-07.md) 推进。暂不新增后端存储；调研、接口预留不升级任何现有功能状态。
 
 新增独立能力 F-OBS-001：Demo（本地模拟 Agent 观测，非完整框架接入）。[需求/验收](../features/F-OBS-001/spec.md)、代码 `src/services/runLocalAgentExperiment.ts` 与 `src/components/observability/AgentObservabilityLab.tsx`、[测试证据](../evidence/pr-agent-observability/README.md)。本地 5 个新增单测、2 个新增用户路径通过；[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 最终 CI 通过并已合并。此增量不改旧 75 项统计基数。
@@ -14,7 +16,7 @@
 
 > 审计日期：2026-09-02
 
-新增独立能力 F-OBS-002：已实现（固定 Langfuse 纯逻辑复用与中文步骤检查器），[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50) 最终 CI 待验。[规格与条件](../features/F-OBS-002/spec.md)、实际 `src/vendor/langfuse`、`src/lib/agentTraceInspector.ts`、`TraceInspector.tsx`，以及 [源码/许可/浏览器证据](../evidence/pr-langfuse-trace/README.md)。仅是 Mock 实验中的检查能力，不提升全部框架兼容性，不改变旧 75 项统计基数。
+新增独立能力 F-OBS-002：已验证（固定 Langfuse 纯逻辑复用与中文步骤检查器），[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50) 最终 CI 通过并合并。[规格与条件](../features/F-OBS-002/spec.md)、实际 `src/vendor/langfuse`、`src/lib/agentTraceInspector.ts`、`TraceInspector.tsx`，以及 [源码/许可/浏览器证据](../evidence/pr-langfuse-trace/README.md)。仅是 Mock 实验中的检查能力，不提升全部框架兼容性，不改变旧 75 项统计基数。
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)
 > 审计口径：前十章 75 条主能力逐项核对；实施顺序与验收标准不重复计数。
 

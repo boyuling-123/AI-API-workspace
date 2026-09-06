@@ -1,6 +1,6 @@
 # F-OBS-002 验收证据
 
-状态：本地完整验收通过，功能提交 `7f10fee399bea6a5f71b20664eb28033ec6923f9` 已推送，自主创建 [PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50)。首轮 [CI 34058791578](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34058791578) 两道 Job 全部成功；当前回写最终文档，其 head 仍须 CI 通过后才合并，不提前标记已验证。
+状态：已验证（本规格限定的源码复用与 Mock 步骤检查能力）。[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50) 最终 head `e605f5bf3af7f9e2fd502a25b90e179d3a5ba0ef` 的 [CI 34059043421](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34059043421) 两道 Job 全部成功；04:52 正常合并为 `50164b7c1824211144552e25c2514094ac63d53b`。首轮功能 CI `34058791578` 也通过，最终 head 单独复验，不混用旧结果。
 
 ## 证据对应
 
@@ -37,4 +37,4 @@
 
 ## 回滚与待验
 
-远端最终 head CI 待实际运行记录。没有新增 npm 依赖；既有依赖审计风险未因此解决，不宣称全仓库安全完备。原工作树四项性能草稿不属于本节点。普通 revert 移除本地检查器和 vendor 文件即可，不删除/迁移任何业务数据。
+最终 head/base 无漂移、无 Review 或未解决线程，GitHub Ready to merge 后通过正常流程合并，没有伪造独立审批。没有新增 npm 依赖；既有依赖审计风险未因此解决，不宣称全仓库安全完备。原工作树四项性能草稿不属于本节点。普通 revert 移除本地检查器和 vendor 文件即可，不删除/迁移任何业务数据。

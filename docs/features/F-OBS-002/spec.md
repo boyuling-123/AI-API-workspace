@@ -1,6 +1,6 @@
 # F-OBS-002：Langfuse 源码复用的中文步骤检查器
 
-状态：已实现，验收中。分支 `codex/feat-langfuse-trace-module`，基线 PR49 merge `4f6279e`。Issue/PR：[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50)，功能提交 `7f10fee`；最终 head CI 待验。
+状态：已验证（本规格限定范围）。分支 `codex/feat-langfuse-trace-module`，基线 PR49 merge `4f6279e`。Issue/PR：[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50)，最终 head `e605f5b` 的 CI `34059043421` 通过，正常合并为 `50164b7`。
 
 ## 需求与范围
 
@@ -29,4 +29,4 @@
 
 ## 本地证据
 
-264 unit（新增 14）/ 2 stress、lint/typecheck/build/源码摘要扫描通过；相关 4 E2E 与全量 52 E2E/WCAG 再次通过。合成截图、成功 Trace、首轮失败与修复在 [验收报告](../../evidence/pr-langfuse-trace/README.md)。最终 head CI 与正常合并状态仍待实际确认。
+264 unit（新增 14）/ 2 stress、lint/typecheck/build/源码摘要扫描通过；相关 4 E2E 与全量 52 E2E/WCAG 再次通过。合成截图、成功 Trace、首轮失败与修复在 [验收报告](../../evidence/pr-langfuse-trace/README.md)。最终 head CI 成功，正常合并状态已确认。
