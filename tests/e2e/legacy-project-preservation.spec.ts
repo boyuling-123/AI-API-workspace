@@ -74,7 +74,9 @@ test("retains mixed legacy records across editing and reload, with an accessible
   expect(results.violations).toEqual([]);
   if (process.env.CAPTURE_EVIDENCE === "1") {
     await page.setViewportSize({ width: 1440, height: 1000 });
-    await page.screenshot({ path: "docs/evidence/pr-legacy-project-preservation/legacy-preserved.png" });
+    await page.screenshot({
+      path: process.env.STORAGE_EVIDENCE_PATH ?? "docs/evidence/pr-legacy-project-preservation/legacy-preserved.png",
+    });
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await expect(notice).toBeVisible();

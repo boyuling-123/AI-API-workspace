@@ -1,6 +1,6 @@
 # F-STORE-001 验收证据
 
-当前：本地完整门禁通过；[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47) 已创建，功能提交 `037c527c10358c4851d80be4164faf76eebd4499` 的 [CI run 34053067332](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34053067332) 两道 Job 全部 success。正在回写文档，仍须最终 head 的远端 CI 通过，不提前标记已验证。
+当前：本地完整门禁通过；[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47) 已合并。功能提交 `037c527` 的 [首轮 CI 34053067332](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34053067332) 与最终 head `89d21c998795673eeb92b7b4f8e0559e68f81f5f` 的 [最终 CI 34053385100](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34053385100) 均两道 Job success。03:04 复核 head/base 无漂移、无阻塞 Review、GitHub Ready to merge 后正常合并，SHA `328191879d0bc4117a608f386041c796c37f6a1a`。
 
 范围：兼容性读取不删除、同 ID 不兼容记录写保护、中文保留提示及安全错误。所有验收数据为合成数据；不读取用户浏览器项目、真实密钥或模型，不调用评价接口。
 

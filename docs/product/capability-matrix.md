@@ -6,7 +6,9 @@
 
 新增独立能力 F-DATA-001：已验证（本地历史归档只读演示，限定范围）。[需求/验收](../features/F-DATA-001/spec.md)、代码 `src/server/localArchiveReader.ts`、`src/app/api/local-archive/route.ts` 与 `src/components/archive/LocalArchiveDemo.tsx`、[测试与最终 CI 证据](../evidence/pr-local-history-demo/README.md)。[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已合并；不等于全量任务导入、完整证据查看或 20GB 执行，同样不改变旧 75 项统计基数。
 
-新增独立能力 F-STORE-001：已实现（不兼容本地项目保留，限定范围）。[需求与验收](../features/F-STORE-001/spec.md)、代码 `src/services/db.ts`、`src/hooks/useProject.ts`、`src/components/AppShell.tsx`、[9 项新增单测 / 4 项新增 E2E 与截图](../evidence/pr-legacy-project-preservation/README.md)。本地门禁通过，[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47) 已创建，最终 CI 待通过；不是迁移、备份或新的存储后端，不改变旧 75 项统计基数。
+新增独立能力 F-STORE-001：已验证（不兼容本地项目保留，限定范围）。[需求与验收](../features/F-STORE-001/spec.md)、代码 `src/services/db.ts`、`src/hooks/useProject.ts`、`src/components/AppShell.tsx`、[9 项新增单测 / 4 项新增 E2E、截图与最终 CI](../evidence/pr-legacy-project-preservation/README.md)。本地门禁与最终 head CI 通过，[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47) 已合并；不是迁移、备份或新的存储后端，不改变旧 75 项统计基数。
+
+新增独立能力 F-STORE-002：已实现（ProjectRepository 代码边界与真实 IndexedDB 适配器）。[规格](../features/F-STORE-002/spec.md)、代码 `src/lib/projectRepository.ts`、`src/services/indexedDbProjectRepository.ts`、`src/services/projectRepository.ts` 与 `src/hooks/useProject.ts`、[8 项新增单测、全量 E2E、本轮截图/Trace](../evidence/pr-project-repository/README.md)。[PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48) 已创建，最终 CI 待通过；不含草稿迁移、运行时后端切换或 MCP 桥接，不改变旧 75 项统计基数。
 
 > 审计日期：2026-09-02
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)

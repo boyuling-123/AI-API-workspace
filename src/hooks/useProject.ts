@@ -2,12 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Project } from "@/types";
-import {
-  db,
-  projectSaveErrorMessage,
-  readProjectCatalog,
-  saveProject,
-} from "@/services/db";
+import { projectSaveErrorMessage } from "@/lib/projectStoragePolicy";
+import { projectRepository } from "@/services/projectRepository";
 import { createEmptyProject } from "@/services/projectFactory";
 
 const AUTO_SAVE_DEBOUNCE_MS = 600;
@@ -33,7 +29,7 @@ export interface UseProjectResult {
 }
 
 /**
- * 当前项目状态管理 + IndexedDB debounce 自动保存。
+ * 当前项目状态管理 + Repository debounce 自动保存。
  * 写入失败（含配额超限）会捕获并通过 saveError 暴露提示。
  */
 export function useProject(): UseProjectResult {
@@ -59,14 +55,14 @@ export function useProject(): UseProjectResult {
 
     async function loadInitial() {
       try {
-        const { projects, retainedIncompatibleCount } = await readProjectCatalog();
+        const { projects, retainedIncompatibleCount } = await projectRepository.readCatalog();
         setRetainedProjectCount(retainedIncompatibleCount);
         if (projects.length > 0) {
           projectRef.current = projects[0];
           setProject(projects[0]);
         } else {
           const initial = createEmptyProject();
-          await saveProject(initial);
+          await projectRepository.save(initial);
           projectRef.current = initial;
           setProject(initial);
         }
@@ -91,7 +87,7 @@ export function useProject(): UseProjectResult {
     setSaveStatus("saving");
     saveQueue.current = saveQueue.current.then(async () => {
       try {
-        await saveProject(next);
+        await projectRepository.save(next);
         if (saveId === latestSaveId.current) {
           setSaveStatus("saved");
           setSaveError(null);
@@ -168,11 +164,6 @@ export function useProject(): UseProjectResult {
         clearTimeout(debounceTimer.current);
       }
     };
-  }, []);
-
-  useEffect(() => {
-    // 占位：保留 db 引用，避免未来 tree-shaking 误删；同时确保数据库初始化。
-    void db;
   }, []);
 
   return {
