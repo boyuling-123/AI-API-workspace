@@ -1,6 +1,6 @@
 # F-STORE-002 验收证据
 
-当前：本地完整门禁通过，功能提交 `1025f8e55592a948a61c2974b5e73d739af31ea0` 已推送并创建 [PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48)，[首轮 CI 34054586655](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34054586655) 两道 Job 全部 success。正在进行仅文档证据回写，最终 head CI 待验，不标记已验证。
+当前：本地完整门禁通过，[PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48) 已合并。功能提交 `1025f8e` 的 [首轮 CI 34054586655](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34054586655) 及最终 head `cc340abd82e130e22cca66fb77b98b1e5b4e6329` 的 [最终 CI 34054851224](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34054851224) 均两道 Job success。03:30 核对 head/base 无漂移、无阻塞 Review、GitHub Ready to merge 后正常合并，SHA `0a26dbfbed36378e9b8c93ce5972d9fe67e41dfd`。
 
 范围：ProjectRepository 契约、真实 IndexedDB 默认适配器、组合入口与 Hook 接入；没有新后端或运行时切换，没有新的业务 UI。既有旧项目保留页面必须在本轮源代码上重新跑浏览器测试。
 

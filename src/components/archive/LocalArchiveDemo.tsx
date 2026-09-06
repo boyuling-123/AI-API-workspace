@@ -99,6 +99,7 @@ export function LocalArchiveDemo() {
           <Link href="/" className="font-semibold hover:underline">评测工作台</Link>
           <span aria-current="page" className="font-semibold text-blue-800">历史归档</span>
           <Link href="/observability" className="text-slate-600 hover:underline">Agent 观测</Link>
+          <Link href="/assistant-tools" className="text-slate-600 hover:underline">助手工具</Link>
           <span className="ml-auto text-xs text-slate-600">本机只读 · 不启动评价</span>
         </nav>
       </header>

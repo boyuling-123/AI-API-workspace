@@ -21,7 +21,7 @@
 
 ## 交付状态
 
-- 当前状态：已实现，本地完整门禁通过，待 PR 最终 head CI 与正常合并，暂不标记已验证。
+- 当前状态：已验证，限定 ProjectRepository 代码边界及当前 IndexedDB 适配器；本地门禁和最终 head CI 通过，PR #48 已合并。
 - 分支：`codex/refactor-project-repository`，基线 PR #47 合并后的 main；功能提交 `1025f8e`，[PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48)。
 - 代码证据：`src/lib/projectRepository.ts`、`projectStoragePolicy.ts`、`src/services/indexedDbProjectRepository.ts`、`projectRepository.ts`、`db.ts`、`src/hooks/useProject.ts`。
 - 测试证据：`tests/unit/projectRepository.test.ts` 新增 8 项，现有 `projectStorage.test.ts` 回归；全量 237 unit / 2 stress / 47 E2E 通过，另采集 4 条成功 Trace 与本轮合成截图。新契约不新增虚构业务页面，见 [完整证据](../../evidence/pr-project-repository/README.md)。

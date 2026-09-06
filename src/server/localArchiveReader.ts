@@ -2,8 +2,8 @@ import { constants } from "node:fs";
 import { open, realpath } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
-import { ARCHIVE_PAGE_SIZE, archiveStatus, archiveType, type ArchiveSummary, type ArchivePage, type ArchiveContent, type ArchiveType, type ArchiveRow } from "@/lib/localArchive";
-import { redactSensitiveText } from "@/lib/redactSensitive";
+import { ARCHIVE_PAGE_SIZE, archiveStatus, archiveType, type ArchiveSummary, type ArchivePage, type ArchiveContent, type ArchiveType, type ArchiveRow } from "../lib/localArchive";
+import { redactSensitiveText } from "../lib/redactSensitive";
 
 const MAX_FILE_BYTES = 1024 * 1024;
 const MAX_INDEX_BYTES = 256 * 1024 * 1024;
