@@ -1,6 +1,6 @@
 # F-OBS-004 验收证据
 
-分支 `codex/feat-portable-observation`，基线 `main@106c3e5`。完整本地验证通过，[PR #53](https://github.com/boyuling-123/AI-API-workspace/pull/53) 已创建，最终 head CI 待验。功能提交 `c1d07f76142d2b86570fc005db024c0db15c84ec`，首次 [CI 34064254004](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34064254004) 已触发；PR 信息回写为纯文档，仍须以最终提交的完整 CI 为准。
+状态：已验证。[PR #53](https://github.com/boyuling-123/AI-API-workspace/pull/53) 最终 head `74e44c33d2af8ce44366c2f9c34a0fffca65e773` 的 [CI 34064340036](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34064340036) 两道 Job success。06:39 复核 head/base 无漂移、Review/未解决线程为空、Ready to merge 后正常合并，SHA `5e25d1cb826894e0141628ad0533c839fa1d428b`。原分支 `codex/feat-portable-observation`，基线 `main@106c3e5`；功能提交 `c1d07f76142d2b86570fc005db024c0db15c84ec`，首次 CI 已由最终 head 验收取代，不用旧运行冒充最终证据。
 
 ## 范围与源码
 

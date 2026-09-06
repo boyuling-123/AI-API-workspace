@@ -13,25 +13,31 @@
 - 提供评测工作区导入接口 `/api/import-evaluation-workspace`，供外部 Skill 生成 Deep Link。
 - 项目、任务和评价记录保存在浏览器 IndexedDB；API Key 真值只从服务端环境变量读取。
 
-完整状态以 [`docs/product/capability-matrix.md`](docs/product/capability-matrix.md) 为唯一当前口径。页面中标为“设计中”或“Demo”的规划路由不可直接调用。
+旧 75 项状态见 [v5.0 能力矩阵](docs/product/capability-matrix.md)；新需求与旧实现的差距见 [2026-09 阶段审计](docs/product/stage-gap-audit-2026-09-07.md)。两者不可合并计算完成率。页面中标为“设计中”或“Demo”的规划路由不可直接调用。
 
 ## 快速开始
 
-环境要求：Node.js 18 或更高版本。
+推荐 Node.js 22，与 GitHub CI 一致。当前锁定的 MCP / LangChain / Vitest 等依赖不再支持原 README 的 Node.js 18 基线；本机 Node.js 24.14.1 的验收另见证据，不代表所有版本都经过认证。
+
+先启动不需要模型密钥的演示：
 
 ```bash
-npm install
-cp .env.local.example .env.local
-npm run dev
+npm ci
+npm run dev -- --hostname 127.0.0.1 --port 3002
 ```
 
-在 `.env.local` 中配置：
+访问 [中文演示导览](http://127.0.0.1:3002/interview-demo)。页面不会自动生成数据、运行 Agent 或启动评价；观测实验使用固定 Mock 节点。首次安装依赖及构建可能需要网络，不能将此称为完全离线安装。
 
-```bash
-DASHSCOPE_API_KEY=your_key_here
-```
+真实模型为可选接入：仅在自行配置服务端环境变量并确认数据外发、调用次数和费用后运行。可参考 `.env.local.example`，不要将真实密钥提交到 Git。常规开发与 CI 使用 Mock。
 
-然后访问 [http://localhost:3000](http://localhost:3000)。真实模型调用会产生第三方 API 请求和费用；常规开发与 CI 应优先使用 Mock。
+## 本机演示入口
+
+- [五章演示导览](http://127.0.0.1:3002/interview-demo)：讲解产品判断、数据口径和工程证据。
+- [Agent 观测实验室](http://127.0.0.1:3002/observability)：手工 OTel 埋点及真实 LangGraph 调度固定 Mock 节点，支持受限观测 JSON 确认回读，不是任意框架导入。
+- [本地历史演示](http://127.0.0.1:3002/history-demo)：需要按 [只读归档说明](docs/product/local-history-demo.md) 配置本机目录；新克隆不会携带任何真实数据。
+- 完整讲解、MCP 接入、存储边界见 [面试说明](docs/product/interview-demo.md)、[开源复用清单](docs/product/open-source-reuse.md) 和 [项目存储契约](docs/product/project-storage-boundary.md)。
+
+项目保存在浏览器当前 origin 的 IndexedDB 中。更换端口或从 `localhost` 换到 `127.0.0.1` 不会自动迁移原浏览器数据，原记录并未因此删除。
 
 ## 核心流程
 
@@ -64,6 +70,8 @@ docs/             当前 PRD、能力矩阵和开发纪实
 - 当前任务台账：[`docs/execution/TASKS.md`](docs/execution/TASKS.md)
 - 开发纪实：[`docs/execution/WORKLOG.md`](docs/execution/WORKLOG.md)
 - v5.0 原始功能清单：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](docs/prd/v5.0/测评平台v5.0-待补充功能清单.md)
+- 最新需求基线及冲突裁定：[`docs/prd/2026-09/README.md`](docs/prd/2026-09/README.md)
+- 新 PRD 逐项差距与下一阶段小 PR：[`docs/product/stage-gap-audit-2026-09-07.md`](docs/product/stage-gap-audit-2026-09-07.md)
 
 ## 安全约束
 
