@@ -40,8 +40,8 @@
 |---|---|---|---|---|
 | N1 源码复用基线 | 已形成，随 N3/4 验收 | 记录候选、许可边界、旧代码复用与本夜限制 | 文档可追溯；Diff/Secret Scan 通过 | `../product/open-source-reuse.md`；PR 待创建 |
 | N2 存储替换接口 | 后移，N7 后评估 | 提取 ProjectRepository 契约，保留当前 IndexedDB 实现 | 真实源码契约测试；页面保存/刷新回归；不迁移、不丢旧数据、不新建后端 | 未实现 |
-| N3 最小上游复用样例 | 验收中 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，新增单测 5 条已通过 |
-| N4 中文 UI 接入 | 验收中，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | E2E 首轮发现链接对比度，修复后复测 |
+| N3 最小上游复用样例 | 本地通过，待远端 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，全量单测 209 通过；PR #45 |
+| N4 中文 UI 接入 | 本地通过，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核 |
 | N7 本地结果演示 | Ready，N3/4 后 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | 找到便携门户候选包，包说明 117,065 条可检索记录，尚未复核独立样本数 |
 | N5 MCP/Assistant 契约 | 待 N2 | 复用已有 MCP 能力，定义缺失业务 Action、确认和预算边界 | 已有/待实现明确区分；无默认模型调用；禁止把只写类型标为已验证 | 未实现 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
@@ -66,6 +66,15 @@
 - 初始文档变更的 Secret Scan 已通过（350 个仓库文件），`git diff --check` 通过。尚未提交/推送或创建本轮 PR；新功能没有开发或测试，不能计为完成。
 - GitHub 已确认历史 PR #44 为 Merged，合并提交 `caa2517ce66df73e3b5c32b5ac673b139c000e6a`；不重复创建、测试或合并 PR 08B。
 - 01:27：按最新要求优先推进 N3/4：已安装锁定 OTel/Ant Design 依赖，独立实验页面与真实源码测试就绪，5 条新增单测通过；首轮 E2E 1 通过/1 对比度失败，正在修复复验。尚未提交/推送/创建 PR。下一轮先查当前验收进程，不重复安装/实现。
+
+## 最新检查点（优先于初始记录）
+
+- 01:34：功能提交 `7b284f3` 已推送；[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 自主创建，远端 Quality Gate 开始运行。检查 PR 当前 head 的最新 CI，不要只检查旧功能提交。
+- 本地 `quality` 完整通过：361 文件最终 Secret Scan，lint/typecheck、209 unit、2 stress、21 路由 build；全量 40 E2E 通过。截图与验收报告见 `../evidence/pr-agent-observability/README.md`。
+- 预览为 `http://127.0.0.1:3002/observability`，01:35 已得到 HTTP 200；由本工作树的 dev server 提供，恢复前先检查端口/进程，不覆盖原平台进程。
+- GitHub 连接器只有读权限，浏览器已以仓库所有者登录；Git CLI SSH 推送可用，PR 创建已通过浏览器完成。无需再次问用户授权。
+- 数据已逐片只读核对，详细清单位于 Git 忽略的 `local-data/INVENTORY.md`；`.sdd/tasks.json` 记录 Developer Helper 适配状态。这些本机记录禁止上传。
+- 下一步：等待最终 head 的 CI 两个 Job 通过，确认未漂移且无未解决评审后自动合并；通过后从最新 main 新建 `codex/` 数据演示短分支。不得用最终任务成功掩盖中间失败，不把检索行数冒充独立实验数。
 
 ## 收尾规则
 

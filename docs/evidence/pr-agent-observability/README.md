@@ -1,12 +1,12 @@
 # F-OBS-001 验收记录
 
-日期：2026-09-07。结论：本地门禁通过，远端 CI / PR 待执行。产品状态仍为 Demo；真实模型和框架回调未验收。
+日期：2026-09-07。结论：本地门禁通过，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已创建；最终 head 的远端 CI 通过前不合并。产品状态仍为 Demo；真实模型和框架回调未验收。
 
 ## 本地结果
 
 | 验收 | 结果 | 证据 |
 |---|---|---|
-| Secret Scan | 通过，360 文件 | `npm run security:secrets`；后续新增文档提交前再次扫描 |
+| Secret Scan | 最终通过，361 文件 | `npm run security:secrets`，本机 `.sdd/` 与 `local-data/` 均被忽略 |
 | lint / typecheck | 全通过，lint 零警告 | `npm run quality` |
 | 真实源码单测 | 41 文件、209 测试通过（新增 5 条） | `tests/unit/agentObservability.test.ts` 使用真实 OTel SDK |
 | 压力回归 | 2 测试通过 | 现有 task pool 测试；不代表已验证十万条或 20GB |

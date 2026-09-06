@@ -64,7 +64,7 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 - 首个代码节点：`F-OBS-001`，真实 OTel SDK 与 Ant Design 中文观测实验室；测试与 CI 状态见 `../evidence/pr-agent-observability/README.md`。
 - 未完成：Langfuse 具体组件抽离、框架回调兼容性、真实模型评测、持久化及大数据性能验证。
 - 下一步：本地现有数据只读盘点/分页演示；可替换 ProjectRepository 后移，不新增后端存储。
-- PR：待本地门禁通过后创建，不预填不存在的链接。
+- PR：[F-OBS-001 / #45](https://github.com/boyuling-123/AI-API-workspace/pull/45)，本地门禁通过，最终远端 CI 通过前不合并。
 
 ## 提取优势，而非拼装整个平台
 

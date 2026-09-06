@@ -2,7 +2,7 @@
 
 > 2026-09-07 增量说明：本矩阵保留为旧功能证据，后续按 [开源源码复用方案](open-source-reuse.md) 与 [夜间台账](../execution/OVERNIGHT-2026-09-07.md) 推进。暂不新增后端存储；调研、接口预留不升级任何现有功能状态。
 
-新增独立能力 F-OBS-001：Demo（本地模拟 Agent 观测，非完整框架接入）。[需求/验收](../features/F-OBS-001/spec.md)、代码 `src/services/runLocalAgentExperiment.ts` 与 `src/components/observability/AgentObservabilityLab.tsx`、[测试证据](../evidence/pr-agent-observability/README.md)。本地 5 个新增单测、2 个新增用户路径通过；PR/远端 CI 待执行。此增量不改旧 75 项统计基数。
+新增独立能力 F-OBS-001：Demo（本地模拟 Agent 观测，非完整框架接入）。[需求/验收](../features/F-OBS-001/spec.md)、代码 `src/services/runLocalAgentExperiment.ts` 与 `src/components/observability/AgentObservabilityLab.tsx`、[测试证据](../evidence/pr-agent-observability/README.md)。本地 5 个新增单测、2 个新增用户路径通过；[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已创建，最终远端 CI 通过前不合并。此增量不改旧 75 项统计基数。
 
 > 审计日期：2026-09-02
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)
