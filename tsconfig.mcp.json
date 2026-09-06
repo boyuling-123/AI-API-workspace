@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "incremental": false,
+    "module": "Node16",
+    "moduleResolution": "Node16",
+    "target": "ES2022",
+    "rootDir": "src",
+    "outDir": ".mcp-dist",
+    "plugins": [],
+    "types": ["node"]
+  },
+  "include": ["src/mcp/stdio.ts"],
+  "exclude": ["node_modules", ".next", ".mcp-dist"]
+}

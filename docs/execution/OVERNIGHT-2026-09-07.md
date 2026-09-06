@@ -13,7 +13,7 @@
 - 原仓库：`../AI-API-workspace-v5`，本夜不得修改或清理其未提交草稿。
 - 隔离工作树：`AI-API-workspace-overnight-20260907`，本文件所在仓库。
 - 起始基线：`origin/main@caa2517`，已成功 fetch 后创建。
-- 当前分支：`codex/refactor-project-repository`，从 PR #47 合并后的 `origin/main@3281918` 创建；首次推送显式指定该新分支，不向 main 直接推送。
+- 当前分支：`codex/feat-platform-actions`，从 PR #48 合并后的 `origin/main@0a26dbf` 创建；首次推送显式指定该新分支，不向 main 直接推送。
 - 自动任务：`automation`，已从旧线程迁入本次讨论线程，并替换旧 v6 存储开发指令。
 - 每轮开始先读取本文件、`TASKS.md`、`WORKLOG.md`、最新用户消息和 `git status`。
 - 每轮结束记录当前分支、提交、测试结果、PR、未完成步骤与下一项 Ready。
@@ -39,11 +39,12 @@
 | 节点 | 队列状态 | 范围 | 验收条件 | 当前证据 |
 |---|---|---|---|---|
 | N1 源码复用基线 | 已完成 | 记录候选、许可边界、旧代码复用与本夜限制 | 文档可追溯；Diff/Secret Scan 通过 | `../product/open-source-reuse.md`；PR #45 已合并 |
-| N2 存储替换接口 | N2A 已完成，N2B 验收中 | N2A 停止兼容性检查隐式删旧数据；N2B 再提取 ProjectRepository 契约，保留当前 IndexedDB | 真实源码契约测试；旧数据不变、保存/刷新回归；不迁移、不新建后端 | PR #47 已合并；F-STORE-002 契约与默认适配器已实施，真实契约/依赖边界测试与全门禁验收中，未提交 |
+| N2 存储替换接口 | 已完成 | N2A 停止兼容性检查隐式删旧数据；N2B 再提取 ProjectRepository 契约，保留当前 IndexedDB | 真实源码契约测试；旧数据不变、保存/刷新回归；不迁移、不新建后端 | PR #47 / #48 已合并；F-STORE-002 237 unit / 2 stress / 47 E2E、本轮截图/Trace 与最终 CI 通过；不包括 draftDb 或后端迁移 |
 | N3 最小上游复用样例 | 已完成 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，PR #45 最终 CI 通过并合并，产品范围仍 Demo |
 | N4 中文 UI 接入 | 已完成，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核，CI 通过 |
 | N7 本地结果演示 | 已完成 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；220 unit/2 stress/43 E2E、真实本机联调与最终 CI 通过，PR #46 已合并 |
-| N5 MCP/Assistant 契约 | 待 N2 | 复用已有 MCP 能力，定义缺失业务 Action、确认和预算边界 | 已有/待实现明确区分；无默认模型调用；禁止把只写类型标为已验证 | 未实现 |
+| N5 MCP/Assistant 契约 | 本地通过，待最终 CI | F-ACT-001：两项共享只读 Action、中文工具页、同源 API、真实 stdio MCP；写动作与完整 Assistant 暂缓 | 已有/待实现明确区分；无默认模型调用；正式客户端协议与用户路径测试 | 250 unit / 2 stress / 50 E2E / 构建通过，合成截图与 3 条成功 Trace；本机摘要联调成功，PR #49 已创建 |
+| N8 Langfuse 具体源码复用 | 待 N5 合并 | 固定上游版本、审计候选依赖和许可，选可独立复用的 UI/纯逻辑模块再接线 | 必须有原始文件/版本/许可及真实代码证据；不能把重绘称为 Fork，不引入完整后端 | 下一 Ready 见 `.sdd/next-feature-langfuse.md`，当前仅规划 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
 每轮只领取 1 至 3 个相关节点。若 N3 没有合适的可独立复用模块，记录实证和暂缓理由，不为完成数量而重写替代品。N2 的契约拆分不得顺带提升 Schema 或清理不兼容记录；发现历史删除行为时必须有单独迁移保护方案。
@@ -69,6 +70,12 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 04:17：名称修复后 9 次重复工具路径、250 unit / 2 stress、全量 50 E2E、构建及基础门禁再次通过；将修复和首轮 CI 证据一并提交到 PR49，再等待该 head 的 CI。未开始 N8，不用首次失败运行冒充成功。
+- 04:15：PR49 首轮 CI `34056733123` Quality 通过 / 浏览器 49/50，下载失败证据后修复加载图标污染按钮名称的问题，补忙碌/禁用/恢复断言。正在跑 3 次重复路径与全量门禁，最终 head 通过前不合并、不进入 N8；预览 99950 已停。
+- 04:02：功能提交 `856062fcb7c72852a56e16b26f7841a75a4644c1` 已推送并自主创建 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，首轮 CI `34056733123` 运行中；仅证据文档在回写，最终文档 head 仍需 CI 通过。3002 预览已恢复 / 会话 99950，下一轮 build/E2E 前仅停此服务。下一 Ready `.sdd/next-feature-langfuse.md`，当前不提前实施。
+- 03:58：F-ACT-001 修复后完整 quality 与 50 E2E 全通过，3 条成功 Trace/合成截图已复核；真实本机 MCP 摘要联调成功，原工作树四项草稿不变。接下来只需最后 Diff/Secret Scan、commit/push/PR，最终 head CI 后合并。下一 Ready 为 Langfuse 具体源码复用审计，不开启新后端或真实模型；3002 尚未恢复。
+- 03:50：F-ACT-001 已完成实现，13 项新增源码/API/正式 MCP 子进程测试通过，覆盖 2025 handshake 和 2026 pinned；全量 250 unit / 2 stress、lint/typecheck/build 通过。首轮 typecheck 发现测试用例 Header 联合类型推断问题，已明确类型后复验。3002 / 会话 36021 已停；完整 50 E2E 正在执行，结束后恢复预览。未提交/推送/创建本节点 PR，不重复实现。
+- 03:30：PR #48 最终 head `cc340ab` 的 CI `34054851224` 两道 Job 全部 success；head/base 无漂移、无阻塞 Review、GitHub Ready to merge 后正常合并，SHA `0a26dbfbed36378e9b8c93ce5972d9fe67e41dfd`。当前已进入 `codex/feat-platform-actions`，只有本次 PR48 收尾文档待提交；N5 尚未编写业务代码。下一步读 `.sdd/next-feature-actions.md`、importer Skill 和相关源码，先厘清真实能力。预览 3002 / 会话 36021 仍在运行，下一轮 build/E2E 前仅停此会话。
 - 03:23：PR #48 首轮 CI `34054586655` 两道 Job 全部 success；仅文档的最终证据回写准备提交，仍需最终 head 的 CI 通过后再合并。尚无 N5 业务代码变更，下一 Ready 不变。
 - 03:21：功能提交 `1025f8e` 已推送并自主创建 [PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48)，base `main@3281918`、19 文件。首轮 CI `34054586655` 运行中，正在回写 PR 证据文档；最终文档 head 仍须 CI 通过后再合并。3002 预览已恢复，会话 `36021`；下一 Ready `.sdd/next-feature-actions.md`，不重复 N2B。
 - 03:18：F-STORE-002 完整 quality（237 unit、2 stress、lint/typecheck/22 路由构建）与 47 E2E 通过；4 条存储路径成功 Trace 与本轮合成截图已采集、复核，后续只需完成最终 Diff/Secret Scan 后提交创建 PR。下一 Ready 写入 `.sdd/next-feature-actions.md`，先审计现有 Skill/MCP，别把接入 Agent 当作整个平台 Assistant。3002 暂停状态待恢复；未提交/推送/创建本节点 PR。

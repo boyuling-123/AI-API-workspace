@@ -239,6 +239,7 @@ export function PlatformOverview({ project, onNavigate }: PlatformOverviewProps)
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-5 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
         <span className="text-slate-600 dark:text-slate-300">本地历史归档：只读连接已有结果，核对统计并分页查看，不重新评价。</span>
         <Link href="/history-demo" className="py-2 font-semibold text-blue-800 hover:underline dark:text-blue-200">打开历史归档演示（只读）</Link>
+        <Link href="/assistant-tools" className="py-2 font-semibold text-blue-800 hover:underline dark:text-blue-200">打开助手工具（只读 MCP）</Link>
       </div>
 
       <section aria-label="当前项目资产" className="relative z-10 -mt-1 grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">

@@ -5,6 +5,7 @@
 最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
 
 - 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
+- 最新：F-ACT-001 已通过本地 250 unit / 2 stress / 50 E2E、真实 MCP 子进程与本机摘要联调；功能提交 `856062f`、[PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49) 已创建，最终 CI 待验。下列较早节点是时间线，不据旧 Ready 重复工作。
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
@@ -25,6 +26,8 @@
 - 03:21：F-STORE-002 功能提交 `1025f8e`、[PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48) 已创建，首轮 CI `34054586655` 运行中；仅证据文档待回写，最终 head 通过后再正常合并。
 
 - 03:23：PR #48 首轮 CI 两道 Job 全通过，最终文档 head 待验；审查无 Review/未解决线程，不提前合并。
+
+- 03:30：PR #48 最终 CI `34054851224` 两道 Job 通过，正常合并为 `0a26dbf`。F-STORE-002 限定范围升级为已验证，当前分支 `codex/feat-platform-actions`，下一 Ready `.sdd/next-feature-actions.md`；尚未实施，不重复存储节点。
 
 ## 已完成：PR 01 基线迁移与状态校准
 

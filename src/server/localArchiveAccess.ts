@@ -1,6 +1,6 @@
 import path from "node:path";
-import { ARCHIVE_TYPES, type ArchiveType } from "@/lib/localArchive";
-import { ArchiveError, LocalArchiveReader, readArchiveFile } from "@/server/localArchiveReader";
+import { ARCHIVE_TYPES, type ArchiveType } from "../lib/localArchive";
+import { ArchiveError, LocalArchiveReader, readArchiveFile } from "./localArchiveReader";
 
 export function assertLocalArchiveRequest(request: Request): void {
   const url = new URL(request.url);
