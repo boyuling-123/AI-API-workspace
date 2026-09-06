@@ -13,7 +13,7 @@
 - 原仓库：`../AI-API-workspace-v5`，本夜不得修改或清理其未提交草稿。
 - 隔离工作树：`AI-API-workspace-overnight-20260907`，本文件所在仓库。
 - 起始基线：`origin/main@caa2517`，已成功 fetch 后创建。
-- 当前分支：`codex/feat-local-history-demo`，从 PR #45 合并后的 `origin/main@f4a4422` 创建。
+- 当前分支：`codex/fix-preserve-legacy-projects`，从 PR #46 合并后的 `origin/main@fe29d91` 创建；推送时显式指定该新分支，不向 main 直接推送。
 - 自动任务：`automation`，已从旧线程迁入本次讨论线程，并替换旧 v6 存储开发指令。
 - 每轮开始先读取本文件、`TASKS.md`、`WORKLOG.md`、最新用户消息和 `git status`。
 - 每轮结束记录当前分支、提交、测试结果、PR、未完成步骤与下一项 Ready。
@@ -39,10 +39,10 @@
 | 节点 | 队列状态 | 范围 | 验收条件 | 当前证据 |
 |---|---|---|---|---|
 | N1 源码复用基线 | 已完成 | 记录候选、许可边界、旧代码复用与本夜限制 | 文档可追溯；Diff/Secret Scan 通过 | `../product/open-source-reuse.md`；PR #45 已合并 |
-| N2 存储替换接口 | N7 后，先保护旧数据 | N2A 停止兼容性检查隐式删旧数据；N2B 再提取 ProjectRepository 契约，保留当前 IndexedDB | 真实源码契约测试；旧数据不变、保存/刷新回归；不迁移、不新建后端 | 发现 `db.ts:listCompatibleProjects` 现有 bulkDelete；必须独立保护与测试，不在 N7 顺带改写 |
+| N2 存储替换接口 | N2A 验收中，N2B 后置 | N2A 停止兼容性检查隐式删旧数据；N2B 再提取 ProjectRepository 契约，保留当前 IndexedDB | 真实源码契约测试；旧数据不变、保存/刷新回归；不迁移、不新建后端 | F-STORE-001 最小保护已实施，9 项真实 Dexie 单测通过，完整门禁进行中；未提交/PR |
 | N3 最小上游复用样例 | 已完成 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，PR #45 最终 CI 通过并合并，产品范围仍 Demo |
 | N4 中文 UI 接入 | 已完成，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核，CI 通过 |
-| N7 本地结果演示 | 本地通过，待 PR/CI | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；11 新增单测、3 新增 E2E 通过；全量 220 unit/2 stress/43 E2E 通过，真实本机联调完成 |
+| N7 本地结果演示 | 已完成 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；220 unit/2 stress/43 E2E、真实本机联调与最终 CI 通过，PR #46 已合并 |
 | N5 MCP/Assistant 契约 | 待 N2 | 复用已有 MCP 能力，定义缺失业务 Action、确认和预算边界 | 已有/待实现明确区分；无默认模型调用；禁止把只写类型标为已验证 | 未实现 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
@@ -68,6 +68,15 @@
 - 01:27：按最新要求优先推进 N3/4：已安装锁定 OTel/Ant Design 依赖，独立实验页面与真实源码测试就绪，5 条新增单测通过；首轮 E2E 1 通过/1 对比度失败，正在修复复验。尚未提交/推送/创建 PR。下一轮先查当前验收进程，不重复安装/实现。
 
 ## 最新检查点（优先于初始记录）
+
+- 02:56：PR #47 功能提交首轮 CI `34053067332` 两道 Job 全部 success；准备仅文档的最终证据提交，最终 head 自身 CI 通过再合并。代码和测试未变，不重复运行或虚报新测试。预览仍是 3002 / 会话 9147；原目录草稿未动。
+- 02:52：功能提交 `037c527` 已推送并自主创建 [PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47)，base `main@fe29d91`、17 文件。首轮 CI `34053067332` 运行中；仅本次 PR 证据文档在回写，最终文档提交也须 CI 通过后才合并。3002 预览已恢复，会话 `9147`。下一 Ready 仍为 `.sdd/next-feature-repository.md`。
+- 02:50：完整 quality 与 47 项 Playwright 回归通过，新提示 WCAG 零违规、390px 无溢出、合成截图已复核。接下来提交 F-STORE-001 并创建 PR；最终 head CI 必须通过。下一 Ready 已写入 `.sdd/next-feature-repository.md`，本轮不得夹带 N2B 实施。
+- 02:47：F-STORE-001 已实施：全表只读分类（不遗漏无 updateTime 索引记录）、同 ID 写保护事务、保留数量提示及固定异常文案。新增 dev-only fake-indexeddb 6.2.5，真实 Dexie 测试 9 项通过，全量 unit 229/压力 2 通过，完整 quality/build 与 4 条新增 E2E 正在验收。未提交/推送/创建本节点 PR。预览会话 65336 已停止，完成本轮门禁后恢复 3002。
+- 02:31：PR #46 最终 head `53f9586764c68bb286d1f7ba4df9d62459f2b3da` 的 CI `34051689031` 两道 Job 全部 success。复查 head/base 无漂移、无 Review 或未解决线程、GitHub Ready to merge 后，通过正常浏览器流程合并；GitHub 确认 merged=true，合并 SHA `fe29d9131c0ad1eae5648f8e895c152d10ca9276`。
+- 当前已进入 `codex/fix-preserve-legacy-projects`。仅有 PR46 收尾文档待提交，属于本次自主改动；没有开始 N2A 业务代码。下一步读 `.sdd/next-feature-store.md`，生成 F-STORE-001 公开规格后实施。先停止兼容性检查的隐式 bulkDelete，再做 N2B 契约，禁止旧数据被静默清理。
+- 本机 `/history-demo` 已加载真实历史索引摘要与分页，中文历史状态通过实际页面核对，默认正文仍隐藏；`/observability` 仍可运行明确标注 Mock 的三组实验。3002 预览会话 `65336`（启动时间 02:18）仍是本工作树，开始 build/E2E 前仅停此服务并在结束后恢复。
+- 自动任务已更新为从最新台账取任务，不再硬编码“先重做观测实验室”；09:00 截止与 08:40 收尾窗口未变。下一轮不要重复创建或合并 PR45/46。
 
 - 02:24：PR #46 功能提交 `2f94428` 的 CI run `34051378800` 两个 Job 全部 success；Review 与未解决线程均为空。正在提交仅文档的 PR/CI 信息回写，最终 head 自身 CI 通过后再核对分支并合并。下一 Ready 为 N2A：禁止兼容性检查自动删旧项目，保持既有 IndexedDB；N2B 契约提取后做。
 

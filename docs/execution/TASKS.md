@@ -10,6 +10,13 @@
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
 - F-DATA-001 本地历史归档只读演示已完成本地门禁：220 unit、2 stress、43 E2E/WCAG、lint/typecheck/build/Secret Scan；本机归档只读联调通过，[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已创建，远端 CI 进行中。正文确认、50 条分页与统计口径见 [规格](../features/F-DATA-001/spec.md)。
 - PR #46 功能提交首轮 CI `34051378800` 两道 Job 已全部通过，最终文档提交 CI 待运行。下一 Ready 调整为 N2A：兼容性检查只读保留旧项目，再做 N2B ProjectRepository 接口；不新增存储后端。
+- 02:31：PR #46 最终 head `53f9586` 的 CI `34051689031` 两道 Job 全通过，已正常合并为 `fe29d91`。F-DATA-001 限定范围升级为已验证。当前分支 `codex/fix-preserve-legacy-projects`，下一 Ready 为 `.sdd/next-feature-store.md` 中 F-STORE-001（N2A），尚未实施，不重复归档节点。
+
+- 02:50：F-STORE-001（N2A）本地验收通过：229 unit、2 stress、47 E2E，旧项目保留/同 ID 写保护/中文提示/故障文案已有证据。当前 `codex/fix-preserve-legacy-projects` 未提交，接下来提交并创建 PR，最终 CI 后合并。下一 Ready：F-STORE-002 / N2B，仅提取 ProjectRepository 契约，仍保留当前 IndexedDB。
+
+- 02:52：F-STORE-001 功能提交 `037c527`、[PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47) 已创建；远端 CI `34053067332` 运行中。最终 head 通过后再合并，不重复开发或索取 PR 确认。
+
+- 02:56：PR #47 首轮 CI 两道 Job 全通过；最终文档提交仍须 CI 成功后正常合并，下一项仅为 N2B，不引入后端迁移。
 
 ## 已完成：PR 01 基线迁移与状态校准
 

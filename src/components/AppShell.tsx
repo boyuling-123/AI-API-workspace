@@ -12,6 +12,7 @@ export function AppShell() {
     project,
     saveStatus,
     saveError,
+    retainedProjectCount,
     isLoaded,
     updateProject,
     replaceProject,
@@ -72,6 +73,12 @@ export function AppShell() {
         />
       </header>
       <main className="flex-1">
+        {retainedProjectCount > 0 && (
+          <div role="status" aria-label="旧项目保留提示" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+            <strong>发现 {retainedProjectCount} 条暂不兼容的本地项目，未加载，但已原样保留。</strong>
+            <p>这些记录仍在当前浏览器中，未迁移，也不是备份。当前项目导出不包含这些记录；请勿清理浏览器数据，后续可使用兼容版本处理。</p>
+          </div>
+        )}
         {importNotice && (
           <div className="border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-center text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
             {importNotice}
