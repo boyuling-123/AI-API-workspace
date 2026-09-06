@@ -1,6 +1,6 @@
 # F-OBS-002 验收证据
 
-状态：本地完整验收通过，待提交/PR 与最终 CI，不标记已验证。
+状态：本地完整验收通过，功能提交 `7f10fee399bea6a5f71b20664eb28033ec6923f9` 已推送，自主创建 [PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50)。首轮 [CI 34058791578](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34058791578) 两道 Job 全部成功；当前回写最终文档，其 head 仍须 CI 通过后才合并，不提前标记已验证。
 
 ## 证据对应
 

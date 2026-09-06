@@ -1,6 +1,6 @@
 # F-OBS-002：Langfuse 源码复用的中文步骤检查器
 
-状态：已实现，验收中。分支 `codex/feat-langfuse-trace-module`，基线 PR49 merge `4f6279e`。Issue/PR：待创建。
+状态：已实现，验收中。分支 `codex/feat-langfuse-trace-module`，基线 PR49 merge `4f6279e`。Issue/PR：[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50)，功能提交 `7f10fee`；最终 head CI 待验。
 
 ## 需求与范围
 

@@ -14,7 +14,7 @@
 
 > 审计日期：2026-09-02
 
-新增独立能力 F-OBS-002：已实现（固定 Langfuse 纯逻辑复用与中文步骤检查器），验收中。[规格与条件](../features/F-OBS-002/spec.md)、实际 `src/vendor/langfuse`、`src/lib/agentTraceInspector.ts`、`TraceInspector.tsx`，以及 [源码/许可/浏览器证据](../evidence/pr-langfuse-trace/README.md)。仅是 Mock 实验中的检查能力，不提升全部框架兼容性，不改变旧 75 项统计基数。
+新增独立能力 F-OBS-002：已实现（固定 Langfuse 纯逻辑复用与中文步骤检查器），[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50) 最终 CI 待验。[规格与条件](../features/F-OBS-002/spec.md)、实际 `src/vendor/langfuse`、`src/lib/agentTraceInspector.ts`、`TraceInspector.tsx`，以及 [源码/许可/浏览器证据](../evidence/pr-langfuse-trace/README.md)。仅是 Mock 实验中的检查能力，不提升全部框架兼容性，不改变旧 75 项统计基数。
 > 需求来源：[`docs/prd/v5.0/测评平台v5.0-待补充功能清单.md`](../prd/v5.0/测评平台v5.0-待补充功能清单.md)
 > 审计口径：前十章 75 条主能力逐项核对；实施顺序与验收标准不重复计数。
 

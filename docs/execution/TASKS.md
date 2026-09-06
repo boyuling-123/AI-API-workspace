@@ -5,7 +5,7 @@
 最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
 
 - 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
-- 最新：F-ACT-001 的 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49) 已于 04:22 正常合并。当前 `codex/feat-langfuse-trace-module` 已实施 F-OBS-002（两份 Langfuse 纯逻辑与中文检查器），完整验收中、未提交/PR；下列较早节点是时间线，不据旧 Ready 重复工作。
+- 最新：F-ACT-001 的 PR #49 已合并；F-OBS-002 本地完整通过，功能提交 `7f10fee`、[PR #50](https://github.com/boyuling-123/AI-API-workspace/pull/50) 已创建，最终 CI 待验。当前 `codex/feat-langfuse-trace-module` 只回写证据；下一 Ready 在本节点合并后才领取，不据旧时间线重复工作。
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
