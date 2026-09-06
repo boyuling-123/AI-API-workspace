@@ -5,7 +5,7 @@
 最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
 
 - 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
-- 最新：F-OBS-004 的 [PR #53](https://github.com/boyuling-123/AI-API-workspace/pull/53) 最终 head `74e44c3` / CI `34064340036` 两道 Job success，已正常合并为 `5e25d1c`。当前 `codex/docs-stage-gap-audit` 完成N12文档初稿：[最新PRD基线](../prd/2026-09/README.md)、[72行差距表](../product/stage-gap-audit-2026-09-07.md)、README启动/存储口径校准；正在文档门禁，未提交/PR。3002预览52679运行；旧75状态不升级。下一Ready优先P0-A旧观测声明校准，再收尾，不新开框架/存储。
+- 最新：N12文档提交 `b5561bb` 已推送，[PR #54](https://github.com/boyuling-123/AI-API-workspace/pull/54) 自主创建，首次CI `34065674746`运行中；纯文档回写后仍等最终head完整CI。14份Markdown/138链接、72行ID/阶段/状态、旧75行不变、464文件扫描通过。3002预览52679运行；下一Ready `.sdd/next-feature-capability-claims.md`（P0-A）尚未实施，不新开框架/存储。PR53已合并不重复。
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
