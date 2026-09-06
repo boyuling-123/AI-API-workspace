@@ -1,5 +1,14 @@
 # 测评平台开发任务台账
 
+## 当前入口：2026-09-07 夜间源码复用开发
+
+最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
+
+- 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
+- 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
+- F-OBS-001 中文 Agent 观测实验室已完成本地验收，保持 Demo 状态，PR/远端 CI 待执行；旧 75 项能力状态不因调研而升级。
+- Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
+
 ## 已完成：PR 01 基线迁移与状态校准
 
 分支：`codex/chore-baseline-sync`
@@ -513,7 +522,7 @@
 - [x] 分支已推送并自主创建 [PR #43](https://github.com/boyuling-123/AI-API-workspace/pull/43)；首轮 workflow run `33475468716` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，POOL-001～003 升级为“已验证”。
 - [x] 最终证据提交 workflow run `33586109969` 两道 GitHub CI 通过；远端无漂移、无 Review 或未解决线程，以普通 fast-forward 合并 [PR #43](https://github.com/boyuling-123/AI-API-workspace/pull/43)，合并 SHA 为 `5b14664`。
 
-## 进行中：PR 08B 资源身份与最近连通性状态
+## 已完成：PR 08B 资源身份与最近连通性状态
 
 分支：`codex/feat-resource-identity-health`
 
@@ -526,7 +535,7 @@
 - [x] 视觉证据 `docs/evidence/pr-08b/resource-identity-health.png` 已生成并人工检查；完整本地 quality 通过 348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试和 20 路由构建，全量 38 项 Playwright/WCAG 通过。
 - [x] 功能快照 `b10d469` 在独立 detached 工作树全新安装 434 个包；348 文件 Secret Scan、零警告 lint、typecheck、204 项单测、2 项压力测试、20 路由构建与全量 38 项 Playwright/WCAG 通过，结束时 HEAD 未漂移且 Git 零改动。
 - [x] 分支已推送并自主创建 [PR #44](https://github.com/boyuling-123/AI-API-workspace/pull/44)；首轮 workflow run `33588301577` 的核心质量与 Playwright/WCAG 两个 Job 全部通过，POOL-004 升级为“已验证”。
-- [ ] 最终证据提交自身两道 GitHub CI 通过后，完成远端漂移、Review/线程和可合并状态审计并以普通 fast-forward 安全合并。
+- [x] 2026-09-07 补核 GitHub：PR #44 已于 2026-09-02 合并，合并提交为 `caa2517ce66df73e3b5c32b5ac673b139c000e6a`，远端 main 已包含；不重复执行此节点。最终 CI 的细节仍以原 workflow 记录为准，本次未重跑。
 
 ## 硬门禁
 
