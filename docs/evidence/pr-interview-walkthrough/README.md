@@ -1,6 +1,6 @@
 # F-DEMO-001 验收证据
 
-状态：已实现，本地完整门禁通过，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 已创建，最终 head CI 待验。功能提交 `3b2db7d9963feed7528effc4437305543fbc1d8f`，首次 [CI 34062722427](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34062722427) 已触发；PR 证据回写为纯文档，后续以最终 head 的完整 CI 为准。分支 `codex/feat-interview-walkthrough`，基线 `main@93f46ca`。本主题只串起现有能力，不新增模型、存储、框架依赖或真实数据复制。
+状态：已验证，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 最终 head `3cc092237a070628c6fb8d8056d9d3ebc4c8360b` 的 [CI 34062846754](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34062846754) 两道 Job success。06:08 核对 head/base 无漂移、无 Review/未解决线程、Ready to merge 后正常合并，SHA `106c3e52c3186798ba9e968aef39cc7e952bd7d6`。功能提交 `3b2db7d9963feed7528effc4437305543fbc1d8f`，首次 CI 由最终 head 取代，不使用旧运行作为最终验收。原分支 `codex/feat-interview-walkthrough`，基线 `main@93f46ca`。本主题只串起现有能力，不新增模型、存储、框架依赖或真实数据复制。
 
 ## 真实代码与用户路径
 
