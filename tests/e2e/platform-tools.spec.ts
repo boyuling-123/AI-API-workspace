@@ -96,3 +96,40 @@ test("entry link, mobile, keyboard and read-only API restrictions remain usable"
   expect((await request.get("/api/platform-actions?action=delete_project", { headers: { "x-eval-archive": "local-read" } })).status()).toBe(400);
   expect((await request.post(endpoint, { data: {} })).status()).toBe(405);
 });
+
+test("capability claims distinguish fixed LangGraph execution from unverified files without running experiments", async ({ page }) => {
+  const calls: string[] = [];
+  page.on("request", (request) => { if (request.url().includes("/api/platform-actions")) calls.push(request.url()); });
+  await page.goto("/assistant-tools");
+  await expect(page.getByRole("status")).toContainText("尚未调用");
+  expect(calls).toEqual([]);
+  const responsePromise = page.waitForResponse("**/api/platform-actions?action=get_platform_capabilities");
+  await page.getByRole("button", { name: "查询平台能力", exact: true }).click();
+  const response = await responsePromise;
+  expect(response.status()).toBe(200);
+  const { data } = await response.json();
+  expect(data.tools.map((tool: { name: string }) => tool.name)).toEqual(["get_platform_capabilities", "get_archive_summary"]);
+  expect(data.modelCalls).toBe(0);
+  const graphClaim = "观测页已验证真实 LangGraph 调度固定 Mock 节点；模型调用为 0，不代表任意用户 Agent 或框架已兼容。";
+  const fileClaim = "本平台观测 JSON 回读仅用于查看；外部文件来源未认证，不证明现场执行，也不会重放 Agent。";
+  expect(data.limits).toEqual(expect.arrayContaining([graphClaim, fileClaim]));
+  await expect(page.getByText(graphClaim, { exact: true })).toBeVisible();
+  await expect(page.getByText(fileClaim, { exact: true })).toBeVisible();
+  await expect(page.locator("main")).not.toContainText("不代表真实框架适配");
+  await page.getByText("查看结构化返回（不含正文）", { exact: true }).click();
+  expect(JSON.parse(await page.getByRole("region", { name: "结构化工具返回" }).innerText())).toEqual(data);
+  await page.getByText("查看结构化返回（不含正文）", { exact: true }).click();
+  if (process.env.CLAIMS_EVIDENCE_PATH) {
+    await page.setViewportSize({ width: 1440, height: 1080 });
+    await page.screenshot({ path: process.env.CLAIMS_EVIDENCE_PATH, fullPage: true });
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.getByText(graphClaim, { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  expect((await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations).toEqual([]);
+  expect(calls).toHaveLength(1);
+  await page.reload();
+  await expect(page.getByRole("status")).toContainText("尚未调用");
+  await expect(page.getByText(graphClaim, { exact: true })).toHaveCount(0);
+  expect(calls).toHaveLength(1);
+});

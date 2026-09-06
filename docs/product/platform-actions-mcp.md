@@ -4,6 +4,8 @@
 
 本节点为真实 MCP 服务，不是工具清单 Mock。网页 `/assistant-tools`、`GET /api/platform-actions` 和 stdio MCP 共用 `executePlatformAction`，归档直接复用已验证的本机读取器。它不是完整自主 Agent，没有内置对话模型，也不能直接访问浏览器 origin 内的 IndexedDB 项目。
 
+观测能力声明与网页同源：真实LangGraph仅验证固定Mock节点调度，非任意用户Agent兼容；观测JSON回读来自外部文件时来源未认证，只用于查看，不证明现场执行或重放。声明修复见[P0-A规格](../features/F-ACT-001/claims-correction.md)。
+
 | 工具名 | 输入 | 返回 | 不做什么 |
 | --- | --- | --- | --- |
 | `get_platform_capabilities` | `{}` | 当前两个工具、传输方式和明确边界 | 不读取归档、不调用模型 |

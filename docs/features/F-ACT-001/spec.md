@@ -1,5 +1,7 @@
 # F-ACT-001 只读领域 Actions 与本机 MCP
 
+2026-09-07追加[P0-A共享观测声明修复](claims-correction.md)：原两工具范围不变，纠正PR51之后已过时的框架说明；独立验收状态见修复规格，不以文案扩展功能范围。
+
 ## 需求与范围
 
 为中文评测工作台建立可供外部 Assistant 调用的真实入口，而不是将按钮清单称为 MCP。只提供 `get_platform_capabilities` 与 `get_archive_summary` 两个无参数、无写入、无模型调用的领域 Action。页面、已有 Next API 和独立 stdio MCP 进程共享同一业务实现与归档读取器。

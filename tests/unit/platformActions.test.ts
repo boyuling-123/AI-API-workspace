@@ -3,7 +3,7 @@ import { readFile, rm } from "node:fs/promises";
 import { executePlatformAction, safeActionError, PlatformActionError } from "@/server/platformActions";
 import { ArchiveError, LocalArchiveReader } from "@/server/localArchiveReader";
 import { GET } from "@/app/api/platform-actions/route";
-import { ACTION_ERRORS, PLATFORM_ACTION_NAMES } from "@/lib/platformActions";
+import { ACTION_ERRORS, ACTION_LIMITS, PLATFORM_ACTION_NAMES } from "@/lib/platformActions";
 import { runPlatformAction } from "@/services/platformActionClient";
 import { actionArchiveFixture } from "../helpers/actionArchiveFixture";
 
@@ -22,7 +22,26 @@ describe("real read-only platform actions", () => {
     expect(result).toMatchObject({ schemaVersion: 1, transport: "stdio", modelCalls: 0 });
     if (result.action !== "get_platform_capabilities") throw new Error("wrong action");
     expect(result.tools.map((tool) => tool.name)).toEqual(PLATFORM_ACTION_NAMES);
+    expect(result.limits).toEqual(ACTION_LIMITS);
+    expect(result.limits.join("\n")).toContain("真实 LangGraph 调度固定 Mock 节点");
+    expect(result.limits.join("\n")).toContain("不代表任意用户 Agent 或框架已兼容");
+    expect(result.limits.join("\n")).toContain("来源未认证，不证明现场执行，也不会重放 Agent");
+    expect(result.limits.join("\n")).not.toContain("不代表真实框架适配");
     expect(archiveSummary).not.toHaveBeenCalled();
+  });
+
+  it("returns shared bounded observability claims over the real API without requiring an archive", async () => {
+    const f = await fixture();
+    vi.stubEnv("EVAL_ARCHIVE_CONFIG", `${f.root}/missing-private-config.json`);
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    const response = await GET(request());
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ ok: true, data: {
+      limits: ACTION_LIMITS, modelCalls: 0, transport: "stdio",
+      tools: [{ name: "get_platform_capabilities" }, { name: "get_archive_summary" }],
+    } });
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(await readFile(f.shard)).toEqual(f.bytes);
   });
 
   it("rejects arbitrary names, data, paths, missing/array/null args and extra envelope fields", async () => {
