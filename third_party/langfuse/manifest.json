@@ -1,0 +1,42 @@
+{
+  "project": "langfuse/langfuse",
+  "commit": "7637df1e1aadddbbfd0a45b960ecc97451381ce5",
+  "license": "MIT Expat (selected files outside ee)",
+  "files": [
+    {
+      "upstream": "web/src/features/traces/fns/timelineCalculations.ts",
+      "local": "src/vendor/langfuse/timelineCalculations.ts",
+      "sha256": "e35454d354ccc43199191dc68ef83bd43af8c25b18fdb03454bfbeec5f7a4a51",
+      "header": "// Vendored from langfuse/langfuse@7637df1e1aadddbbfd0a45b960ecc97451381ce5.\n// Copyright (c) 2023-2026 ClickHouse, Inc. See third_party/langfuse/LICENSE.\n// Local changes: type-only import paths; function bodies unchanged.\n",
+      "importReplacements": [
+        [
+          "\"@/src/features/traces/types/treeNode\"",
+          "\"./types\""
+        ]
+      ]
+    },
+    {
+      "upstream": "web/src/features/traces/components/TraceLogView/fns/flattenTreeOrder.ts",
+      "local": "src/vendor/langfuse/flattenTreeOrder.ts",
+      "sha256": "e1a3fc2e90bee70617644032787f19f3210a537a0cd20f08ded0c23a5f75b159",
+      "header": "// Vendored from langfuse/langfuse@7637df1e1aadddbbfd0a45b960ecc97451381ce5.\n// Copyright (c) 2023-2026 ClickHouse, Inc. See third_party/langfuse/LICENSE.\n// Local changes: type-only import paths; function bodies unchanged.\n",
+      "importReplacements": [
+        [
+          "\"@/src/features/traces/types/treeNode\"",
+          "\"./types\""
+        ],
+        [
+          "\"@/src/features/traces/components/TraceLogView/log-view-types\"",
+          "\"./types\""
+        ]
+      ]
+    },
+    {
+      "upstream": "LICENSE",
+      "local": "third_party/langfuse/LICENSE",
+      "sha256": "fd09d42b5b16606ad2042cc1edf3a82da1c47743709f170c959c74758af229d6",
+      "header": "",
+      "importReplacements": []
+    }
+  ]
+}

@@ -1,6 +1,6 @@
 # F-ACT-001 验收证据
 
-状态：功能提交 `856062fcb7c72852a56e16b26f7841a75a4644c1` 已推送并创建 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)。[首轮 CI 34056733123](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34056733123) Quality 通过、浏览器 49 通过 / 1 失败；修复后本地全量再次通过，最终修复 head CI 待验，不标记已验证。
+状态：已验证（本规格限定的两项只读工具）。[PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49) 最终 head `ee5a16858df573f10921b66b0689e846e36bc9d7` 的 [CI 34057547216](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34057547216) 两道 Job 成功，04:22 正常合并为 `4f6279e34f1f6eb339dd8b6760e0b5ed2246cbe2`。首轮 CI 失败记录保留下方，不冒充一次通过。
 
 ## 需求与代码
 

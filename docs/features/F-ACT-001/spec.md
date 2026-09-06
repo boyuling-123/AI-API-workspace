@@ -26,9 +26,9 @@
 
 ## 当前状态
 
-- 状态：已实现，验收中；分支 `codex/feat-platform-actions`，基线 PR #48 merge `0a26dbfb`。
-- Issue/PR：[PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，功能提交 `856062f` 已推送；本地门禁通过，最终 head CI 未完成前不标记为已验证。
+- 状态：已验证（仅本规格限定范围）；分支 `codex/feat-platform-actions`，基线 PR #48 merge `0a26dbfb`。
+- Issue/PR：[PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，最终 head `ee5a168` 的 CI `34057547216` 全通过，正常合并为 `4f6279e`。
 - 代码证据：`src/lib/platformActions.ts`、`src/server/platformActions.ts`、`src/mcp`、`src/app/api/platform-actions/route.ts`、`src/components/assistant/PlatformTools.tsx`。
-- 本地证据：250 unit（新增 13）/ 2 stress / 50 E2E，独立 MCP/Next build、lint/typecheck/Secret Scan 通过；3 条成功 Trace、合成截图与本机真实摘要联调见 [验收报告](../../evidence/pr-platform-actions/README.md)。待最终 head CI 后才标为已验证。
+- 本地证据：250 unit（新增 13）/ 2 stress / 50 E2E，独立 MCP/Next build、lint/typecheck/Secret Scan 通过；3 条成功 Trace、合成截图与本机真实摘要联调见 [验收报告](../../evidence/pr-platform-actions/README.md)。远端首次失败后修复按钮名称，9 次重复路径与完整门禁再通过，最终 CI 成功。
 - 回滚：正常 revert 本节点；删除的只是工具入口，原 IndexedDB 与归档文件不变，不执行数据回滚。
 - 暂缓：写入/删除/评分工具、自然语言规划、费用审批、浏览器项目桥接、完整平台权限模型、任意格式数据导入。

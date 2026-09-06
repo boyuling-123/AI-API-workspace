@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button, ConfigProvider, Table, Tag, Tree } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import type { DataNode } from "antd/es/tree";
+import { TraceInspector } from "./TraceInspector";
 import { serializeAgentExperiment, summarizeAgentExperiment, type AgentExperiment, type AgentObservation, type AgentTraceSummary } from "@/lib/agentObservability";
 
 const statusText = { ok: "成功", error: "异常", unset: "未确定" };
@@ -88,11 +89,11 @@ export function AgentObservabilityLab() {
             本页为 Mock 验证，不是真实模型评测。决策、工具和故障均由本地桩控制；耗时不能用于比较模型能力。Token 和模型成本未测量。
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button type="primary" loading={running} onClick={run}>运行 3 组本地实验</Button>
+            <Button type="primary" aria-label="运行 3 组本地实验" aria-busy={running} loading={running} onClick={run}>运行 3 组本地实验</Button>
             <Button disabled={!experiment || running} onClick={download}>下载实验 JSON</Button>
             {running && <Button onClick={() => abortRef.current?.abort()}>停止本地实验</Button>}
           </div>
-          <p className="mt-2 text-xs leading-6 text-slate-600" role="status">
+          <p className="mt-2 text-xs leading-6 text-slate-600" role="status" aria-label="实验采集状态">
             {running ? "正在本地采集调用链，不调用模型或外部 API…" : experiment ? "采集完成。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : "点击后运行顺序工作流、失败重试、并行协作。不会修改现有项目数据。"}
           </p>
           {error && <p role="alert" className="mt-2 text-sm text-red-800">{error}</p>}
@@ -129,16 +130,20 @@ export function AgentObservabilityLab() {
           <h2 id="trace-details" className="text-base font-semibold">调用链详情{selected ? ` · ${selected.name}` : ""}</h2>
           {selected ? <>
             <p className="my-3 break-all font-mono text-xs text-slate-600">Trace ID: {selected.traceId}</p>
-            <div className="overflow-x-auto">
-              <Tree key={selectedTraceId} treeData={spanNodes(spans)} defaultExpandAll selectable={false} showLine aria-label="Agent 执行步骤" />
-            </div>
+            <TraceInspector key={selectedTraceId} spans={spans} />
+            <details className="mt-5 border-t border-slate-200 pt-4 text-sm">
+              <summary className="cursor-pointer py-2 font-medium text-blue-800">查看原始步骤树</summary>
+              <div className="overflow-x-auto">
+                <Tree key={selectedTraceId} treeData={spanNodes(spans)} defaultExpandAll selectable={false} showLine aria-label="Agent 执行步骤" />
+              </div>
+            </details>
           </> : <p className="mt-3 text-sm text-slate-600">采集完成后，选择一条任务查看执行步骤与异常位置。</p>}
         </section>
 
         <details className="rounded-lg border border-slate-200 bg-white px-5 py-4 text-sm">
           <summary className="cursor-pointer font-semibold">接入边界与开源来源</summary>
           <div className="mt-3 space-y-2 leading-7 text-slate-600">
-            <p>已接入：OpenTelemetry 手动 SDK 埋点、内存导出器，Ant Design 表格/树/按钮及中文语言包。未部署完整 Langfuse。</p>
+            <p>已接入：OpenTelemetry 手动 SDK 埋点、内存导出器，Ant Design 表格/树/按钮及中文语言包。步骤检查器真实复用 Langfuse 时间范围、滚动定位与调用树展开源码（7637df1）；保留 MIT 许可和来源摘要，不是整站 Fork。</p>
             <p>待开发：框架回调、OTLP 实时接收、历史存储与告警；本页不等同于已兼容 LangGraph、AgentScope 或所有 Agent 框架。</p>
             <p>我们的改动：统一实验数据契约、任务与步骤分层统计、失败恢复场景、中文交互及真实源码测试。上游库仍保留各自许可，不冒充原创框架。</p>
           </div>

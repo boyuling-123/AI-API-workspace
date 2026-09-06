@@ -13,7 +13,7 @@
 - 原仓库：`../AI-API-workspace-v5`，本夜不得修改或清理其未提交草稿。
 - 隔离工作树：`AI-API-workspace-overnight-20260907`，本文件所在仓库。
 - 起始基线：`origin/main@caa2517`，已成功 fetch 后创建。
-- 当前分支：`codex/feat-platform-actions`，从 PR #48 合并后的 `origin/main@0a26dbf` 创建；首次推送显式指定该新分支，不向 main 直接推送。
+- 当前分支：`codex/feat-langfuse-trace-module`，从 PR #49 合并后的 `origin/main@4f6279e` 创建；首次推送显式指定该新分支，不向 main 直接推送。
 - 自动任务：`automation`，已从旧线程迁入本次讨论线程，并替换旧 v6 存储开发指令。
 - 每轮开始先读取本文件、`TASKS.md`、`WORKLOG.md`、最新用户消息和 `git status`。
 - 每轮结束记录当前分支、提交、测试结果、PR、未完成步骤与下一项 Ready。
@@ -43,8 +43,9 @@
 | N3 最小上游复用样例 | 已完成 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，PR #45 最终 CI 通过并合并，产品范围仍 Demo |
 | N4 中文 UI 接入 | 已完成，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核，CI 通过 |
 | N7 本地结果演示 | 已完成 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；220 unit/2 stress/43 E2E、真实本机联调与最终 CI 通过，PR #46 已合并 |
-| N5 MCP/Assistant 契约 | 本地通过，待最终 CI | F-ACT-001：两项共享只读 Action、中文工具页、同源 API、真实 stdio MCP；写动作与完整 Assistant 暂缓 | 已有/待实现明确区分；无默认模型调用；正式客户端协议与用户路径测试 | 250 unit / 2 stress / 50 E2E / 构建通过，合成截图与 3 条成功 Trace；本机摘要联调成功，PR #49 已创建 |
-| N8 Langfuse 具体源码复用 | 待 N5 合并 | 固定上游版本、审计候选依赖和许可，选可独立复用的 UI/纯逻辑模块再接线 | 必须有原始文件/版本/许可及真实代码证据；不能把重绘称为 Fork，不引入完整后端 | 下一 Ready 见 `.sdd/next-feature-langfuse.md`，当前仅规划 |
+| N5 MCP/Assistant 契约 | 已完成 | F-ACT-001：两项共享只读 Action、中文工具页、同源 API、真实 stdio MCP；写动作与完整 Assistant 暂缓 | 已有/待实现明确区分；无默认模型调用；正式客户端协议与用户路径测试 | 250 unit / 2 stress / 50 E2E、修复后 9 次工具路径、最终 CI 全通过；PR #49 已合并 |
+| N8 Langfuse 具体源码复用 | 本地通过，待 PR/CI | 固定上游两份纯逻辑，接入中文时间/步骤检查器，原树可展开保留 | 必须有原始文件/版本/许可及真实代码证据；不能把重绘称为 Fork，不引入完整后端 | F-OBS-002：上游 7637df1 / 264 unit / 2 stress / 52 E2E；许可/源码摘要、截图/Trace 已复核 |
+| N9 首个真实框架适配 | 待 N8 合并 | 先审计轻量 LangGraph 本地执行，不调用真实模型；可行后接现有 OTel 与检查器 | 真正运行框架、固定版本、隔离遥测与网络；不声称全框架兼容 | 下一 Ready `.sdd/next-feature-framework.md`，尚未审计/安装/实施 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
 每轮只领取 1 至 3 个相关节点。若 N3 没有合适的可独立复用模块，记录实证和暂缓理由，不为完成数量而重写替代品。N2 的契约拆分不得顺带提升 Schema 或清理不兼容记录；发现历史删除行为时必须有单独迁移保护方案。
@@ -70,6 +71,9 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 04:38：F-OBS-002 完整 quality（264 unit / 2 stress）与全量 52 E2E 全通过；原始源码/许可摘要严格匹配，4 条成功 Trace 和合成截图已复核。接下来提交/PR，最终 head CI 后正常合并。下一 Ready `.sdd/next-feature-framework.md`，不提前装框架；3002 暂停，截图复核结束后恢复。
+- 04:35：F-OBS-002 已接入两份固定上游纯逻辑及有界适配器、中文步骤检查器。首轮 264 单测中 1 项发现多余末尾空行，已按上游原文修正；4 条相关 E2E 通过，原树收进可展开区域后启动完整 quality，完成后全量浏览器/截图/Trace。未提交/推送/创建 PR，3002 会话 15346 已停。
+- 04:22：PR49 最终 head `ee5a168` 的 CI `34057547216` 两道 Job 成功，head/base 未漂移、无 Review/未解决线程、GitHub Ready to merge 后正常合并，SHA `4f6279e34f1f6eb339dd8b6760e0b5ed2246cbe2`。当前 `codex/feat-langfuse-trace-module` 仅 PR49 收尾文档，开始 N8 源码审计；3002 / 会话 15346 已恢复，下一 build/E2E 前仅停它。
 - 04:17：名称修复后 9 次重复工具路径、250 unit / 2 stress、全量 50 E2E、构建及基础门禁再次通过；将修复和首轮 CI 证据一并提交到 PR49，再等待该 head 的 CI。未开始 N8，不用首次失败运行冒充成功。
 - 04:15：PR49 首轮 CI `34056733123` Quality 通过 / 浏览器 49/50，下载失败证据后修复加载图标污染按钮名称的问题，补忙碌/禁用/恢复断言。正在跑 3 次重复路径与全量门禁，最终 head 通过前不合并、不进入 N8；预览 99950 已停。
 - 04:02：功能提交 `856062fcb7c72852a56e16b26f7841a75a4644c1` 已推送并自主创建 [PR #49](https://github.com/boyuling-123/AI-API-workspace/pull/49)，首轮 CI `34056733123` 运行中；仅证据文档在回写，最终文档 head 仍需 CI 通过。3002 预览已恢复 / 会话 99950，下一轮 build/E2E 前仅停此服务。下一 Ready `.sdd/next-feature-langfuse.md`，当前不提前实施。
