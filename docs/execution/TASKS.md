@@ -8,7 +8,8 @@
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。
-- F-DATA-001 本地历史归档只读演示已完成本地门禁：220 unit、2 stress、43 E2E/WCAG、lint/typecheck/build/Secret Scan；本机归档只读联调通过，下一步创建 PR，远端 CI 待执行。正文确认、50 条分页与统计口径见 [规格](../features/F-DATA-001/spec.md)。
+- F-DATA-001 本地历史归档只读演示已完成本地门禁：220 unit、2 stress、43 E2E/WCAG、lint/typecheck/build/Secret Scan；本机归档只读联调通过，[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已创建，远端 CI 进行中。正文确认、50 条分页与统计口径见 [规格](../features/F-DATA-001/spec.md)。
+- PR #46 功能提交首轮 CI `34051378800` 两道 Job 已全部通过，最终文档提交 CI 待运行。下一 Ready 调整为 N2A：兼容性检查只读保留旧项目，再做 N2B ProjectRepository 接口；不新增存储后端。
 
 ## 已完成：PR 01 基线迁移与状态校准
 
