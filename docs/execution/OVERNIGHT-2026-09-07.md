@@ -13,7 +13,7 @@
 - 原仓库：`../AI-API-workspace-v5`，本夜不得修改或清理其未提交草稿。
 - 隔离工作树：`AI-API-workspace-overnight-20260907`，本文件所在仓库。
 - 起始基线：`origin/main@caa2517`，已成功 fetch 后创建。
-- 当前分支：`codex/feat-agent-observability-lab`。
+- 当前分支：`codex/feat-local-history-demo`，从 PR #45 合并后的 `origin/main@f4a4422` 创建。
 - 自动任务：`automation`，已从旧线程迁入本次讨论线程，并替换旧 v6 存储开发指令。
 - 每轮开始先读取本文件、`TASKS.md`、`WORKLOG.md`、最新用户消息和 `git status`。
 - 每轮结束记录当前分支、提交、测试结果、PR、未完成步骤与下一项 Ready。
@@ -38,11 +38,11 @@
 
 | 节点 | 队列状态 | 范围 | 验收条件 | 当前证据 |
 |---|---|---|---|---|
-| N1 源码复用基线 | 已形成，随 N3/4 验收 | 记录候选、许可边界、旧代码复用与本夜限制 | 文档可追溯；Diff/Secret Scan 通过 | `../product/open-source-reuse.md`；PR 待创建 |
-| N2 存储替换接口 | 后移，N7 后评估 | 提取 ProjectRepository 契约，保留当前 IndexedDB 实现 | 真实源码契约测试；页面保存/刷新回归；不迁移、不丢旧数据、不新建后端 | 未实现 |
-| N3 最小上游复用样例 | 本地通过，待远端 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，全量单测 209 通过；PR #45 |
-| N4 中文 UI 接入 | 本地通过，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核 |
-| N7 本地结果演示 | Ready，N3/4 后 | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | 找到便携门户候选包，包说明 117,065 条可检索记录，尚未复核独立样本数 |
+| N1 源码复用基线 | 已完成 | 记录候选、许可边界、旧代码复用与本夜限制 | 文档可追溯；Diff/Secret Scan 通过 | `../product/open-source-reuse.md`；PR #45 已合并 |
+| N2 存储替换接口 | N7 后，先保护旧数据 | N2A 停止兼容性检查隐式删旧数据；N2B 再提取 ProjectRepository 契约，保留当前 IndexedDB | 真实源码契约测试；旧数据不变、保存/刷新回归；不迁移、不新建后端 | 发现 `db.ts:listCompatibleProjects` 现有 bulkDelete；必须独立保护与测试，不在 N7 顺带改写 |
+| N3 最小上游复用样例 | 已完成 | 真实 OTel SDK 包围三种本地模拟执行场景 | 3 Trace/14 Span，根耗时，异常恢复，导出可回读 | `F-OBS-001`，PR #45 最终 CI 通过并合并，产品范围仍 Demo |
+| N4 中文 UI 接入 | 已完成，与 N3 同 PR | Ant Design 中文组件、观测表/树、总览入口 | Mock Playwright/WCAG/视觉证据；不冒充 Langfuse Fork | 全量 E2E 40 通过，新页 axe 零违规，截图已复核，CI 通过 |
+| N7 本地结果演示 | 本地通过，待 PR/CI | 只读核对数据索引、来源、字段、数量；分页/脱敏演示，不重跑 | 不改原文件，不自动映射标准答案，不提交真实数据；大数据不全量渲染 | F-DATA-001；11 新增单测、3 新增 E2E 通过；全量 220 unit/2 stress/43 E2E 通过，真实本机联调完成 |
 | N5 MCP/Assistant 契约 | 待 N2 | 复用已有 MCP 能力，定义缺失业务 Action、确认和预算边界 | 已有/待实现明确区分；无默认模型调用；禁止把只写类型标为已验证 | 未实现 |
 | N6 收尾 | 等待窗口 | 停止领取，保留成果，汇总 PR/测试/遗留项 | 09:00 停止开发；暂停同一自动任务；不伪造预览链接 | 未开始 |
 
@@ -69,12 +69,25 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 02:24：PR #46 功能提交 `2f94428` 的 CI run `34051378800` 两个 Job 全部 success；Review 与未解决线程均为空。正在提交仅文档的 PR/CI 信息回写，最终 head 自身 CI 通过后再核对分支并合并。下一 Ready 为 N2A：禁止兼容性检查自动删旧项目，保持既有 IndexedDB；N2B 契约提取后做。
+
+- 02:20：功能提交 `2f9442836a234c505329a722a22468bc90932480` 已推送，已自主创建 [PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46)，base `main@f4a4422`。首轮 [CI run 34051378800](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34051378800) 运行中。当前未提交的文档是本次 PR 信息回写，需扫描提交；最终 head 的 CI 全通过再合并，不能只验旧 head。
+- 3002 独立预览已恢复，`/history-demo` 已连接本机归档；进程为本工作树的 dev server。后续构建/E2E 前停此预览，结束后恢复，不动其他服务。
+
+- 02:18：F-DATA-001 最终代码完整 quality 与全量 43 E2E/WCAG 再次通过，单测增加至 220。真实归档通过 API 与浏览器核对，默认不读正文；补上中文历史失败标签。原目录四项草稿未变。接下来提交本节点并创建 PR，远端 CI 通过才合并；不重复开发或误认为 PR 已创建。
+
+- 02:09：F-DATA-001 契约、受限本机读取器/API、中文历史演示页、源码单测与合成夹具 E2E 已实现。首轮 quality 通过 219 unit、2 stress、22 路由构建；E2E 发现并修复 Next 内部 URL 与浏览器 Host 别名差异造成的 403，未放宽跨站保护；正在复验。本节点仍未提交、推送或创建 PR。
+- 真实路径配置只保存在 Git 忽略的 `local-data/archive-source.json`；测试通过独立 `EVAL_ARCHIVE_CONFIG` 使用合成夹具。3002 预览暂停以避免与 build/E2E 争用 .next，测试完成后需恢复。
+
+- 01:43：PR #45 最终 head `51d2c62` 的 [CI run 34049163074](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34049163074) 两个 Job 全部 success；复查 head/base 未漂移，Review/未解决线程均为空，GitHub 显示 Ready to merge。已按授权正常合并，合并 SHA `f4a4422bfb3659c026a299d2786213f760129d8d`。
+- 当前已切到下一短分支 `codex/feat-local-history-demo`。仅有本次收尾文档待提交，不重复开发/创建/合并 PR #45。下一节点先读 `.sdd/next-feature.md` 与 `local-data/INVENTORY.md`，补 F-DATA-001 规格后实施。
+
 - 01:34：功能提交 `7b284f3` 已推送；[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 自主创建，远端 Quality Gate 开始运行。检查 PR 当前 head 的最新 CI，不要只检查旧功能提交。
 - 本地 `quality` 完整通过：361 文件最终 Secret Scan，lint/typecheck、209 unit、2 stress、21 路由 build；全量 40 E2E 通过。截图与验收报告见 `../evidence/pr-agent-observability/README.md`。
 - 预览为 `http://127.0.0.1:3002/observability`，01:35 已得到 HTTP 200；由本工作树的 dev server 提供，恢复前先检查端口/进程，不覆盖原平台进程。
 - GitHub 连接器只有读权限，浏览器已以仓库所有者登录；Git CLI SSH 推送可用，PR 创建已通过浏览器完成。无需再次问用户授权。
 - 数据已逐片只读核对，详细清单位于 Git 忽略的 `local-data/INVENTORY.md`；`.sdd/tasks.json` 记录 Developer Helper 适配状态。这些本机记录禁止上传。
-- 下一步：等待最终 head 的 CI 两个 Job 通过，确认未漂移且无未解决评审后自动合并；通过后从最新 main 新建 `codex/` 数据演示短分支。不得用最终任务成功掩盖中间失败，不把检索行数冒充独立实验数。
+- 不得用最终任务成功掩盖中间失败，不把检索行数冒充独立实验数。N7 仍未完成，不可将本地数据盘点标为已经导入/加载。
 
 ## 收尾规则
 

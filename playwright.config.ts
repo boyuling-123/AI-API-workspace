@@ -30,8 +30,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `npm run dev -- --hostname 127.0.0.1 --port ${port}`,
-    reuseExistingServer: !process.env.CI,
+    command: `node scripts/createLocalArchiveFixture.mjs && npm run dev -- --hostname 127.0.0.1 --port ${port}`,
+    env: { EVAL_ARCHIVE_CONFIG: "test-results/archive-fixture/source.json" },
+    reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL,
   },
