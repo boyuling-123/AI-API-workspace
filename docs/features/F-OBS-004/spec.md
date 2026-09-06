@@ -1,6 +1,6 @@
 # F-OBS-004 观测 JSON 本机回读
 
-状态：已实现，本地完整门禁通过，待 PR 最终 CI。[验收证据](../../evidence/pr-portable-observation/README.md)。分支 `codex/feat-portable-observation`，基线 PR #52 合并后的 main。仅补已导出结果重新打开的可迁移闭环。
+状态：已实现，本地完整门禁通过，[PR #53](https://github.com/boyuling-123/AI-API-workspace/pull/53) 最终 CI 待验。[验收证据](../../evidence/pr-portable-observation/README.md)。分支 `codex/feat-portable-observation`，基线 PR #52 合并后的 main。仅补已导出结果重新打开的可迁移闭环。
 
 ## 契约与边界
 
