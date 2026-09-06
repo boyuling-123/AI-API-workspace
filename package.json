@@ -17,6 +17,9 @@
     "quality": "npm run security:secrets && npm run lint && npm run typecheck && npm run test:unit && npm run test:stress && npm run build"
   },
   "dependencies": {
+    "@opentelemetry/api": "1.9.1",
+    "@opentelemetry/sdk-trace-base": "2.11.0",
+    "antd": "6.6.2",
     "dexie": "^4.4.3",
     "next": "14.2.35",
     "react": "^18",

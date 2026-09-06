@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import type { Project, Task } from "@/types";
 import { formatDateTime } from "@/lib/datetime";
 
@@ -230,6 +231,11 @@ export function PlatformOverview({ project, onNavigate }: PlatformOverviewProps)
           </aside>
         </div>
       </section>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+        <span className="text-slate-600 dark:text-slate-300">Agent 观测：先用本地模拟任务检查调用链，不消耗模型调用。</span>
+        <Link href="/observability" className="py-2 font-semibold text-blue-800 hover:underline dark:text-blue-200">打开观测实验室（Mock）</Link>
+      </div>
 
       <section aria-label="当前项目资产" className="relative z-10 -mt-1 grid gap-3 py-5 sm:grid-cols-2 xl:grid-cols-4">
         {[
