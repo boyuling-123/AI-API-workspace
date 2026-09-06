@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "purpose": "synthetic-engineering-evidence-not-model-benchmark",
+  "startedAt": "2026-09-06T23:38:55.217Z",
+  "completedAt": "2026-09-06T23:39:03.574Z",
+  "sourceCommit": "3c625c729a30793c203aaeaab4fae7219c8d578a",
+  "sourceTree": "runtime-unchanged-plus-capture-script-and-docs",
+  "runtime": {
+    "node": "v24.14.1"
+  },
+  "historicalArchiveRead": false,
+  "modelCalls": 0,
+  "captures": [
+    {
+      "mode": "manual",
+      "source": "local-mock-otel",
+      "createdAt": "2026-09-06T23:38:56.613Z",
+      "instrumentation": {
+        "name": "@opentelemetry/sdk-trace-base",
+        "version": "2.11.0"
+      },
+      "modelCalls": 0,
+      "tokens": null,
+      "modelCost": null,
+      "tableColumns": [
+        "执行方式",
+        "任务状态",
+        "耗时/ms（页面显示值）",
+        "工具调用",
+        "异常步骤",
+        "重试次数"
+      ],
+      "tableRows": [
+        [
+          "顺序工作流",
+          "成功",
+          "31.0",
+          "1",
+          "0",
+          "0"
+        ],
+        [
+          "失败重试",
+          "成功",
+          "39.5",
+          "2",
+          "1",
+          "1"
+        ],
+        [
+          "并行协作",
+          "成功",
+          "18.1",
+          "2",
+          "0",
+          "0"
+        ]
+      ],
+      "apiCalls": [],
+      "blockedRequests": 0,
+      "pageErrors": 0,
+      "confirmedRoundtrip": true,
+      "axeViolations": 0,
+      "files": [
+        {
+          "name": "manual-observations.json",
+          "bytes": 5874,
+          "sha256": "1aae56e4aac0be177fe94ace74ae28f913c9280f16c173fe945d6da385d0ca41"
+        },
+        {
+          "name": "manual-reopened-unverified.json",
+          "bytes": 5956,
+          "sha256": "5e087094c42a03c9fec1e40c782118b1284a71db7db6680da808dd43c8dd2845"
+        }
+      ]
+    },
+    {
+      "mode": "langgraph",
+      "source": "local-langgraph-mock-otel",
+      "createdAt": "2026-09-06T23:39:01.000Z",
+      "instrumentation": {
+        "name": "@opentelemetry/sdk-trace-base",
+        "version": "2.11.0"
+      },
+      "framework": {
+        "name": "@langchain/langgraph",
+        "version": "1.4.14",
+        "coreVersion": "1.2.9",
+        "execution": "StateGraph",
+        "nodes": "mock",
+        "events": "callbacks"
+      },
+      "modelCalls": 0,
+      "tokens": null,
+      "modelCost": null,
+      "tableColumns": [
+        "执行方式",
+        "任务状态",
+        "耗时/ms（页面显示值）",
+        "工具调用",
+        "异常步骤",
+        "重试次数"
+      ],
+      "tableRows": [
+        [
+          "顺序工作流",
+          "成功",
+          "33.8",
+          "1",
+          "0",
+          "0"
+        ],
+        [
+          "失败重试",
+          "成功",
+          "33.1",
+          "2",
+          "1",
+          "1"
+        ]
+      ],
+      "apiCalls": [
+        "POST /api/experiments/langgraph"
+      ],
+      "blockedRequests": 0,
+      "pageErrors": 0,
+      "confirmedRoundtrip": true,
+      "axeViolations": 0,
+      "files": [
+        {
+          "name": "langgraph-observations.json",
+          "bytes": 3461,
+          "sha256": "5d0f38e872309bc9453f62af4f94a10dbcae64d07c21097690681fa00d13a2f0"
+        },
+        {
+          "name": "langgraph-reopened-unverified.json",
+          "bytes": 3543,
+          "sha256": "d287619c7f9f39719f929dd733dcda39315f43564a849b9a2303c79d28ce625a"
+        }
+      ]
+    }
+  ]
+}

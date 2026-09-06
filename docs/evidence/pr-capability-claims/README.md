@@ -1,6 +1,6 @@
 # N13 / P0-A 共享观测声明验收
 
-规格：[F-ACT-001声明修复](../../features/F-ACT-001/claims-correction.md)。基线`4d7d7f9`，分支`codex/fix-observability-capability-claims`。[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55) 已创建，功能提交`3c7313ea64543ef97a1c3ae3368bdc40e0a4e943`；首次[CI34066680213](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34066680213)已触发。本次纯文档回写后仍须等待最终head自身CI通过，不能用旧运行代替。
+状态：已验证，[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55)最终head `9755bb59a1b001b3d77c02d0355e33c5714406a4` 的[CI34066768229](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34066768229)质量与浏览器Job全success。07:29核对head/base无漂移、Review/未解决线程为空、Ready to merge后正常合并为 `3c625c729a30793c203aaeaab4fae7219c8d578a`。规格：[F-ACT-001声明修复](../../features/F-ACT-001/claims-correction.md)。原分支`codex/fix-observability-capability-claims`基线4d7d7f9；功能提交3c7313e的首轮CI不替代最终head结果。
 
 ## 代码与范围
 

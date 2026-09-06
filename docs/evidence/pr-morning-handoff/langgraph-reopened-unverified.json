@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "source": "local-langgraph-mock-otel",
+  "createdAt": "2026-09-06T23:39:01.000Z",
+  "framework": {
+    "name": "@langchain/langgraph",
+    "version": "1.4.14",
+    "coreVersion": "1.2.9",
+    "execution": "StateGraph",
+    "nodes": "mock",
+    "events": "callbacks"
+  },
+  "instrumentation": {
+    "name": "@opentelemetry/sdk-trace-base",
+    "version": "2.11.0"
+  },
+  "modelCalls": 0,
+  "tokens": null,
+  "modelCost": null,
+  "spans": [
+    {
+      "traceId": "7e7c4d7ebb2294f5390481f84227b580",
+      "spanId": "7ef57e63bfb5f62f",
+      "name": "顺序工作流",
+      "kind": "agent",
+      "startTimeMs": 1788737940931.476,
+      "endTimeMs": 1788737940965.2896,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true,
+        "eval.scenario": "workflow"
+      }
+    },
+    {
+      "traceId": "7e7c4d7ebb2294f5390481f84227b580",
+      "spanId": "59e8da4538430647",
+      "parentSpanId": "7ef57e63bfb5f62f",
+      "name": "路由节点（固定规则）",
+      "kind": "agent",
+      "startTimeMs": 1788737940941.3667,
+      "endTimeMs": 1788737940951.3596,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "7e7c4d7ebb2294f5390481f84227b580",
+      "spanId": "a3e38d84ab41fc61",
+      "parentSpanId": "7ef57e63bfb5f62f",
+      "name": "库存工具（Mock，第 1 次）",
+      "kind": "tool",
+      "startTimeMs": 1788737940952.5505,
+      "endTimeMs": 1788737940963.5117,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true,
+        "eval.attempt": 1,
+        "eval.retry": false
+      }
+    },
+    {
+      "traceId": "eb0541dfde50e8c9aee4cd374d260a7b",
+      "spanId": "5576f6bb51af275f",
+      "name": "失败重试",
+      "kind": "agent",
+      "startTimeMs": 1788737940965.8528,
+      "endTimeMs": 1788737940998.9292,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true,
+        "eval.scenario": "retry"
+      }
+    },
+    {
+      "traceId": "eb0541dfde50e8c9aee4cd374d260a7b",
+      "spanId": "75e8b12c24962a38",
+      "parentSpanId": "5576f6bb51af275f",
+      "name": "路由节点（固定规则）",
+      "kind": "agent",
+      "startTimeMs": 1788737940967.2126,
+      "endTimeMs": 1788737940976.7056,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "eb0541dfde50e8c9aee4cd374d260a7b",
+      "spanId": "336494c4c64ecfa3",
+      "parentSpanId": "5576f6bb51af275f",
+      "name": "库存工具（Mock，第 1 次）",
+      "kind": "tool",
+      "startTimeMs": 1788737940977.193,
+      "endTimeMs": 1788737940986.3489,
+      "status": "error",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true,
+        "eval.attempt": 1,
+        "eval.retry": false,
+        "eval.error": "mock_node_failure"
+      }
+    },
+    {
+      "traceId": "eb0541dfde50e8c9aee4cd374d260a7b",
+      "spanId": "716ed508b5b69c05",
+      "parentSpanId": "5576f6bb51af275f",
+      "name": "库存工具（Mock，第 2 次）",
+      "kind": "tool",
+      "startTimeMs": 1788737940987.8315,
+      "endTimeMs": 1788737940998.5562,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true,
+        "eval.attempt": 2,
+        "eval.retry": true
+      }
+    }
+  ],
+  "provenance": {
+    "kind": "local-file",
+    "verification": "unverified"
+  }
+}
