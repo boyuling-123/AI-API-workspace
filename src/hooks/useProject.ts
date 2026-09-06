@@ -4,8 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Project } from "@/types";
 import {
   db,
-  isQuotaExceededError,
-  listCompatibleProjects,
+  projectSaveErrorMessage,
+  readProjectCatalog,
   saveProject,
 } from "@/services/db";
 import { createEmptyProject } from "@/services/projectFactory";
@@ -22,6 +22,7 @@ export interface UseProjectResult {
   project: Project | null;
   saveStatus: SaveStatus;
   saveError: string | null;
+  retainedProjectCount: number;
   isLoaded: boolean;
   updateProject: (
     updater: (current: Project) => Project,
@@ -39,6 +40,7 @@ export function useProject(): UseProjectResult {
   const [project, setProject] = useState<Project | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [retainedProjectCount, setRetainedProjectCount] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
 
   const projectRef = useRef<Project | null>(null);
@@ -57,8 +59,8 @@ export function useProject(): UseProjectResult {
 
     async function loadInitial() {
       try {
-        // 仅加载与当前 schema 兼容的项目；不兼容的旧版记录已在此步被清理。
-        const projects = await listCompatibleProjects();
+        const { projects, retainedIncompatibleCount } = await readProjectCatalog();
+        setRetainedProjectCount(retainedIncompatibleCount);
         if (projects.length > 0) {
           projectRef.current = projects[0];
           setProject(projects[0]);
@@ -68,13 +70,13 @@ export function useProject(): UseProjectResult {
           projectRef.current = initial;
           setProject(initial);
         }
-      } catch (error) {
+      } catch {
         // IndexedDB 不可用（如隐私模式）时降级为内存项目，至少保证页面可用。
-        console.error("加载本地项目失败，降级为内存项目：", error);
         const fallback = createEmptyProject();
         projectRef.current = fallback;
         setProject(fallback);
-        setSaveError("本地存储不可用，数据将不会自动保存，请注意导出备份");
+        setSaveStatus("error");
+        setSaveError("本地项目加载失败，当前为临时项目。请先导出当前内容；不要清理浏览器数据，旧项目未被主动删除。");
       } finally {
         setIsLoaded(true);
       }
@@ -99,12 +101,7 @@ export function useProject(): UseProjectResult {
           return;
         }
         setSaveStatus("error");
-        const message = isQuotaExceededError(error)
-          ? "存储空间不足，建议改用 URL 图片或导出备份"
-          : error instanceof Error
-            ? `保存失败：${error.message}`
-            : "保存失败：未知错误";
-        setSaveError(message);
+        setSaveError(projectSaveErrorMessage(error));
       }
     });
   }, []);
@@ -182,6 +179,7 @@ export function useProject(): UseProjectResult {
     project,
     saveStatus,
     saveError,
+    retainedProjectCount,
     isLoaded,
     updateProject,
     replaceProject,

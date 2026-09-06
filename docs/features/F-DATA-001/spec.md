@@ -27,6 +27,6 @@
 Developer Helper 适配角色：Planner 固定以上边界 → Developer 实现契约/只读服务/中文页面 → Tester 用合成夹具测真实源文件与 API → 修复 → 本地门禁 → 小分支 PR → 远端 CI/审查 → 正常合并。无付费模型调用，无伪造独立审查。
 
 - 分支：`codex/feat-local-history-demo`。
-- 当前状态：已实现，本地完整验收与功能提交 CI 通过；最终文档提交的 CI 待验证。
+- 当前状态：已验证，限定只读归档范围的本地完整验收与最终 head CI 通过，PR #46 已合并；不包括未开发的范围。
 - 代码：`src/lib/localArchive.ts`、`src/server/localArchiveReader.ts`、`src/server/localArchiveAccess.ts`、`src/app/api/local-archive/route.ts`、`src/components/archive/LocalArchiveDemo.tsx`。
-- 测试：`tests/unit/localArchive.test.ts`（11 项）、`tests/e2e/local-archive.spec.ts`（3 项）；全量 220 unit、2 stress、43 E2E 通过，截图见 [证据](../../evidence/pr-local-history-demo/README.md)。[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已创建；远端 CI 未通过前不标记已验证。
+- 测试：`tests/unit/localArchive.test.ts`（11 项）、`tests/e2e/local-archive.spec.ts`（3 项）；全量 220 unit、2 stress、43 E2E 通过，截图及最终 CI 见 [证据](../../evidence/pr-local-history-demo/README.md)。[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已合并。

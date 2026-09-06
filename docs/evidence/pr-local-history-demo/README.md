@@ -1,6 +1,6 @@
 # F-DATA-001 验收证据
 
-状态：本地完整门禁与功能提交远端 CI 通过，[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已创建；最终文档提交 CI 通过前不合并。
+状态：限定只读归档范围已验证，[PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46) 已合并。最终 head `53f9586` 的 [CI run 34051689031](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34051689031) 两道 Job 全部 success；合并提交 `fe29d91`。不扩大为新任务导入、20GB 执行或真实模型效果验证。
 
 - 单测直接引用 `LocalArchiveReader`、访问边界和真实 Next route；使用临时合成归档，不接触业务文件。
 - Playwright 使用 `scripts/createLocalArchiveFixture.mjs` 生成 63 条合成记录，通过实际本地 API 测试 50 条分页、分片筛选、隐私确认、摘要下载和错误恢复。

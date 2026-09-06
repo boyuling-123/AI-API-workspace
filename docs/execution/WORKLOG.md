@@ -1,5 +1,13 @@
 # 测评平台开发纪实
 
+## 2026-09-07：F-STORE-001 非破坏性本地项目保护
+
+- 以 PR #46 合并后的 main 为基线单开 `codex/fix-preserve-legacy-projects`，保留原目录四项草稿，不升级 Schema，不引入新后端。
+- 诊断发现隐式 bulkDelete、索引遗漏缺 updateTime 记录，以及同 ID put 覆盖未知项目三处风险；修为只读分类、原样保留和事务内写保护。
+- 页面用独立中文提示说明数量及“未迁移、非备份、当前导出不含旧记录”，不展示旧记录内容；读写异常只用固定安全文案，临时项目和未保存状态可见。
+- dev-only fake-indexeddb 6.2.5 使 Node 单测直接运行真实 Dexie；新增 9 项单测和 4 项真实浏览器 IndexedDB 路径。完整 229 unit / 2 stress / 47 E2E、lint/typecheck/build 通过，合成截图已复核，原始用户数据库未触碰。
+- 下一步按授权提交、推送、创建 PR，最终 CI 和 head/base 审查后正常合并；N2B ProjectRepository 抽离单开下一 PR。既有 7 项依赖风险未因本 PR 解决，也未增加。
+
 ## 2026-08-25：PR 01 启动
 
 - 确认远端仓库为 `boyuling-123/AI-API-workspace`，远端基线只有 `main` 和一个初始提交。
@@ -1280,3 +1288,5 @@
 - 02:18：真实本机归档联调完成；根据历史状态补上超时/限流等白名单中文标签。最终完整 quality 与全量 43 E2E 再次通过，单测为 220（新增 11）。所有真实正文未自动读取；本机配置/核对记录保持 Git 忽略，原目录草稿未变。
 - 02:20：功能提交 `2f94428` 已推送，浏览器自主创建 [PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46)，基线 `main@f4a4422`、24 文件，无夹带业务数据。远端 Quality Gate `34051378800` 运行中，不提前合并。
 - 02:24：首轮远端 CI 两道 Job 全部 success，无 Review 或未解决线程。准备仅文档的最终证据提交，仍须新 head 自身 CI 通过才能合并。只读梳理下一节点时发现 `listCompatibleProjects` 会 bulkDelete 不兼容记录，已将 N2 拆为数据保护优先、契约后置；本 PR 不动旧存储行为或用户数据。
+- 02:31：最终文档提交 `53f9586` 的 CI `34051689031` 两道 Job 全部 success，head/base 未漂移，无 Review 或未解决线程，正常合并 [PR #46](https://github.com/boyuling-123/AI-API-workspace/pull/46)，SHA `fe29d9131c0ad1eae5648f8e895c152d10ca9276`。
+- 从最新 main 创建 `codex/fix-preserve-legacy-projects`，只留下本轮收尾文档待下个 PR，N2A 业务代码未动。下一 Ready `.sdd/next-feature-store.md`；3002 历史只读演示保持可访问，自动任务继续按最新台账执行至硬截止。
