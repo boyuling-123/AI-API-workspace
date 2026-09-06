@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { WorkbenchNav } from "@/components/WorkbenchNav";
 import { Button, ConfigProvider, Modal, Table, Tag } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { ARCHIVE_TYPES, type ArchiveContent, type ArchivePage, type ArchiveRow, type ArchiveSummary } from "@/lib/localArchive";
@@ -94,15 +94,7 @@ export function LocalArchiveDemo() {
     fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif', controlHeight: 40,
   } }}>
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
-        <nav aria-label="平台导航" className="mx-auto flex max-w-7xl flex-wrap items-center gap-6 text-sm">
-          <Link href="/" className="font-semibold hover:underline">评测工作台</Link>
-          <span aria-current="page" className="font-semibold text-blue-800">历史归档</span>
-          <Link href="/observability" className="text-slate-600 hover:underline">Agent 观测</Link>
-          <Link href="/assistant-tools" className="text-slate-600 hover:underline">助手工具</Link>
-          <span className="ml-auto text-xs text-slate-600">本机只读 · 不启动评价</span>
-        </nav>
-      </header>
+      <WorkbenchNav active="history" note="本机只读 · 不启动评价" />
       <main className="mx-auto max-w-7xl space-y-6 px-5 py-8 sm:px-8">
         <section aria-labelledby="archive-title">
           <p className="mb-2 text-xs font-semibold tracking-wider text-slate-600">HISTORY / 本地结果演示</p>

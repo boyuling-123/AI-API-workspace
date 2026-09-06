@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { WorkbenchNav } from "@/components/WorkbenchNav";
 import { Button, ConfigProvider, Tag } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import { ACTION_LIMITS, PLATFORM_ACTIONS, type PlatformActionName, type PlatformActionResult } from "@/lib/platformActions";
@@ -36,15 +36,7 @@ export function PlatformTools() {
     colorLink: "#1554ad", borderRadius: 6, fontFamily: '"PingFang SC", "Microsoft YaHei", sans-serif', controlHeight: 44,
   } }}>
     <div className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="border-b border-slate-200 bg-white px-5 py-4 sm:px-8">
-        <nav aria-label="平台导航" className="mx-auto flex max-w-7xl flex-wrap items-center gap-5 text-sm">
-          <Link href="/" className="py-2 font-semibold hover:underline">评测工作台</Link>
-          <Link href="/history-demo" className="py-2 text-slate-600 hover:underline">历史归档</Link>
-          <Link href="/observability" className="py-2 text-slate-600 hover:underline">Agent 观测</Link>
-          <span aria-current="page" className="font-semibold text-blue-800">助手工具</span>
-          <span className="ml-auto text-xs text-slate-600">只读 / 无模型调用</span>
-        </nav>
-      </header>
+      <WorkbenchNav active="assistant" note="只读 / 无模型调用" />
       <main className="mx-auto max-w-7xl space-y-6 px-5 py-8 sm:px-8">
         <section aria-labelledby="tools-title">
           <p className="mb-2 text-xs font-semibold tracking-wider text-slate-600">ASSISTANT / 工具连接</p>

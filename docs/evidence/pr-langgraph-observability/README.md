@@ -1,6 +1,6 @@
 # F-OBS-003 验收证据
 
-状态：本地最终验收通过，[PR #51](https://github.com/boyuling-123/AI-API-workspace/pull/51) 已创建，最终 head 的远端 CI 通过前不标记已验证。功能提交 `2ca382fdcf9ce71be756ecb28b790fbf4f914c1d`；首次 CI [34061034711](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34061034711) 已触发。PR/证据回写是纯文档提交，后续以最终 head 的完整 CI 为合并门禁，不要求旧 head 重复完成。
+状态：已验证（限定固定 Mock 节点），[PR #51](https://github.com/boyuling-123/AI-API-workspace/pull/51) 已正常合并。功能提交 `2ca382fdcf9ce71be756ecb28b790fbf4f914c1d`；最终文档 head `ab42c56f1ecc6be2ea341eaa71ea02becbb1da9b` 的 [CI 34061117640](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34061117640) 两道 Job 全部 success。05:32 核对 head/base、无 Review/未解决线程、Ready to merge 后正常合并为 `93f46ca1d32beb8e743404f8d7b2c7fda5dac3db`。最初功能 head 的 CI 由最终 head 替代，不用旧运行作为验收依据。
 
 ## 真实代码路径
 
@@ -23,6 +23,6 @@
 | 故障/停止/恢复/移动端 | 8311800157ad1a7a9759f5c366ee7215857d6ad8385243af21179d1e46b7c842 |
 | 真实端点拒绝跨站/数据 | f2759999b88eb064b96ad9d64679224e816d344af1917844c87d96ee6cbabff2 |
 
-所有实验是实际框架 + 固定 Mock 节点，模型调用 0、token/成本 null；不能当作模型精度或 20GB 性能数据。构建中首页 First Load JS 为 416 kB，观测页 301 kB；框架运行代码仅由独立 Node 入口导入，未新增框架浏览器执行包。云端 CI 待 PR 后回写，不能以本地通过替代。
+所有实验是实际框架 + 固定 Mock 节点，模型调用 0、token/成本 null；不能当作模型精度或 20GB 性能数据。构建中首页 First Load JS 为 416 kB，观测页 301 kB；框架运行代码仅由独立 Node 入口导入，未新增框架浏览器执行包。本机 3002 也经实际页面点击核对 2 Trace/7 Span 及失败恢复，不自动打开归档正文。
 
 回滚为正常 revert 本主题提交；没有 Schema 迁移、用户数据写入、系统持久配置变更或新监听服务。
