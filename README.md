@@ -32,6 +32,7 @@ npm run dev -- --hostname 127.0.0.1 --port 3002
 
 ## 本机演示入口
 
+- [2026-09-07早间交付](docs/product/morning-handoff-2026-09-07.md)：实际合成实验结果、可回读文件、演示口径与下一步缺口。
 - [五章演示导览](http://127.0.0.1:3002/interview-demo)：讲解产品判断、数据口径和工程证据。
 - [Agent 观测实验室](http://127.0.0.1:3002/observability)：手工 OTel 埋点及真实 LangGraph 调度固定 Mock 节点，支持受限观测 JSON 确认回读，不是任意框架导入。
 - [本地历史演示](http://127.0.0.1:3002/history-demo)：需要按 [只读归档说明](docs/product/local-history-demo.md) 配置本机目录；新克隆不会携带任何真实数据。

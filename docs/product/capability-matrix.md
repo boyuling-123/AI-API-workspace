@@ -1,8 +1,10 @@
 # 测评平台 v5.0 能力矩阵
 
+N14[早间交付](morning-handoff-2026-09-07.md)与[PR #56](https://github.com/boyuling-123/AI-API-workspace/pull/56)只汇总合成实验与演示材料，不新增业务功能计数，不改变下列75行或本夜9项增量状态。
+
 > 本表是旧75项基线，不是新一期完成率。[2026-09需求入口](../prd/2026-09/README.md)与[72行阶段差距审计](stage-gap-audit-2026-09-07.md)分别跟踪最新范围；N12文档审计不升级旧75项状态，F-OBS-004仅按已完成的PR53最终CI回写。
 
-F-ACT-001追加[P0-A声明修复](../features/F-ACT-001/claims-correction.md)，不增工具或能力计数。299unit/2stress、4专项和全量67 E2E通过，[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55)最终CI待验；旧75行状态不变。
+F-ACT-001追加[P0-A声明修复](../features/F-ACT-001/claims-correction.md)，不增工具或能力计数。299unit/2stress、4专项和全量67 E2E通过，[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55)最终CI成功并正常合并；旧75行状态不变。
 
 新增独立能力 F-OBS-004：已验证（限定两种本平台 Mock 观测 JSON 的确认式本机回读），本地完整门禁与最终 CI 通过。[规格](../features/F-OBS-004/spec.md)、代码 `portableAgentExperiment.ts`、`ObservationFileImport.tsx` 与既有观测页；[11新单测/全量66 E2E/5成功Trace/截图与最终CI证据](../evidence/pr-portable-observation/README.md)。不是通用 Agent 数据导入，不改变旧 75 项统计基数；[PR #53](https://github.com/boyuling-123/AI-API-workspace/pull/53) 已正常合并。
 

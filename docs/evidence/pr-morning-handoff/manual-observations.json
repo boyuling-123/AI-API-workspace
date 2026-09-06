@@ -1,0 +1,214 @@
+{
+  "schemaVersion": 1,
+  "source": "local-mock-otel",
+  "createdAt": "2026-09-06T23:38:56.613Z",
+  "instrumentation": {
+    "name": "@opentelemetry/sdk-trace-base",
+    "version": "2.11.0"
+  },
+  "modelCalls": 0,
+  "tokens": null,
+  "modelCost": null,
+  "spans": [
+    {
+      "traceId": "0f84398f72eb56080baa9d86a41f38ca",
+      "spanId": "347a732c747823ef",
+      "name": "顺序工作流",
+      "kind": "agent",
+      "startTimeMs": 1788737936519.3,
+      "endTimeMs": 1788737936550.3,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true,
+        "eval.scenario": "workflow"
+      }
+    },
+    {
+      "traceId": "0f84398f72eb56080baa9d86a41f38ca",
+      "spanId": "799f8985dc6b2c82",
+      "parentSpanId": "347a732c747823ef",
+      "name": "模拟路由决策",
+      "kind": "llm",
+      "startTimeMs": 1788737936519.8,
+      "endTimeMs": 1788737936538.9001,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "llm",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "0f84398f72eb56080baa9d86a41f38ca",
+      "spanId": "77cec57188b47bf6",
+      "parentSpanId": "347a732c747823ef",
+      "name": "查询退款规则（本地桩）",
+      "kind": "tool",
+      "startTimeMs": 1788737936539.1,
+      "endTimeMs": 1788737936550.2002,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "10a8ce6a860317c024a34902737eb7f4",
+      "spanId": "6a97e28168eb2e3a",
+      "parentSpanId": "d9dc7a348265d7bf",
+      "name": "模拟工具选择",
+      "kind": "llm",
+      "startTimeMs": 1788737936550.3,
+      "endTimeMs": 1788737936560.8,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "llm",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "10a8ce6a860317c024a34902737eb7f4",
+      "spanId": "d9dc7a348265d7bf",
+      "name": "失败重试",
+      "kind": "agent",
+      "startTimeMs": 1788737936550.3,
+      "endTimeMs": 1788737936589.8,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true,
+        "eval.scenario": "retry"
+      }
+    },
+    {
+      "traceId": "10a8ce6a860317c024a34902737eb7f4",
+      "spanId": "b282d7e03e33df86",
+      "parentSpanId": "d9dc7a348265d7bf",
+      "name": "库存查询：首次失败（故障注入）",
+      "kind": "tool",
+      "startTimeMs": 1788737936561.3,
+      "endTimeMs": 1788737936570,
+      "status": "error",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true,
+        "eval.attempt": 1,
+        "eval.error": "simulated_timeout"
+      }
+    },
+    {
+      "traceId": "10a8ce6a860317c024a34902737eb7f4",
+      "spanId": "9f4512f3315bdf51",
+      "parentSpanId": "d9dc7a348265d7bf",
+      "name": "模拟重试决策",
+      "kind": "llm",
+      "startTimeMs": 1788737936570,
+      "endTimeMs": 1788737936580.2002,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "llm",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "10a8ce6a860317c024a34902737eb7f4",
+      "spanId": "da013c96c20107ce",
+      "parentSpanId": "d9dc7a348265d7bf",
+      "name": "库存查询：重试恢复（本地桩）",
+      "kind": "tool",
+      "startTimeMs": 1788737936580.2002,
+      "endTimeMs": 1788737936589.7002,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true,
+        "eval.attempt": 2,
+        "eval.retry": true
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "9effe261c5c6248b",
+      "name": "并行协作",
+      "kind": "agent",
+      "startTimeMs": 1788737936589.8,
+      "endTimeMs": 1788737936607.9001,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true,
+        "eval.scenario": "collaboration"
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "0243da7de7bce520",
+      "parentSpanId": "9effe261c5c6248b",
+      "name": "模拟任务分配",
+      "kind": "llm",
+      "startTimeMs": 1788737936589.9001,
+      "endTimeMs": 1788737936598.8,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "llm",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "ee5915cd46cce1d7",
+      "parentSpanId": "04445e2a248ed013",
+      "name": "读取规则（本地桩）",
+      "kind": "tool",
+      "startTimeMs": 1788737936598.8,
+      "endTimeMs": 1788737936607.7002,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "04445e2a248ed013",
+      "parentSpanId": "9effe261c5c6248b",
+      "name": "规则检查 Agent（模拟）",
+      "kind": "agent",
+      "startTimeMs": 1788737936598.8,
+      "endTimeMs": 1788737936607.9001,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "a6f3b0225bc7ed88",
+      "parentSpanId": "9effe261c5c6248b",
+      "name": "库存检查 Agent（模拟）",
+      "kind": "agent",
+      "startTimeMs": 1788737936598.8,
+      "endTimeMs": 1788737936607.9001,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "agent",
+        "eval.mock": true
+      }
+    },
+    {
+      "traceId": "727f9ec6b40a96f1a26c0cba894ccc46",
+      "spanId": "c1094419fa813761",
+      "parentSpanId": "a6f3b0225bc7ed88",
+      "name": "读取库存（本地桩）",
+      "kind": "tool",
+      "startTimeMs": 1788737936598.9001,
+      "endTimeMs": 1788737936607.9001,
+      "status": "ok",
+      "attributes": {
+        "eval.kind": "tool",
+        "eval.mock": true
+      }
+    }
+  ]
+}

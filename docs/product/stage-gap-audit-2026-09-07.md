@@ -2,7 +2,7 @@
 
 审计节点：N12。代码基线：`5e25d1cb826894e0141628ad0533c839fa1d428b`（PR #53 合并）。需求来源：[最新 PRD 基线](../prd/2026-09/README.md)。本轮只修改文档，不把审计升级成新业务功能。
 
-后续修复记录：N13/P0-A已按本审计发现实施[共享声明校准](../features/F-ACT-001/claims-correction.md)，完整本地门禁已通过，最终CI尚未完成；下表保留原审计时点事实，不将修复计作新能力。
+后续修复记录：N13/P0-A已按本审计发现完成[共享声明校准](../features/F-ACT-001/claims-correction.md)，完整本地门禁及[PR #55](https://github.com/boyuling-123/AI-API-workspace/pull/55)最终CI通过并正常合并；下表保留原审计时点事实，P0-A已解决，不将修复计作新能力。
 
 ## 一句话结论
 
