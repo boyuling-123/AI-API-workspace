@@ -6,6 +6,7 @@ import { Button, ConfigProvider, Table, Tag, Tree } from "antd";
 import zhCN from "antd/locale/zh_CN";
 import type { DataNode } from "antd/es/tree";
 import { TraceInspector } from "./TraceInspector";
+import { ObservationFileImport } from "./ObservationFileImport";
 import { serializeAgentExperiment, summarizeAgentExperiment, type AgentExperiment, type AgentObservation, type AgentTraceSummary } from "@/lib/agentObservability";
 
 const statusText = { ok: "成功", error: "异常", unset: "未确定" };
@@ -29,6 +30,8 @@ export function AgentObservabilityLab() {
   const [running, setRunning] = useState(false);
   const [runningMode, setRunningMode] = useState<"mock" | "langgraph" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [importBusy, setImportBusy] = useState(false);
+  const [downloadError, setDownloadError] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   useEffect(() => () => abortRef.current?.abort(), []);
   const summaries = experiment ? summarizeAgentExperiment(experiment) : [];
@@ -36,12 +39,13 @@ export function AgentObservabilityLab() {
   const spans = experiment?.spans.filter((span) => span.traceId === selectedTraceId) ?? [];
 
   async function run(mode: "mock" | "langgraph" = "mock") {
-    if (abortRef.current) return;
+    if (abortRef.current || importBusy) return;
     const controller = new AbortController();
     abortRef.current = controller;
     setRunning(true);
     setRunningMode(mode);
     setError(null);
+    setDownloadError(false);
     try {
       const result = mode === "langgraph"
         ? await (await import("@/services/runLangGraphExperimentClient")).runLangGraphExperimentClient(controller.signal)
@@ -60,12 +64,16 @@ export function AgentObservabilityLab() {
 
   function download() {
     if (!experiment) return;
-    const url = URL.createObjectURL(new Blob([serializeAgentExperiment(experiment)], { type: "application/json;charset=utf-8" }));
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = experiment.source === "local-langgraph-mock-otel" ? "agent-observability-langgraph-mock.json" : "agent-observability-local-mock.json";
-    anchor.click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setDownloadError(false);
+    let url: string | undefined;
+    try {
+      url = URL.createObjectURL(new Blob([serializeAgentExperiment(experiment)], { type: "application/json;charset=utf-8" }));
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = experiment.source === "local-langgraph-mock-otel" ? "agent-observability-langgraph-mock.json" : "agent-observability-local-mock.json";
+      anchor.click();
+    } catch { setDownloadError(true); }
+    finally { if (url) { const objectUrl = url; setTimeout(() => URL.revokeObjectURL(objectUrl), 1000); } }
   }
 
   return <ConfigProvider locale={zhCN} theme={{ token: {
@@ -87,20 +95,28 @@ export function AgentObservabilityLab() {
             本页为 Mock 验证，不是真实模型评测。决策、工具和故障均由本地桩控制；耗时不能用于比较模型能力。Token 和模型成本未测量。
           </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Button type="primary" aria-label="运行 3 组本地实验" aria-busy={runningMode === "mock"} loading={runningMode === "mock"} disabled={running} onClick={() => run()}>运行 3 组本地实验</Button>
-            <Button aria-label="运行 LangGraph 实验" aria-busy={runningMode === "langgraph"} loading={runningMode === "langgraph"} disabled={running} onClick={() => run("langgraph")}>运行 LangGraph 实验</Button>
+            <Button type="primary" aria-label="运行 3 组本地实验" aria-busy={runningMode === "mock"} loading={runningMode === "mock"} disabled={running || importBusy} onClick={() => run()}>运行 3 组本地实验</Button>
+            <Button aria-label="运行 LangGraph 实验" aria-busy={runningMode === "langgraph"} loading={runningMode === "langgraph"} disabled={running || importBusy} onClick={() => run("langgraph")}>运行 LangGraph 实验</Button>
             <Button disabled={!experiment || running} onClick={download}>下载实验 JSON</Button>
             {running && <Button onClick={() => abortRef.current?.abort()}>停止本地实验</Button>}
           </div>
           <p className="mt-3 text-sm leading-6 text-slate-700">LangGraph 1.4.14：真实框架 + 固定 Mock 节点，运行顺序与自动重试 2 组实验。仅访问本机执行接口，不连接 LangSmith 或模型。</p>
           {experiment && <p className="mt-2 text-sm font-medium text-blue-800" aria-label="当前结果来源">
-            当前结果：{experiment.source === "local-langgraph-mock-otel" ? "LangGraph 真实调度 / Mock 节点 / 框架回调采集" : "本地模拟流程 / 手动 SDK 埋点"}
+            {experiment.provenance ? `外部文件回读，来源未认证。文件声明：${experiment.source === "local-langgraph-mock-otel" ? "LangGraph / Mock 节点 / 框架回调" : "本地模拟流程 / 手动 SDK 埋点"}` : `当前结果：${experiment.source === "local-langgraph-mock-otel" ? "LangGraph 真实调度 / Mock 节点 / 框架回调采集" : "本地模拟流程 / 手动 SDK 埋点"}`}
           </p>}
           <p className="mt-2 text-xs leading-6 text-slate-600" role="status" aria-label="实验采集状态">
-            {running ? "正在本地采集调用链，不调用模型或外部 API…" : error ? "本次采集未完成；如有之前完成的结果，仍保留在下方。" : experiment ? "采集完成。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : "选择上方一种实验后开始。不会修改现有项目数据。"}
+            {running ? "正在本地采集调用链，不调用模型或外部 API…" : error ? "本次采集未完成；如有之前完成的结果，仍保留在下方。" : experiment?.provenance ? "文件已加载，未重新执行。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : experiment ? "采集完成。结果仅保留在当前页面，离开前可下载 JSON；未写入项目数据库。" : "选择上方一种实验后开始。不会修改现有项目数据。"}
           </p>
           {error && <p role="alert" aria-label="实验运行错误" className="mt-2 text-sm text-red-800">{error}</p>}
+          {downloadError && <p role="alert" aria-label="观测下载错误" className="mt-2 text-sm text-red-800">下载未完成，当前结果保留。请再次点击下载。</p>}
         </section>
+
+        <ObservationFileImport disabled={running} hasResult={Boolean(experiment)} onBusyChange={setImportBusy} onConfirm={(result) => {
+          setExperiment(result);
+          setSelectedTraceId(summarizeAgentExperiment(result)[0]?.traceId ?? null);
+          setError(null);
+          setDownloadError(false);
+        }} />
 
         <section aria-label="采集摘要" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           {[

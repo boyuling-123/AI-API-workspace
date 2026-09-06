@@ -5,7 +5,7 @@
 最新用户要求优先复用现成开源代码，暂不新增后端存储；此前 v6 文件系统/SQLite 实现排期暂缓，不继续按旧 POOL 队列开发。原有未提交草稿保留在原工作树。
 
 - 本轮任务、硬截止和接续状态见 [夜间台账](OVERNIGHT-2026-09-07.md)。
-- 最新：F-DEMO-001 功能提交 `3b2db7d` 已推送，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 已自主创建。287 unit/2 stress/61 E2E、截图/6成功Trace、本机导航检查均通过；纯文档回写后等待最终 head CI。3002预览会话35452已恢复，下次build/E2E前仅停它。下一 Ready `.sdd/next-feature-portable-observation.md` 仅在本 PR 最终 CI/合并后审计，不重复创建或索取授权。
+- 最新：PR52 已正常合并为 `106c3e5`。当前 `codex/feat-portable-observation` 的 F-OBS-004 完整 quality 298 unit/2 stress、全量66 E2E、5专项再验及截图/Trace均通过，459文件Secret Scan通过。接下来提交/PR/最终CI。3002预览已恢复，会话52679；下次build/E2E前仅停它。下一Ready N12阶段差距审计，不重复当前实现或PR52。
 - 复用候选、许可边界、旧模块证据与存储接口范围见 [源码复用方案](../product/open-source-reuse.md)。
 - F-OBS-001 中文 Agent 观测实验室已完成本地及远端验收，[PR #45](https://github.com/boyuling-123/AI-API-workspace/pull/45) 已合并，保持 Demo 状态；旧 75 项能力状态不因调研而升级。下一 Ready：F-DATA-001 本地只读历史演示。
 - Developer Helper 已完成方法适配，见 [适配说明](DEVELOPER-HELPER-ADAPTATION.md)；不复制配置或强制迁移技术栈。

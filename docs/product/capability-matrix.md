@@ -1,6 +1,8 @@
 # 测评平台 v5.0 能力矩阵
 
-新增独立能力 F-DEMO-001：已实现（中文产品演示导览），本地完整门禁通过，[PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 最终 CI 待验。[需求/验收](../features/F-DEMO-001/spec.md)、代码 `interviewGuide.ts`、`InterviewWalkthrough.tsx`、`WorkbenchNav.tsx` 与 `/interview-demo`，以及 [9 新单测/6 浏览器路径/全量61 E2E/截图与 Trace](../evidence/pr-interview-walkthrough/README.md)。导览不自动运行任务，不改变旧75项统计基数，不把导航高亮算作功能验收。
+新增独立能力 F-OBS-004：已实现（限定两种本平台 Mock 观测 JSON 的确认式本机回读），本地完整门禁通过、最终 CI 待验。[规格](../features/F-OBS-004/spec.md)、代码 `portableAgentExperiment.ts`、`ObservationFileImport.tsx` 与既有观测页；[11新单测/全量66 E2E/5成功Trace/截图与来源标记证据](../evidence/pr-portable-observation/README.md)。不是通用 Agent 数据导入，不改变旧 75 项统计基数；PR 待创建。
+
+新增独立能力 F-DEMO-001：已验证（中文产品演示导览），本地完整门禁与 [PR #52](https://github.com/boyuling-123/AI-API-workspace/pull/52) 最终 CI 全通过，已正常合并。[需求/验收](../features/F-DEMO-001/spec.md)、代码 `interviewGuide.ts`、`InterviewWalkthrough.tsx`、`WorkbenchNav.tsx` 与 `/interview-demo`，以及 [9 新单测/6 浏览器路径/全量61 E2E/截图与 Trace/最终 CI](../evidence/pr-interview-walkthrough/README.md)。导览不自动运行任务，不改变旧75项统计基数，不把导航高亮算作功能验收。
 
 新增独立能力 F-OBS-003：已验证（真实 LangGraph 调度 + 固定 Mock 节点），[PR #51](https://github.com/boyuling-123/AI-API-workspace/pull/51) 最终 CI 通过并正常合并。[规格/验收](../features/F-OBS-003/spec.md)、代码 `src/langgraph`、`src/server/langgraphExperiment.ts` 与 `/observability`，以及 [14 项新增单测/3 项新增 E2E/截图与 Trace/最终 CI](../evidence/pr-langgraph-observability/README.md)。不代表任意用户 Agent 或真实模型接入，不改变旧 75 项统计基数。
 

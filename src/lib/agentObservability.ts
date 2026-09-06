@@ -34,6 +34,7 @@ export interface AgentExperiment {
   modelCalls: 0;
   tokens: null;
   modelCost: null;
+  provenance?: { kind: "local-file"; verification: "unverified" };
   spans: AgentObservation[];
 }
 
