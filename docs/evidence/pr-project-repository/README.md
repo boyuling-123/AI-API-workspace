@@ -1,6 +1,6 @@
 # F-STORE-002 验收证据
 
-当前：本地完整门禁通过，尚未提交/创建 PR，最终 head CI 待验，不标记已验证。
+当前：本地完整门禁通过，功能提交 `1025f8e55592a948a61c2974b5e73d739af31ea0` 已推送并创建 [PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48)，[首轮 CI 34054586655](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34054586655) 两道 Job 全部 success。正在进行仅文档证据回写，最终 head CI 待验，不标记已验证。
 
 范围：ProjectRepository 契约、真实 IndexedDB 默认适配器、组合入口与 Hook 接入；没有新后端或运行时切换，没有新的业务 UI。既有旧项目保留页面必须在本轮源代码上重新跑浏览器测试。
 
@@ -15,7 +15,7 @@
 | 独立证据复跑 | 4 / 4 旧项目保留路径再次运行，成功 Trace 全部生成，新截图实际采集并目视复核 |
 | 可访问性 | 新提示区域 WCAG 零违规、390px 无溢出；现有主路径 serious/critical 门禁通过 |
 | 数据与网络边界 | 全部合成数据、原用户数据库未读取；存储测试所有 API 调用数为零，页面控制台错误为零 |
-| Diff / Secret Scan | 检查通过，提交前对最终文件集合复扫；无新增生产依赖或真实配置 |
+| Diff / Secret Scan | 检查通过，提交前对最终 392 个仓库文件复扫；无新增生产依赖或真实配置 |
 
 首次故障测试曾错误要求异常对象引用相等；真实 Dexie 会包装底层异常。调整为验证确实拒绝、QuotaExceededError 类型、原记录不变及固定安全文案后通过，没有改生产逻辑来迎合测试。
 

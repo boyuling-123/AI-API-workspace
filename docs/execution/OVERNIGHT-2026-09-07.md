@@ -69,6 +69,8 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 03:23：PR #48 首轮 CI `34054586655` 两道 Job 全部 success；仅文档的最终证据回写准备提交，仍需最终 head 的 CI 通过后再合并。尚无 N5 业务代码变更，下一 Ready 不变。
+- 03:21：功能提交 `1025f8e` 已推送并自主创建 [PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48)，base `main@3281918`、19 文件。首轮 CI `34054586655` 运行中，正在回写 PR 证据文档；最终文档 head 仍须 CI 通过后再合并。3002 预览已恢复，会话 `36021`；下一 Ready `.sdd/next-feature-actions.md`，不重复 N2B。
 - 03:18：F-STORE-002 完整 quality（237 unit、2 stress、lint/typecheck/22 路由构建）与 47 E2E 通过；4 条存储路径成功 Trace 与本轮合成截图已采集、复核，后续只需完成最终 Diff/Secret Scan 后提交创建 PR。下一 Ready 写入 `.sdd/next-feature-actions.md`，先审计现有 Skill/MCP，别把接入 Agent 当作整个平台 Assistant。3002 暂停状态待恢复；未提交/推送/创建本节点 PR。
 - 03:13：F-STORE-002 已实现最小契约/组合入口/默认 IndexedDB 适配器，纯兼容与错误策略从 db.ts 提出并保留旧导出，useProject 不再直接依赖 db。8 项新增测试首轮 7 通过/1 因 Dexie 包装异常而与测试的引用相等假设冲突，已改为验证失败/类型/数据不变/安全文案，正在复验；未改存储错误行为。3002 会话 9147 已停，完整构建/E2E 完成后恢复。尚未提交/推送/创建本节点 PR。
 - 03:04：PR #47 最终 head `89d21c9` 的 CI `34053385100` 两道 Job success，复核 head/base 未漂移、无 Review 或未解决线程、正常可合并后完成合并，SHA `328191879d0bc4117a608f386041c796c37f6a1a`。当前进入 `codex/refactor-project-repository`，仅本次 PR47 收尾文档待提交；N2B 业务代码尚未开始。下一步按 `.sdd/next-feature-repository.md` 生成 F-STORE-002 规格，禁止重复 N2A 或扩大为后端迁移。

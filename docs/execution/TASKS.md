@@ -22,6 +22,10 @@
 
 - 03:18：F-STORE-002 / N2B 完成真实契约/适配器/Hook 接入，237 unit、2 stress、47 E2E、本轮截图/Trace 与基础门禁通过；待提交创建 PR 和最终 CI。下一 Ready N5 已记录 `.sdd/next-feature-actions.md`；不能宣称已有跨设备、后端迁移或完整 MCP 管理。
 
+- 03:21：F-STORE-002 功能提交 `1025f8e`、[PR #48](https://github.com/boyuling-123/AI-API-workspace/pull/48) 已创建，首轮 CI `34054586655` 运行中；仅证据文档待回写，最终 head 通过后再正常合并。
+
+- 03:23：PR #48 首轮 CI 两道 Job 全通过，最终文档 head 待验；审查无 Review/未解决线程，不提前合并。
+
 ## 已完成：PR 01 基线迁移与状态校准
 
 分支：`codex/chore-baseline-sync`
