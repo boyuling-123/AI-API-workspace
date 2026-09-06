@@ -233,6 +233,7 @@ export function PlatformOverview({ project, onNavigate }: PlatformOverviewProps)
       </section>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm dark:border-slate-700 dark:bg-slate-900">
+        <Link prefetch={false} href="/interview-demo?chapter=positioning" className="py-2 font-semibold text-blue-800 hover:underline dark:text-blue-200">面试演示导览</Link>
         <span className="text-slate-600 dark:text-slate-300">Agent 观测：先用本地模拟任务检查调用链，不消耗模型调用。</span>
         <Link href="/observability" className="py-2 font-semibold text-blue-800 hover:underline dark:text-blue-200">打开观测实验室（Mock）</Link>
       </div>

@@ -65,7 +65,7 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 - 已完成：F-DATA-001 只读历史归档/分页演示（PR #46），F-STORE-001 非破坏性旧项目保护（PR #47）及 F-STORE-002 真实项目存储契约（PR #48）；各自最终 CI 已通过并合并。
 - 已完成：F-ACT-001 两项共享只读 Action、中文工具页、同源 API 与官方 SDK stdio MCP（PR #49 最终 CI 通过并合并）；没有对话自治或浏览器项目桥接，写入/评分工具未开放。
 - 已完成：F-OBS-002 实际复用固定 Langfuse 提交的时间范围/选中定位、调用树展开两份纯逻辑，中文检查器最终 CI 通过，PR #50 已合并；文件/许可/差异见 [受控复用清单](../../third_party/langfuse/README.md)。
-- 未完成：Langfuse 整站 UI 容器移植、框架回调兼容性、真实模型评测、观测轨迹持久化及大数据性能验证。
+- 未完成：Langfuse 整站 UI 容器移植、任意用户框架回调兼容性、真实模型评测、观测轨迹持久化及大数据性能验证。固定 LangGraph 适配不等于任意框架兼容。
 - PR：[F-OBS-001 / #45](https://github.com/boyuling-123/AI-API-workspace/pull/45)，本地与最终远端 CI 通过，已正常合并。
 
 ## 提取优势，而非拼装整个平台
@@ -80,8 +80,8 @@ Langfuse 原生 [MCP](https://langfuse.com/docs/api-and-data-platform/features/m
 | promptfoo | 声明式用例/断言、回归与红队工作流 | 可迁移评测配置、确定性断言优先、受控批量执行 | 设计中；不复制整个服务，不默认生成攻击或调用 Judge |
 | DeepTeam / Giskard | 安全场景与测试集合 | 可选的经授权安全测试适配器 | 暂缓实际运行；安全报告不代表保证模型安全 |
 | AgentScope | Agent 工程与 OTel 追踪，具有中文文档生态 | 后续优先验收的 Agent 框架之一，沿用其已提供的埋点能力 | 设计中；不另造一个 Agent 框架，不宣称已运行兼容测试 |
-| LangGraph | 显式状态图、节点调度与失败重试 | 编译顺序与失败恢复两张图，将真实回调转换为既有 OTel/中文检查器 | F-OBS-003 本地门禁通过，PR #51 最终 CI 待验；真实框架、固定 Mock 节点，非真实模型或任意 Agent 兼容 |
-| Ant Design | 企业工具组件、表格/树及中文语言包 | 实际复用观测表格、步骤树、按钮，中文文案与错误提示 | 观测与归档页已验收合并，工具页沿用组件验收中；不用翻译皮肤掩盖缺失业务能力 |
+| LangGraph | 显式状态图、节点调度与失败重试 | 编译顺序与失败恢复两张图，将真实回调转换为既有 OTel/中文检查器 | F-OBS-003 本地与最终 CI 通过，PR #51 已合并；真实框架、固定 Mock 节点，非真实模型或任意 Agent 兼容 |
+| Ant Design | 企业工具组件、表格/树及中文语言包 | 实际复用观测表格、步骤树、按钮，中文文案与错误提示 | 观测、归档与只读工具页均已验收合并；不用翻译皮肤掩盖缺失业务能力 |
 
 AgentScope 官方 [Tracing 文档](https://doc.agentscope.io/tutorial/task_tracing.html) 给出 OpenTelemetry 与 Langfuse 的接法；[仓库](https://github.com/agentscope-ai/agentscope) 标示 Apache-2.0。框架已有 SDK/回调时优先复用；不同版本的字段和父子关系必须各自测试，不能从 OTel 兼容推出“所有框架均已接入”。
 
