@@ -8,6 +8,10 @@
 - dev-only fake-indexeddb 6.2.5 使 Node 单测直接运行真实 Dexie；新增 9 项单测和 4 项真实浏览器 IndexedDB 路径。完整 229 unit / 2 stress / 47 E2E、lint/typecheck/build 通过，合成截图已复核，原始用户数据库未触碰。
 - 下一步按授权提交、推送、创建 PR，最终 CI 和 head/base 审查后正常合并；N2B ProjectRepository 抽离单开下一 PR。既有 7 项依赖风险未因本 PR 解决，也未增加。
 
+- 02:52：F-STORE-001 功能提交 `037c527` 已推送，浏览器自主创建 [PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47)；首轮 CI `34053067332` 运行中。下一步回写文档并等待最终 head CI，再审查合并，未冒充独立自批准。
+
+- 02:56：PR #47 首轮 CI `34053067332` 两道 Job 全通过；准备只含 PR/证据状态的最终文档提交，远端最终 head 通过前不合并。
+
 ## 2026-08-25：PR 01 启动
 
 - 确认远端仓库为 `boyuling-123/AI-API-workspace`，远端基线只有 `main` 和一个初始提交。

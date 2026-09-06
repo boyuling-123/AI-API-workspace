@@ -69,6 +69,8 @@
 
 ## 最新检查点（优先于初始记录）
 
+- 02:56：PR #47 功能提交首轮 CI `34053067332` 两道 Job 全部 success；准备仅文档的最终证据提交，最终 head 自身 CI 通过再合并。代码和测试未变，不重复运行或虚报新测试。预览仍是 3002 / 会话 9147；原目录草稿未动。
+- 02:52：功能提交 `037c527` 已推送并自主创建 [PR #47](https://github.com/boyuling-123/AI-API-workspace/pull/47)，base `main@fe29d91`、17 文件。首轮 CI `34053067332` 运行中；仅本次 PR 证据文档在回写，最终文档提交也须 CI 通过后才合并。3002 预览已恢复，会话 `9147`。下一 Ready 仍为 `.sdd/next-feature-repository.md`。
 - 02:50：完整 quality 与 47 项 Playwright 回归通过，新提示 WCAG 零违规、390px 无溢出、合成截图已复核。接下来提交 F-STORE-001 并创建 PR；最终 head CI 必须通过。下一 Ready 已写入 `.sdd/next-feature-repository.md`，本轮不得夹带 N2B 实施。
 - 02:47：F-STORE-001 已实施：全表只读分类（不遗漏无 updateTime 索引记录）、同 ID 写保护事务、保留数量提示及固定异常文案。新增 dev-only fake-indexeddb 6.2.5，真实 Dexie 测试 9 项通过，全量 unit 229/压力 2 通过，完整 quality/build 与 4 条新增 E2E 正在验收。未提交/推送/创建本节点 PR。预览会话 65336 已停止，完成本轮门禁后恢复 3002。
 - 02:31：PR #46 最终 head `53f9586764c68bb286d1f7ba4df9d62459f2b3da` 的 CI `34051689031` 两道 Job 全部 success。复查 head/base 无漂移、无 Review 或未解决线程、GitHub Ready to merge 后，通过正常浏览器流程合并；GitHub 确认 merged=true，合并 SHA `fe29d9131c0ad1eae5648f8e895c152d10ca9276`。
