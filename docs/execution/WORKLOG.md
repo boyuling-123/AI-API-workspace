@@ -1,5 +1,12 @@
 # 测评平台开发纪实
 
+## 2026-09-08 V6-00：AI-Native PRD 重审与底座校准
+
+- Planner：逐节核对用户提供的新 v6.0 PRD、当前 v5 根应用和 EvalScope 固定提交。裁定旧 Next.js 只作迁移源，不能再把侧边栏换皮写成 v6 完成；EvalScope 是唯一执行/Web 基座，Langfuse 只作信息架构与许可清晰的局部源码参考。
+- Developer：新增 v6 文档入口、PRD 执行基线、上游来源、底座能力核验、领域版本、Action 状态机、文件/SQLite 恢复、分阶段验收和短 PR 计划；README 与任务台账同步标明迁移边界。本节点不改业务代码。
+- Tester：隔离克隆 EvalScope `c31f0f946c09bc087f856a017637ac157b5459a5`；Web 全新安装成功，63 个测试文件共 462 项通过，lint、设计/结构/locale drift 和生产构建通过。依赖审计发现 6 高危、1 中危，登记为 V6-01 门禁，不执行强制自动升级。v5 迁移源的 Secret Scan、lint、typecheck、301 项单测、2 项压力测试、24 路由构建和 68 项 Playwright/WCAG 回归通过；11 份本轮 Markdown 的 29 个相对链接通过。Python 3.12 基线和白底商品图业务试跑尚未完成，不冒充底座已验收。
+- 安全：未读取密钥、未导入用户真实数据、未运行付费模型或 AI Judge。当前分支 `codex/v6-foundation-audit`，下一 Ready 为 V6-01。
+
 ## 2026-09-07 N6：最后文档交付
 
 - 08:05：初始提交ae23aa0自主推送并创建[最后PR #57](https://github.com/boyuling-123/AI-API-workspace/pull/57)，首轮CI34068663345触发。本次纯文档补PR链接后只等最终head验收；合并与09:00停止记录分别保留于PR评论及本机忽略检查点，不再创建递归收尾PR。
