@@ -43,7 +43,7 @@ test("filters and edits the unified resource pool without calling models", async
   const accessSection = page
     .locator("section")
     .filter({
-      has: page.getByRole("heading", { name: /接口创建&管理/ }),
+      has: page.getByRole("heading", { name: /对象与接口/ }),
     })
     .last();
   const mockConfig = accessSection

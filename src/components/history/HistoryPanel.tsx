@@ -44,8 +44,8 @@ export function HistoryPanel({
         </div>
 
         {tasks.length === 0 ? (
-          <p className="rounded-md border border-dashed border-gray-200 px-3 py-6 text-center text-sm text-gray-400">
-            还没有历史批次。先在「跑批」板块正式运行一次（试运行不落历史）。
+          <p className="rounded-md border border-dashed border-gray-200 px-3 py-6 text-center text-sm text-gray-600">
+            暂无运行记录。点击右上方「新建评测任务」，配置输入和评测对象后运行；试运行不会写入历史。
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-gray-100">

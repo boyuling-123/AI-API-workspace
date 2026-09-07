@@ -94,7 +94,7 @@ test("appends human review versions without changing AI scores or calling models
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await page.getByRole("button", { name: "批量导入" }).click();
   const inputSection = page
     .locator("section")
@@ -114,7 +114,7 @@ test("appends human review versions without changing AI scores or calling models
     page.getByRole("button", { name: "运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");
@@ -135,7 +135,7 @@ test("appends human review versions without changing AI scores or calling models
   await expect.poll(() => evaluateCalls.length).toBe(1);
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await page.getByRole("button", { name: "查看", exact: true }).click();
   const leaderboard = page.getByLabel("评价排行榜");
   await expect(
@@ -228,7 +228,7 @@ test("appends human review versions without changing AI scores or calling models
   }
 
   await page.reload();
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await page.getByRole("button", { name: "查看", exact: true }).click();
   const reloadedDetail = page.locator("section[id^='evaluation-case-details-']");
   const reloadedRow = reloadedDetail

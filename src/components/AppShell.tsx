@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useProject } from "@/hooks/useProject";
 import { TopToolbar } from "@/components/TopToolbar";
 import { WorkspaceBody } from "@/components/WorkspaceBody";
-import { PetDog } from "@/components/pet/PetDog";
 import { consumeWorkspaceImport } from "@/services/importWorkspaceClient";
 
 export function AppShell() {
@@ -60,18 +59,6 @@ export function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 text-slate-800 transition-colors duration-200 dark:bg-slate-950 dark:text-slate-200">
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
-        <TopToolbar
-          project={project}
-          saveStatus={saveStatus}
-          saveError={saveError}
-          onRename={(name) =>
-            updateProject((current) => ({ ...current, name }))
-          }
-          onCreateNew={() => createNew()}
-          onImport={(next) => replaceProject(next)}
-        />
-      </header>
       <main className="flex-1">
         {retainedProjectCount > 0 && (
           <div role="status" aria-label="旧项目保留提示" className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
@@ -87,12 +74,18 @@ export function AppShell() {
         <WorkspaceBody
           key={project.id}
           project={project}
+          toolbar={<TopToolbar
+            project={project}
+            saveStatus={saveStatus}
+            saveError={saveError}
+            onRename={(name) => updateProject((current) => ({ ...current, name }))}
+            onCreateNew={() => createNew()}
+            onImport={(next) => replaceProject(next)}
+          />}
           updateProject={updateProject}
         />
       </main>
 
-      {/* 电子宠物·像素小狗（v4.7 彩蛋）：全局悬浮，两侧留白自主漫游，纯装饰、不影响业务。 */}
-      <PetDog />
     </div>
   );
 }

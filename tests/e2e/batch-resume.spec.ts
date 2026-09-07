@@ -46,9 +46,9 @@ test("persists a paused batch and resumes only unfinished calls after reload", a
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -80,14 +80,14 @@ test("persists a paused batch and resumes only unfinished calls after reload", a
   slowUnfinishedCalls = false;
   await page.reload();
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await expect(page.getByText("发现可继续的批量任务")).toBeVisible();
   await page.getByRole("button", { name: "继续剩余任务" }).click();
 
   await expect(page.getByText("发现可继续的批量任务")).toBeHidden();
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史任务（1）" })).toBeVisible();
   await expect(page.getByText("12 / 12 调用", { exact: true })).toBeVisible();
   await expect(page.getByText("完成", { exact: true })).toBeVisible();
@@ -114,9 +114,9 @@ test("terminates a running batch without leaving a resumable task", async ({
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -141,6 +141,6 @@ test("terminates a running batch without leaving a resumable task", async ({
 
   await expect(page.getByText("发现可继续的批量任务")).toBeHidden();
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await expect(page.getByText("已取消", { exact: true })).toBeVisible();
 });

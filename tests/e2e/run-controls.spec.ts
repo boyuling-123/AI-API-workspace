@@ -2,9 +2,9 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 
 async function prepareSingleBatch(page: Page, prompt: string) {
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -71,7 +71,7 @@ test("persists a run policy and shows a successful finite retry", async ({
   await expect(
     page.getByRole("button", { name: "运行", exact: true })
   ).toBeEnabled();
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await expect(
     page.getByText("并发 2 · QPS 不限速 · 超时 1s · 重试 1", {
       exact: true,
@@ -114,7 +114,7 @@ test("classifies an auth failure and never retries it", async ({ page }) => {
     page.getByRole("button", { name: "运行", exact: true })
   ).toBeEnabled();
   expect(callCount).toBe(1);
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "查看结果" }).click();
   await expect(
     page.getByRole("table").getByText("鉴权失败", { exact: true })

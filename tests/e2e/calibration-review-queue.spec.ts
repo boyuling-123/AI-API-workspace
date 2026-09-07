@@ -42,8 +42,8 @@ test("claims, reviews and persists a risky multi-Judge Case without new model ca
     });
   });
 
-  await page.goto("/");
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.goto("/?tab=run");
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   await page.getByLabel("导入黄金集文件").setInputFiles({
     name: "review-golden.json",
     mimeType: "application/json",
@@ -150,7 +150,7 @@ test("claims, reviews and persists a risky multi-Judge Case without new model ca
 
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   const reloadedQueue = page
     .getByLabel("Judge 校准运行")
     .getByLabel("校准人工复核队列");

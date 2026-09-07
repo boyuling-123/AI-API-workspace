@@ -12,7 +12,11 @@
 
 `src/vendor/langfuse/types.ts` 是本项目编写的最小结构类型，不宣称为上游原文件。`src/lib/agentTraceInspector.ts` 校验单 Trace 图及时间，把已有 OTel 结果转成该结构，再调用实际 vendor 函数。`TraceInspector.tsx` 是中文/Ant Design 外围 UI，不冒充上游页面源码。
 
-## 未采用的候选
+## 二级导航适配（2026-09-07）
+
+`src/vendor/langfuse/PageTabs.tsx` 基于同一固定提交的 `web/src/components/layouts/page-tabs.tsx` 适配，文件不在商业许可目录中，沿用本目录 MIT 许可。与上方两个未改变函数体的模块不同，该组件去掉 Pages Router、querySelector 和通用 className 入参，改为本地回调、语义链接、aria-current 与 44px 触控区域；不是字节一致的 vendoring，因此不加入上方“逆转导入即可匹配摘要”的 manifest.files。通过实际主页面导航 E2E 验收。主侧边栏为本项目编写，不能称为完整 Langfuse 前端 Fork。
+
+## 未移植的容器
 
 - [TraceTimelineCompact.tsx](https://github.com/langfuse/langfuse/blob/7637df1e1aadddbbfd0a45b960ecc97451381ce5/web/src/features/traces/components/TraceTimelineDense/TraceTimelineCompact.tsx) 直接依赖 TraceData、Selection、Playhead、ViewPreferences、预取与选择 Hooks；移植需要其应用上下文和数据接入，不能将整个容器当作无后端组件。
 - [treeNode.ts](https://github.com/langfuse/langfuse/blob/7637df1e1aadddbbfd0a45b960ecc97451381ce5/web/src/features/traces/types/treeNode.ts) 含 `@langfuse/shared`、Decimal、成本和服务字段。本节点不提供这些能力，只在类型边界声明纯函数真实所需字段。

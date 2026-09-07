@@ -72,7 +72,7 @@ test("blocks a failing calibration and publishes a passing Evaluator without ext
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await page.getByRole("button", { name: "批量导入" }).click();
   const inputSection = page
     .locator("section")
@@ -84,7 +84,7 @@ test("blocks a failing calibration and publishes a passing Evaluator without ext
   await expect(page.getByRole("button", { name: "运行", exact: true }))
     .toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");
@@ -127,7 +127,7 @@ test("blocks a failing calibration and publishes a passing Evaluator without ext
     reviewer_note: index < 10 ? "人工确认可发布" : "人工确认需拦截",
   }));
 
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   await page.getByLabel("导入黄金集文件").setInputFiles({
     name: "release-golden.json",
     mimeType: "application/json",
@@ -202,7 +202,7 @@ test("blocks a failing calibration and publishes a passing Evaluator without ext
   ).toEqual([]);
 
   await page.reload();
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   const reloadedGate = page
     .getByLabel("Judge 校准运行")
     .getByLabel("Evaluator Active 发布门禁");

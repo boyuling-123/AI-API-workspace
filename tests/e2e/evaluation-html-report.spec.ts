@@ -111,7 +111,7 @@ test("downloads and opens a self-contained verified evaluation HTML report", asy
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await page.getByRole("button", { name: "批量导入" }).click();
   const inputSection = page
     .locator("section")
@@ -131,7 +131,7 @@ test("downloads and opens a self-contained verified evaluation HTML report", asy
     page.getByRole("button", { name: "运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");
@@ -166,7 +166,7 @@ test("downloads and opens a self-contained verified evaluation HTML report", asy
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
 
   const modelCallCount = runCalls.length + evaluateCalls.length;
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出HTML报告" }).click();
   const download = await downloadPromise;

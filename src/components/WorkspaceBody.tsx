@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type {
   CalibrationReviewEvent,
   EvaluationReviewEvent,
@@ -39,7 +39,8 @@ import { HistoryPanel } from "@/components/history/HistoryPanel";
 import { GoldenDatasetPanel } from "@/components/calibration/GoldenDatasetPanel";
 import { PlatformOverview } from "@/components/overview/PlatformOverview";
 import { ResourcePoolPanel } from "@/components/resources/ResourcePoolPanel";
-import { AppTabs } from "@/components/layout/AppTabs";
+import { WorkspaceFrame } from "@/components/layout/WorkspaceFrame";
+import { parseWorkspaceTab, workspaceHref, type WorkspaceTab } from "@/lib/workspaceNavigation";
 import { RUNTIME_CONFIG } from "@/config/runtime";
 import { buildResourceCatalog } from "@/lib/resourceCatalog";
 import {
@@ -47,26 +48,16 @@ import {
   getEvaluationRootId,
 } from "@/lib/newDimensionEvaluation";
 
-// 7 板块导航：跑批保持默认入口，总览负责解释完整链路与真实能力边界。
-// 评价入口只在 ③→④（结果区进入），不在跑批板块；⑤ 为历史仓库可随便进。
-type WorkspaceTab =
-  | "run"
-  | "overview"
-  | "access"
-  | "result"
-  | "evaluate"
-  | "evalHistory"
-  | "calibration";
-
 interface WorkspaceBodyProps {
   project: Project;
+  toolbar: ReactNode;
   updateProject: (
     updater: (current: Project) => Project,
     options?: ProjectUpdateOptions
   ) => void;
 }
 
-export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
+export function WorkspaceBody({ project, updateProject, toolbar }: WorkspaceBodyProps) {
   const draft = useInputDraft(project.id);
   const { setContentMode, setRunMode } = draft;
   const { targetIds, setTargetIds } = useTargetSelection(project.id);
@@ -75,23 +66,17 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
   const [evaluatingTask, setEvaluatingTask] = useState<Task | null>(null);
   const [newDimensionContext, setNewDimensionContext] =
     useState<NewDimensionEvaluationContext | null>(null);
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>("run");
+  const [activeTab, setActiveTabState] = useState<WorkspaceTab>("result");
+  const setActiveTab = useCallback((tab: WorkspaceTab) => {
+    const href = workspaceHref(window.location.search, tab);
+    if (href !== window.location.pathname + window.location.search) window.history.pushState(null, "", href);
+    setActiveTabState(tab);
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const tab = params.get("tab");
+    setActiveTabState(parseWorkspaceTab(window.location.search));
     const contentMode = params.get("content_mode");
-    if (
-      tab === "run" ||
-      tab === "overview" ||
-      tab === "access" ||
-      tab === "result" ||
-      tab === "evaluate" ||
-      tab === "evalHistory" ||
-      tab === "calibration"
-    ) {
-      setActiveTab(tab);
-    }
     if (params.get("draft_id") || params.get("import_id")) {
       setRunMode("batch");
       if (contentMode === "text" || contentMode === "image") {
@@ -272,10 +257,21 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       }
       setActiveTab(next);
     },
-    [activeTab, clearEvaluation]
+    [activeTab, clearEvaluation, setActiveTab]
   );
 
-  // 需求三：点击历史某条 → 下方展开该批次结果对比。
+  // Browser navigation follows the same page-state cleanup as sidebar navigation.
+  useEffect(() => {
+    const onPopState = () => {
+      const next = parseWorkspaceTab(window.location.search);
+      if (next !== "evaluate") { setEvaluatingTask(null); setNewDimensionContext(null); clearEvaluation(); }
+      if (next !== "result") setViewingTask(null);
+      setActiveTabState(next);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [clearEvaluation]);
+
   const handleViewTask = useCallback((task: Task) => {
     setViewingTask((current) => (current?.id === task.id ? null : task));
   }, []);
@@ -286,7 +282,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
     setNewDimensionContext(null);
     setEvaluatingTask(task);
     setActiveTab("evaluate");
-  }, [clearEvaluation]);
+  }, [clearEvaluation, setActiveTab]);
 
   const handleAddEvaluationDimensions = useCallback(
     (record: EvaluationRecord, task: Task) => {
@@ -308,7 +304,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       setEvaluatingTask(task);
       setActiveTab("evaluate");
     },
-    [clearEvaluation, project.evaluations]
+    [clearEvaluation, project.evaluations, setActiveTab]
   );
 
   const handleRerunTask = useCallback(
@@ -320,7 +316,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       setActiveTab("run");
       runRerun(sourceTask, rerun);
     },
-    [clearEvaluation, runRerun]
+    [clearEvaluation, runRerun, setActiveTab]
   );
 
   // v4.3 增量2：一次评价跑完 → 生成 EvaluationRecord 存入 Project.evaluations（唯一权威来源，⑤只读这里）。
@@ -373,7 +369,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       updateProject((current) => ({
         ...current,
         evaluations: [...(current.evaluations ?? []), record],
-      }));
+      }), { immediate: true });
     },
     [evaluatingTask, updateProject]
   );
@@ -495,101 +491,37 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
 
   const hasViewingResults = (viewingTask?.results.length ?? 0) > 0;
 
-  // Tab 图标（4 板块）
-  const runIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="5 3 19 12 5 21 5 3" />
-    </svg>
-  );
-  const overviewIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" />
-    </svg>
-  );
-  const accessIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-    </svg>
-  );
-  const resultIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
-    </svg>
-  );
-  const evaluateIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2 9.2 8.6 2 9.2l5.4 4.7L5.8 21 12 17.3 18.2 21l-1.6-7.1L22 9.2l-7.2-.6z" />
-    </svg>
-  );
-  const evalHistoryIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 3v5h5" />
-      <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" />
-      <path d="M12 7v5l4 2" />
-    </svg>
-  );
-  const calibrationIcon = (
-    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 3h6" /><path d="M10 3v5l-4.5 8.2A3 3 0 0 0 8.1 21h7.8a3 3 0 0 0 2.6-4.8L14 8V3" /><path d="M8 15h8" />
-    </svg>
-  );
-
   return (
-    <div className="flex flex-col">
-      {/* 4 板块导航：渲染在 header 下方，视觉上属于头部 */}
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-900/80">
-        <AppTabs
-          activeId={activeTab}
-          onChange={(id) => handleTabChange(id as WorkspaceTab)}
-          tabs={[
-            { id: "run", label: "跑批", icon: runIcon },
-            { id: "overview", label: "平台总览", icon: overviewIcon },
-            { id: "access", label: "接口创建&管理", icon: accessIcon },
-            {
-              id: "result",
-              label: "跑批历史",
-              icon: resultIcon,
-              badge: project.tasks.length > 0 ? (
-                <span className="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">
-                  {project.tasks.length}
-                </span>
-              ) : null,
-            },
-            { id: "evaluate", label: "AI 评价", icon: evaluateIcon },
-            {
-              id: "evalHistory",
-              label: "AI历史评价",
-              icon: evalHistoryIcon,
-              badge:
-                (project.evaluations?.length ?? 0) > 0 ? (
-                  <span className="ml-1 rounded-full bg-brand-100 px-1.5 py-0.5 text-[10px] font-bold text-brand-700 dark:bg-brand-500/15 dark:text-brand-400">
-                    {project.evaluations!.length}
-                  </span>
-                ) : null,
-            },
-            {
-              id: "calibration",
-              label: "Judge 校准",
-              icon: calibrationIcon,
-              badge:
-                (project.goldenDatasetVersions?.length ?? 0) > 0 ? (
-                  <span className="ml-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
-                    {project.goldenDatasetVersions!.length}
-                  </span>
-                ) : null,
-            },
-          ]}
-        />
-      </div>
+    <WorkspaceFrame activeTab={activeTab} onNavigate={handleTabChange} toolbar={toolbar}>
 
-      {activeTab === "overview" ? (
+      {activeTab === "dataset" ? (
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-6 py-6">
+          <p className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">当前为任务共享的数据草稿，切换页面不会清空。DatasetVersion、row_id 哈希与版本 Diff 尚未实现。</p>
+          <InputArea
+            projectName={project.name}
+            contentMode={draft.contentMode}
+            setContentMode={draft.setContentMode}
+            runMode={draft.runMode}
+            setRunMode={draft.setRunMode}
+            singleInput={draft.singleInput}
+            batchInputs={draft.batchInputs}
+            updateSingleInput={draft.updateSingleInput}
+            setBatchInputs={draft.setBatchInputs}
+            targetColumns={targetColumns}
+            isReady={draft.isReady}
+          />
+        </div>
+      ) : activeTab === "resources" ? (
+        <div className="px-6 py-6"><ResourcePoolPanel configs={algoConfigs} /></div>
+      ) : activeTab === "integrations" ? (
+        <div className="px-6 py-6"><ExternalApiCapabilities /></div>
+      ) : activeTab === "overview" ? (
         <PlatformOverview
           project={project}
           onNavigate={(destination) => handleTabChange(destination)}
         />
       ) : activeTab === "run" ? (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* 顶部运行控制台：先给用户明确当前能不能跑、还缺什么。 */}
           <RunPanel
             inputs={currentInputs}
@@ -628,10 +560,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
               <div>
-                <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
-                    2
-                  </span>
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                   测试模型 / 算法选择
                 </h2>
                 <p className="mt-1 text-xs text-slate-600 dark:text-slate-400">
@@ -658,7 +587,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                 onClick={() => setActiveTab("access")}
                 className="mx-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
               >
-                接口创建&管理
+                对象与接口
               </button>
               板块。
             </div>
@@ -681,7 +610,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
               onClick={() => setActiveTab("result")}
               className="mx-1 font-medium text-brand-600 hover:underline dark:text-brand-400"
             >
-              跑批历史
+              运行记录
             </button>
             板块查看对比，再进入「AI 评价」逐条打分。
           </p>
@@ -689,14 +618,11 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
       ) : activeTab === "access" ? (
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
           <ResourcePoolPanel configs={algoConfigs} />
-          {/* ② 接口创建&管理板块：新增/编辑接口、AI 解读文档自动建接口 */}
+          {/* ② 对象与接口板块：新增/编辑接口、AI 解读文档自动建接口 */}
           <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
             <div className="border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
-              <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
-                  ②
-                </span>
-                接口创建&管理
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                对象与接口
               </h2>
             </div>
             <div className="p-5">
@@ -706,10 +632,9 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
               />
             </div>
           </section>
-          <ExternalApiCapabilities />
         </div>
       ) : activeTab === "result" ? (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* 需求三·上方：历史任务列表（每行带「去AI评测」） */}
           <HistoryPanel
             tasks={project.tasks}
@@ -734,33 +659,30 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                 evaluations={evaluation.evalResults}
               />
             ) : (
-              <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400 dark:border-slate-700">
+              <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
                 该批次没有结果数据。
               </div>
             )
-          ) : (
-            <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-400 dark:border-slate-700">
+          ) : project.tasks.length > 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 p-8 text-center text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
               点击上方某条历史批次的「查看结果」，在此展开结果对比。
             </div>
-          )}
+          ) : null}
         </div>
       ) : activeTab === "evaluate" ? (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* ④ AI 评价板块（需求二·数据源洁癖）：必须从③带入批次，离开即清空 */}
           <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
-              <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-amber-100 text-[11px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300">
-                  ④
-                </span>
-                AI 智能评价
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                评价配置
               </h2>
               <button
                 type="button"
                 onClick={() => handleTabChange("result")}
                 className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
               >
-                ← 返回跑批历史
+                ← 返回运行记录
               </button>
             </div>
 
@@ -782,7 +704,7 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
                     onClick={() => handleTabChange("result")}
                     className="rounded-md border border-amber-300 px-2.5 py-1 text-xs text-amber-700 transition hover:bg-amber-100 dark:border-amber-500/30 dark:text-amber-400"
                   >
-                    返回跑批历史
+                    返回运行记录
                   </button>
                 </div>
                 <div className="p-5">
@@ -805,22 +727,21 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
             ) : (
               <div className="flex flex-col items-center gap-4 p-10 text-center">
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  请从【结果与历史】选择批次后点「去AI评测」进入。
+                  请在「评测任务 / 运行记录」选择批次，再点击「去AI评测」。
                 </p>
                 <button
                   type="button"
                   onClick={() => handleTabChange("result")}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-brand-100 px-4 py-2 text-sm font-medium text-brand-700 transition hover:bg-brand-200 dark:bg-brand-500/15 dark:text-brand-400"
                 >
-                  {resultIcon}
-                  返回结果与历史
+                  返回运行记录
                 </button>
               </div>
             )}
           </section>
         </div>
       ) : activeTab === "evalHistory" ? (
-        <div className="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4 py-6 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-6 sm:px-6">
           {/* ⑤ AI 评价结果与历史（v4.3 增量2）：历史仓库，可随便进；只从 Project.evaluations 读 */}
           <EvalHistoryPanel
             evaluations={project.evaluations ?? []}
@@ -850,6 +771,6 @@ export function WorkspaceBody({ project, updateProject }: WorkspaceBodyProps) {
           />
         </div>
       )}
-    </div>
+    </WorkspaceFrame>
   );
 }

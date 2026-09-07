@@ -15,8 +15,8 @@ test("imports, validates, versions, and locks a human golden dataset", async ({
     });
   });
 
-  await page.goto("/");
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.goto("/?tab=run");
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "人工黄金集" })
   ).toBeVisible();
@@ -135,7 +135,7 @@ test("imports, validates, versions, and locks a human golden dataset", async ({
 
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   const reloadedLibrary = page.getByLabel("黄金集版本库");
   await expect(reloadedLibrary.getByText("2 个版本")).toBeVisible();
   await reloadedLibrary.getByLabel("查看黄金集版本").selectOption(v1Id!);
