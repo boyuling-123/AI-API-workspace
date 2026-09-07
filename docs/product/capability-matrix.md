@@ -1,6 +1,8 @@
 # 测评平台 v5.0 能力矩阵
 
-N14[早间交付](morning-handoff-2026-09-07.md)与[PR #56](https://github.com/boyuling-123/AI-API-workspace/pull/56)只汇总合成实验与演示材料，不新增业务功能计数，不改变下列75行或本夜9项增量状态。
+N14[早间交付](morning-handoff-2026-09-07.md)与[PR #56](https://github.com/boyuling-123/AI-API-workspace/pull/56)最终CI已通过并正常合并；只汇总合成实验与演示材料，不新增业务功能计数，不改变下列75行或本夜9项增量状态。
+
+[N6最终文档交付](../execution/N6-CLOSEOUT.md)及[PR #57](https://github.com/boyuling-123/AI-API-workspace/pull/57)同样不新增能力或改变状态。下一业务阶段仍以新PRD差距审计为准，本夜不再继续开发。
 
 > 本表是旧75项基线，不是新一期完成率。[2026-09需求入口](../prd/2026-09/README.md)与[72行阶段差距审计](stage-gap-audit-2026-09-07.md)分别跟踪最新范围；N12文档审计不升级旧75项状态，F-OBS-004仅按已完成的PR53最终CI回写。
 
