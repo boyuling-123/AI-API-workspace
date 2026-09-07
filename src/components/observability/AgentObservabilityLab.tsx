@@ -77,6 +77,7 @@ export function AgentObservabilityLab() {
   }
 
   return <ConfigProvider locale={zhCN} theme={{ token: {
+    motion: false,
     colorPrimary: "#1554ad", colorText: "#172033", colorTextSecondary: "#475569",
     colorLink: "#1554ad", colorLinkHover: "#12458d", colorLinkActive: "#103b78",
     colorSuccess: "#166534", colorError: "#991b1b", borderRadius: 6,

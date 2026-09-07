@@ -49,7 +49,7 @@ test("manages resource identity and explicit connectivity status without backgro
   const accessSection = page
     .locator("section")
     .filter({
-      has: page.getByRole("heading", { name: /接口创建&管理/ }),
+      has: page.getByRole("heading", { name: /对象与接口/ }),
     })
     .last();
   const configItem = (name: string) =>

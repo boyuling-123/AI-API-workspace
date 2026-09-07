@@ -40,10 +40,7 @@ export function InputArea({
   return (
     <section className="rounded-xl border border-slate-200 bg-white shadow-card dark:border-slate-800 dark:bg-slate-900">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-3.5 dark:border-slate-800">
-        <h2 className="flex items-center gap-2 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">
-          <span className="flex h-5 w-5 items-center justify-center rounded-md bg-brand-100 text-[11px] font-bold text-brand-700 dark:bg-brand-500/20 dark:text-brand-300">
-            1
-          </span>
+        <h2 className="flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
           输入数据
         </h2>
         <div className="flex items-center gap-2">

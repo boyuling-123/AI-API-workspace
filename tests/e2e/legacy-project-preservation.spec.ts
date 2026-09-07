@@ -51,7 +51,7 @@ async function readRecords(page: Page): Promise<Record<string, unknown>[]> {
 
 async function openWorkspace(page: Page) {
   await page.goto("/?tab=overview");
-  await expect(page.getByRole("tablist", { name: "工作区功能导航" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "页面二级导航" })).toBeVisible();
 }
 
 test("retains mixed legacy records across editing and reload, with an accessible warning", async ({ page, safePage }) => {
@@ -92,7 +92,7 @@ test("all-legacy catalog creates only one new project and keeps every original r
   const before = await readRecords(page);
   expect(before).toHaveLength(3);
   await page.reload();
-  await expect(page.getByRole("tablist", { name: "工作区功能导航" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "页面二级导航" })).toBeVisible();
   expect(await readRecords(page)).toEqual(before);
   await page.getByPlaceholder("项目名称").fill("合成新项目");
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();

@@ -96,9 +96,9 @@ test("previews deterministic samples and generates dimensions only after a click
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -122,7 +122,7 @@ test("previews deterministic samples and generates dimensions only after a click
     page.getByRole("button", { name: "批量运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");

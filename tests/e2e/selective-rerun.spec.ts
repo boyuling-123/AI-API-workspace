@@ -11,9 +11,9 @@ async function prepareBatch(
   page: Page,
   prompts: string[]
 ): Promise<void> {
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -90,7 +90,7 @@ test("reruns only the exact failed Case and target pair", async ({ page }) => {
     page.getByRole("button", { name: "批量运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "定向重跑" }).click();
   const dialog = page.getByRole("dialog", { name: "定向重跑" });
   await expect(dialog).toBeVisible();
@@ -105,7 +105,7 @@ test("reruns only the exact failed Case and target pair", async ({ page }) => {
     targetId: "deepseek-v4-pro",
   });
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史任务（2）" })).toBeVisible();
   const rows = historyRows(page);
   await expect(rows.first()).toContainText("重跑·失败项");
@@ -139,7 +139,7 @@ test("previews and reruns only selected Case ranges", async ({ page }) => {
     page.getByRole("button", { name: "批量运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "定向重跑" }).click();
   const dialog = page.getByRole("dialog", { name: "定向重跑" });
   const caseInput = dialog.getByLabel("Case 序号");
@@ -193,7 +193,7 @@ test("previews and reruns only selected Case ranges", async ({ page }) => {
     ].sort()
   );
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await expect(historyRows(page).first()).toContainText("重跑·指定 Case");
   await expect(historyRows(page).first()).toContainText("4 / 4 调用");
 });
@@ -227,7 +227,7 @@ test("runs only a selected new target and reuses source results for comparison",
     page.getByRole("button", { name: "批量运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "定向重跑" }).click();
   const dialog = page.getByRole("dialog", { name: "定向重跑" });
   await dialog.getByRole("radio", { name: "新增目标" }).check();
@@ -268,7 +268,7 @@ test("runs only a selected new target and reuses source results for comparison",
     { prompt: "Case 3", targetId: "qwen3.6-plus" },
   ]);
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   const newestTask = historyRows(page).first();
   await expect(newestTask).toContainText("重跑·新增目标");
   await expect(newestTask).toContainText("2 / 2 调用");

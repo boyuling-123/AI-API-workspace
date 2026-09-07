@@ -44,8 +44,8 @@ test("confirms exact Judge calls and drills into calibration disagreements", asy
     });
   });
 
-  await page.goto("/");
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.goto("/?tab=run");
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   const fileInput = page.getByLabel("导入黄金集文件");
   await fileInput.setInputFiles({
     name: "calibration-golden.json",
@@ -145,7 +145,7 @@ test("confirms exact Judge calls and drills into calibration disagreements", asy
 
   await expect(page.getByText("已自动保存", { exact: true })).toBeVisible();
   await page.reload();
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   const reloadedResults = page.getByLabel("Judge 校准结果");
   await expect(reloadedResults.getByText("50.0%", { exact: true })).toBeVisible();
   await expect(reloadedResults.getByText("gold-002", { exact: true })).toBeVisible();
@@ -200,8 +200,8 @@ test("requires typed confirmation for 100 or more Judge calls", async ({
     human_label: index % 2 === 0 ? "pass" : "fail",
   }));
 
-  await page.goto("/");
-  await page.getByRole("tab", { name: /Judge 校准/ }).click();
+  await page.goto("/?tab=run");
+  await page.getByRole("link", { name: "评估器", exact: true }).click();
   await page.getByLabel("导入黄金集文件").setInputFiles({
     name: "large-golden.json",
     mimeType: "application/json",

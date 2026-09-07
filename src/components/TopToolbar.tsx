@@ -69,32 +69,8 @@ export function TopToolbar({
 
   return (
     <div className="flex flex-col">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-1.5 px-4 sm:gap-3 sm:px-6">
-        {/* 品牌区：蓝色 logo + 双行平台名 */}
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-700 text-white shadow-card">
-            <svg
-              className="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M3 3v18h18" />
-              <path d="m19 9-5 5-4-4-3 3" />
-            </svg>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="font-mono text-sm font-bold leading-none text-brand-800 dark:text-brand-300">
-              模型评测平台
-            </h1>
-            <p className="mt-0.5 text-[10px] leading-none text-slate-600 dark:text-slate-400">
-              EVALUATION PLATFORM
-            </p>
-          </div>
-        </div>
+      <div className="mx-auto flex h-14 w-full max-w-none items-center gap-1.5 px-4 sm:gap-3 sm:px-6">
+        <span className="hidden text-xs text-slate-500 sm:block">项目</span>
 
         {/* 项目名输入：文件夹图标 + 内嵌输入 */}
         <div className="flex min-w-0 flex-1 items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 sm:ml-2 sm:flex-none sm:px-3 dark:border-slate-700 dark:bg-slate-800">
@@ -110,7 +86,7 @@ export function TopToolbar({
           <input
             value={project.name}
             onChange={(event) => onRename(event.target.value)}
-            placeholder="项目名称"
+            aria-label="项目名称" placeholder="项目名称"
             className="min-w-0 w-full bg-transparent text-sm font-medium text-slate-700 outline-none placeholder:text-slate-400 sm:w-40 dark:text-slate-200"
           />
         </div>
@@ -122,6 +98,7 @@ export function TopToolbar({
           <button
             type="button"
             onClick={handleCreateNew}
+            aria-label="新建"
             className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
@@ -139,6 +116,7 @@ export function TopToolbar({
           <button
             type="button"
             onClick={handleImportClick}
+            aria-label="导入"
             className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
@@ -159,6 +137,7 @@ export function TopToolbar({
           <button
             type="button"
             onClick={() => exportProjectToJson(project)}
+            aria-label="导出"
             className="flex h-11 w-11 cursor-pointer items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-slate-600 transition-colors duration-150 hover:bg-slate-100 sm:h-8 sm:w-auto sm:px-3 dark:text-slate-300 dark:hover:bg-slate-800"
           >
             <svg
@@ -197,7 +176,7 @@ export function TopToolbar({
       </div>
 
       {(saveError || importError) && (
-        <p className="mx-auto w-full max-w-6xl px-4 pb-2 text-xs text-red-600 sm:px-6">
+        <p className="mx-auto w-full max-w-none px-4 pb-2 text-xs text-red-600 sm:px-6">
           {saveError ?? importError}
         </p>
       )}

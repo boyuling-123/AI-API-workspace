@@ -30,7 +30,7 @@ async function prepareEvaluator(page: Page, evalPrompt: string): Promise<void> {
 }
 
 async function openReusableTaskEvaluation(page: Page): Promise<void> {
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page
     .getByRole("button", { name: "复用输出去AI评测" })
     .click();
@@ -108,7 +108,7 @@ test("trials a small sample without history, then re-evaluates reused outputs in
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await page.getByRole("button", { name: "批量导入" }).click();
   const inputSection = page
     .locator("section")
@@ -183,7 +183,7 @@ test("trials a small sample without history, then re-evaluates reused outputs in
   );
   expect(runCalls).toHaveLength(3);
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史评价（0）" })).toBeVisible();
 
   failTrialCase = false;
@@ -194,7 +194,7 @@ test("trials a small sample without history, then re-evaluates reused outputs in
   await expect(page.getByText(/正式评价完成：成功 3 条/)).toBeVisible();
   expect(runCalls).toHaveLength(3);
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史评价（1）" })).toBeVisible();
 
   await openReusableTaskEvaluation(page);
@@ -203,7 +203,7 @@ test("trials a small sample without history, then re-evaluates reused outputs in
   await expect.poll(() => evaluateCalls.length).toBe(8);
   expect(runCalls).toHaveLength(3);
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史评价（2）" })).toBeVisible();
   const historyRows = page
     .locator("section")

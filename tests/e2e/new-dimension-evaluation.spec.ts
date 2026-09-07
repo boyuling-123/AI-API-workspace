@@ -74,9 +74,9 @@ async function prepareSourceEvaluation(page: Page): Promise<{
     });
   });
 
-  await page.goto("/");
+  await page.goto("/?tab=run");
   await expect(
-    page.getByRole("tablist", { name: "工作区功能导航" })
+    page.getByRole("navigation", { name: "页面二级导航" })
   ).toBeVisible();
   await page.getByRole("button", { name: "批量导入" }).click();
 
@@ -98,7 +98,7 @@ async function prepareSourceEvaluation(page: Page): Promise<{
     page.getByRole("button", { name: "运行", exact: true })
   ).toBeEnabled();
 
-  await page.getByRole("tab", { name: /跑批历史/ }).click();
+  await page.getByRole("link", { name: "评测任务", exact: true }).click();
   await page.getByRole("button", { name: "去AI评测" }).click();
   await page.getByLabel("启用 AI 自评").check();
   await page.getByLabel("裁判模型").selectOption("qwen3.6-plus");
@@ -128,7 +128,7 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
   test.setTimeout(60_000);
   const { runCalls, evaluateCalls } = await prepareSourceEvaluation(page);
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史评价（1）" })).toBeVisible();
   await page.getByRole("button", { name: "新增维度评价" }).click();
 
@@ -218,7 +218,7 @@ test("adds only new dimensions with an exact Judge-call preview and lineage", as
   ]);
   expect(runCalls).toHaveLength(1);
 
-  await page.getByRole("tab", { name: /AI历史评价/ }).click();
+  await page.getByRole("link", { name: "评测报告", exact: true }).click();
   await expect(page.getByRole("heading", { name: "历史评价（2）" })).toBeVisible();
   const historyRows = page
     .locator("section")
