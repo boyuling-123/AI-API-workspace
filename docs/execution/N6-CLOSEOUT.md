@@ -2,6 +2,8 @@
 
 记录时点：2026-09-07 08:03（Asia/Shanghai）。基线为PR56合并`484d40a14ff9d7f5f0e1e4e42164445bcee81bb1`，分支`codex/docs-overnight-closeout`。本文件是最后一个纯文档节点的规格、验收和交接；不增加业务能力。
 
+最后文档交付关联[PR #57](https://github.com/boyuling-123/AI-API-workspace/pull/57)。初始提交`ae23aa00abfdc4ad3c584e6fc5a2ae418b1d9693`的[首轮CI34068663345](https://github.com/boyuling-123/AI-API-workspace/actions/runs/34068663345)已触发；本次PR链接回写后，以PR最终head的Checks及合并记录为最终证据。为保持记录时点真实，不在提交前写“已合并”，也不在合并后追加新的文档PR。09:00停止事实只记本机忽略检查点与本线程。
+
 ## 范围与计划
 
 1. 将PR56最终head `b4108080c979ed8ba710c86c8ece5532fa86177c`、成功CI `34067940111`和07:56:54普通合并事实回写到规格、证据、早间报告与台账。
